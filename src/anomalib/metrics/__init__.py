@@ -44,7 +44,7 @@ from .anomaly_score_distribution import AnomalyScoreDistribution
 from .aupr import AUPR
 from .aupro import AUPRO
 from .auroc import AUROC
-from .base import AnomalibMetric
+from .base import AnomalibMetric, create_anomalib_metric
 from .evaluator import Evaluator
 from .f1_score import F1Max, F1Score
 from .min_max import MinMax
@@ -60,6 +60,7 @@ __all__ = [
     "AnomalibMetric",
     "AnomalyScoreDistribution",
     "BinaryPrecisionRecallCurve",
+    "create_anomalib_metric",
     "Evaluator",
     "F1AdaptiveThreshold",
     "F1Max",

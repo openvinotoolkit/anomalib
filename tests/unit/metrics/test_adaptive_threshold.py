@@ -6,7 +6,7 @@
 import pytest
 import torch
 
-from anomalib.metrics import F1AdaptiveThreshold
+from anomalib.metrics.threshold.f1_adaptive_threshold import _F1AdaptiveThreshold
 
 
 @pytest.mark.parametrize(
@@ -18,7 +18,7 @@ from anomalib.metrics import F1AdaptiveThreshold
 )
 def test_adaptive_threshold(labels: torch.Tensor, preds: torch.Tensor, target_threshold: int | float) -> None:
     """Test if the adaptive threshold computation returns the desired value."""
-    adaptive_threshold = F1AdaptiveThreshold()
+    adaptive_threshold = _F1AdaptiveThreshold()
     adaptive_threshold.update(preds, labels)
     threshold_value = adaptive_threshold.compute()
 
