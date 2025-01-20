@@ -133,7 +133,6 @@ class AnomalibMetric:
         self.fields = fields
         self.name = prefix + self.__class__.__name__
         self.strict = strict
-        self.__update_count = 0  # keeps track of the update calls of the wrapper class
         super().__init__(**kwargs)
 
     def __init_subclass__(cls, **kwargs) -> None:
@@ -155,7 +154,6 @@ class AnomalibMetric:
         Raises:
             ValueError: If batch is missing any required fields.
         """
-        self.__update_count += 1
         for key in self.fields:
             if getattr(batch, key, None) is None:
                 # We cannot update the metric if the batch is missing required fields,
