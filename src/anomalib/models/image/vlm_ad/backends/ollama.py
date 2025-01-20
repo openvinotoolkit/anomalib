@@ -44,8 +44,7 @@ from anomalib.models.image.vlm_ad.utils import Prompt
 from .base import Backend
 
 if module_available("ollama"):
-    from ollama import chat
-    from ollama._client import _encode_image
+    from ollama import Image, chat
 else:
     chat = None
 
@@ -101,7 +100,7 @@ class Ollama(Backend):
         Args:
             image (str | Path): Path to the reference image file
         """
-        self._ref_images_encoded.append(_encode_image(image))
+        self._ref_images_encoded.append(Image(value=image))
 
     @property
     def num_reference_images(self) -> int:
@@ -144,7 +143,7 @@ class Ollama(Backend):
         if not chat:
             msg = "Ollama is not installed. Please install it using `pip install ollama`."
             raise ImportError(msg)
-        image_encoded = _encode_image(image)
+        image_encoded = Image(value=image)
         messages = []
 
         # few-shot

@@ -158,24 +158,26 @@ class SyntheticAnomalyDataset(AnomalibDataset):
         augmentations (Transform | None): Transform object describing the input data augmentations.
         source_samples: DataFrame containing normal samples used as source for
             synthetic anomalies.
+        dataset_name: str dataset name for path of temporary anomalous samples
 
     Example:
         >>> transform = Compose([...])
         >>> dataset = SyntheticAnomalyDataset(
         ...     transform=transform,
-        ...     source_samples=normal_df
+        ...     source_samples=normal_df,
+        ...     dataset_name="synthetic"
         ... )
         >>> len(dataset)  # 50/50 normal/anomalous split
         100
     """
 
-    def __init__(self, augmentations: Transform | None, source_samples: DataFrame) -> None:
+    def __init__(self, augmentations: Transform | None, source_samples: DataFrame, dataset_name: str) -> None:
         super().__init__(augmentations=augmentations)
 
         self.source_samples = source_samples
 
         # Files will be written to a temporary directory in the workdir
-        root = Path(ROOT)
+        root = Path(ROOT) / dataset_name
         root.mkdir(parents=True, exist_ok=True)
 
         self.root = Path(mkdtemp(dir=root))
@@ -193,6 +195,8 @@ class SyntheticAnomalyDataset(AnomalibDataset):
             self.mask_dir,
             0.5,
         )
+
+        self.samples.attrs["task"] = "segmentation"
 
     @classmethod
     def from_dataset(
@@ -212,7 +216,7 @@ class SyntheticAnomalyDataset(AnomalibDataset):
             >>> normal_dataset = Dataset(...)
             >>> synthetic = SyntheticAnomalyDataset.from_dataset(normal_dataset)
         """
-        return cls(augmentations=dataset.augmentations, source_samples=dataset.samples)
+        return cls(augmentations=dataset.augmentations, source_samples=dataset.samples, dataset_name=dataset.name)
 
     def __copy__(self) -> "SyntheticAnomalyDataset":
         """Return shallow copy and prevent cleanup of original.
