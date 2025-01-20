@@ -85,7 +85,7 @@ class MinMax(Metric):
         del args, kwargs  # These variables are not used.
 
         self.min = torch.min(self.min, torch.min(predictions))
-        self.max = torch.max(self.min, torch.max(predictions))
+        self.max = torch.max(self.max, torch.max(predictions))
 
     def compute(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute final minimum and maximum values.
