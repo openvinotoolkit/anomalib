@@ -30,8 +30,10 @@ Example:
 import torch
 from torchmetrics import Metric
 
+from anomalib.metrics import AnomalibMetric
 
-class MinMax(Metric):
+
+class _MinMax(Metric):
     """Track minimum and maximum values across batches.
 
     This metric maintains running minimum and maximum values across all batches
@@ -48,10 +50,10 @@ class MinMax(Metric):
         max (torch.Tensor): Running maximum value seen across all batches
 
     Example:
-        >>> from anomalib.metrics import MinMax
+        >>> from anomalib.metrics.min_max import _MinMax
         >>> import torch
         >>> # Create metric
-        >>> minmax = MinMax()
+        >>> minmax = _MinMax()
         >>> # Update with batches
         >>> batch1 = torch.tensor([0.1, 0.2, 0.3])
         >>> batch2 = torch.tensor([0.2, 0.4, 0.5])
@@ -67,8 +69,8 @@ class MinMax(Metric):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.add_state("min", torch.tensor(float("inf")), persistent=True, dist_reduce_fx="min")
-        self.add_state("max", torch.tensor(float("-inf")), persistent=True, dist_reduce_fx="max")
+        self.add_state("min", torch.tensor(float("inf")), dist_reduce_fx="min")
+        self.add_state("max", torch.tensor(float("-inf")), dist_reduce_fx="max")
 
         self.min = torch.tensor(float("inf"))
         self.max = torch.tensor(float("-inf"))
@@ -85,7 +87,7 @@ class MinMax(Metric):
         del args, kwargs  # These variables are not used.
 
         self.min = torch.min(self.min, torch.min(predictions))
-        self.max = torch.max(self.min, torch.max(predictions))
+        self.max = torch.max(self.max, torch.max(predictions))
 
     def compute(self) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute final minimum and maximum values.
@@ -94,4 +96,8 @@ class MinMax(Metric):
             tuple[torch.Tensor, torch.Tensor]: Tuple containing the (min, max)
                 values tracked across all batches
         """
-        return self.min, self.max
+        return torch.stack([self.min, self.max])
+
+
+class MinMax(AnomalibMetric, _MinMax):  # type: ignore[misc]
+    """Wrapper to add AnomalibMetric functionality to MinMax metric."""

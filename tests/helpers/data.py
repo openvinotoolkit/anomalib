@@ -392,6 +392,25 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
             mask_filename = mask_path / f"{i:03}{mask_suffix}{mask_extension}"
             self.image_generator.generate_image(label, image_filename, mask_filename)
 
+    def _generate_dummy_folder_dataset(self) -> None:
+        """Generate dummy folder dataset in a temporary directory."""
+        # folder names
+        normal_dir = self.root / self.normal_category
+        abnormal_dir = self.root / self.abnormal_category
+        mask_dir = self.root / "masks"
+
+        # generate images
+        for i in range(self.num_train):
+            label = LabelName.NORMAL
+            image_filename = normal_dir / f"{self.normal_category}_{i:03}.png"
+            self.image_generator.generate_image(label, image_filename)
+
+        for i in range(self.num_test):
+            label = LabelName.ABNORMAL
+            image_filename = abnormal_dir / f"{self.abnormal_category}_{i:03}.png"
+            mask_filename = mask_dir / image_filename.name
+            self.image_generator.generate_image(label, image_filename, mask_filename)
+
     def _generate_dummy_btech_dataset(self) -> None:
         """Generate dummy BeanTech dataset in directory using the same convention as BeanTech AD."""
         # BeanTech AD follows the same convention as MVTec AD.

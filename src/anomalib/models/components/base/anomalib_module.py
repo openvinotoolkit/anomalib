@@ -374,8 +374,8 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         """
         image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
         image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
-        pixel_auroc = AUROC(fields=["anomaly_map", "gt_mask"], prefix="pixel_")
-        pixel_f1score = F1Score(fields=["pred_mask", "gt_mask"], prefix="pixel_")
+        pixel_auroc = AUROC(fields=["anomaly_map", "gt_mask"], prefix="pixel_", strict=False)
+        pixel_f1score = F1Score(fields=["pred_mask", "gt_mask"], prefix="pixel_", strict=False)
         test_metrics = [image_auroc, image_f1score, pixel_auroc, pixel_f1score]
         return Evaluator(test_metrics=test_metrics)
 

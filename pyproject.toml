@@ -58,7 +58,7 @@ core = [
     "open-clip-torch>=2.23.0,<2.26.1",
 ]
 openvino = ["openvino>=2024.0", "nncf>=2.10.0", "onnx>=1.16.0"]
-vlm = ["ollama<0.4.0", "openai", "python-dotenv","transformers"]
+vlm = ["ollama>=0.4.0", "openai", "python-dotenv","transformers"]
 loggers = [
     "comet-ml>=3.31.7",
     "gradio>=4",
@@ -191,7 +191,6 @@ lint.ignore = [
     # End of disable rules
 
     # flake8-annotations
-    "ANN101", # Missing-type-self
     "ANN002", # Missing type annotation for *args
     "ANN003", # Missing type annotation for **kwargs
 
