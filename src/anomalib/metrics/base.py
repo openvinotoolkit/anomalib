@@ -178,7 +178,7 @@ class AnomalibMetric:
         values = [getattr(batch, key) for key in self.fields]
         super().update(*values, *args, **kwargs)  # type: ignore[misc]
 
-    def compute(self) -> torch.Tensor | None:
+    def compute(self) -> torch.Tensor:
         """Compute the metric value.
 
         If the metric has not been updated, and metric is not in strict mode, return None.
