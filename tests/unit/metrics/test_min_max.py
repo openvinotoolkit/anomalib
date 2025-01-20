@@ -5,7 +5,7 @@
 
 import torch
 
-from anomalib.metrics import _MinMax  # Assuming the metric is part of `anomalib`
+from anomalib.metrics.min_max import _MinMax  # Assuming the metric is part of `anomalib`
 
 
 def test_initialization() -> None:
