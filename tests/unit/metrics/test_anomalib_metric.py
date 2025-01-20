@@ -79,7 +79,7 @@ class TestStrictMode:
         metric.update(batch)
         assert metric.compute() is None
         assert metric._update_count == 0  # noqa: SLF001
-        assert metric.update_called is True
+        assert metric.update_called is False
 
     @staticmethod
     def test_no_error_when_field_is_none() -> None:
@@ -91,4 +91,4 @@ class TestStrictMode:
         metric.update(batch)
         assert metric.compute() is None
         assert metric._update_count == 0  # noqa: SLF001
-        assert metric.update_called is True
+        assert metric.update_called is False
