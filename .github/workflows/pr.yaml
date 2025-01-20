@@ -40,7 +40,7 @@ name: PR Checks
 
 on:
   pull_request:
-    branches: ["feature/**"]
+    branches: ["main", "feature/**"]
   merge_group:
     branches: [main]
 
