@@ -1,6 +1,6 @@
 """Inference Entrypoint script."""
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from jsonargparse import ActionConfigFile, Namespace
@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 
 from anomalib.data import PredictDataset
 from anomalib.engine import Engine
-from anomalib.models import AnomalyModule, get_model
+from anomalib.models import AnomalibModule, get_model
 
 
 def get_parser() -> LightningArgumentParser:
@@ -20,7 +20,7 @@ def get_parser() -> LightningArgumentParser:
         LightningArgumentParser: The parser object.
     """
     parser = LightningArgumentParser(description="Inference on Anomaly models in Lightning format.")
-    parser.add_lightning_class_args(AnomalyModule, "model", subclass_mode=True)
+    parser.add_lightning_class_args(AnomalibModule, "model", subclass_mode=True)
     parser.add_lightning_class_args(Callback, "--callbacks", subclass_mode=True, required=False)
     parser.add_argument("--ckpt_path", type=str, required=True, help="Path to model weights")
     parser.add_class_arguments(PredictDataset, "--data", instantiate=False)
@@ -53,7 +53,7 @@ def infer(args: Namespace) -> None:
 
     # create the dataset
     dataset = PredictDataset(**args.data)
-    dataloader = DataLoader(dataset)
+    dataloader = DataLoader(dataset, collate_fn=dataset.collate_fn)
 
     engine.predict(model=model, dataloaders=[dataloader], ckpt_path=args.ckpt_path)
 

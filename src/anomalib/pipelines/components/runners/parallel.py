@@ -1,4 +1,26 @@
-"""Process pool executor."""
+"""Parallel execution of pipeline jobs using process pools.
+
+This module provides the :class:`ParallelRunner` class for executing pipeline jobs in
+parallel across multiple processes. It uses Python's :class:`ProcessPoolExecutor` to
+manage a pool of worker processes.
+
+Example:
+    >>> from anomalib.pipelines.components.runners import ParallelRunner
+    >>> from anomalib.pipelines.components.base import JobGenerator
+    >>> generator = JobGenerator()
+    >>> runner = ParallelRunner(generator, n_jobs=4)
+    >>> results = runner.run({"param": "value"})
+
+The parallel runner handles:
+
+- Creating and managing a pool of worker processes
+- Distributing jobs across available workers
+- Collecting and combining results from parallel executions
+- Error handling for failed jobs
+
+The number of parallel jobs can be configured based on available compute resources
+like CPU cores or GPUs.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -22,26 +44,42 @@ class ParallelExecutionError(Exception):
 
 
 class ParallelRunner(Runner):
-    """Run the job in parallel using a process pool.
+    """Run jobs in parallel using a process pool.
 
-    It creates a pool of processes and submits the jobs to the pool.
-    This is useful when you have fixed resources that you want to re-use.
-    Once a process is done, it is replaced with a new job.
+    This runner executes jobs concurrently using a pool of worker processes. It manages
+    process creation, job distribution, and result collection.
 
     Args:
-        generator (JobGenerator): The generator that generates the jobs.
-        n_jobs (int): The number of jobs to run in parallel.
+        generator (JobGenerator): Generator that creates jobs to be executed.
+        n_jobs (int): Number of parallel processes to use.
 
     Example:
-        Creating a pool with the size of the number of available GPUs and submitting jobs to the pool.
-        >>> ParallelRunner(generator, n_jobs=torch.cuda.device_count())
-        Each time a job is submitted to the pool, an additional parameter `task_id` will be passed to `job.run` method.
-        The job can then use this `task_id` to assign a particular device to train on.
-        >>> def run(self, arg1: int, arg2: nn.Module, task_id: int) -> None:
-        >>>     device = torch.device(f"cuda:{task_id}")
-        >>>     model = arg2.to(device)
-        >>>     ...
+        Create a pool with size matching available GPUs and submit jobs:
 
+        >>> from anomalib.pipelines.components.runners import ParallelRunner
+        >>> from anomalib.pipelines.components.base import JobGenerator
+        >>> import torch
+        >>> generator = JobGenerator()
+        >>> runner = ParallelRunner(generator, n_jobs=torch.cuda.device_count())
+        >>> results = runner.run({"param": "value"})
+
+    Notes:
+        When a job is submitted to the pool, a ``task_id`` parameter is passed to the
+        job's ``run()`` method. Jobs can use this ID to manage device assignment:
+
+        .. code-block:: python
+
+            def run(self, arg1: int, arg2: nn.Module, task_id: int) -> None:
+                device = torch.device(f"cuda:{task_id}")
+                model = arg2.to(device)
+                # ... rest of job logic
+
+    The runner handles:
+        - Creating and managing worker processes
+        - Distributing jobs to available workers
+        - Collecting and combining results
+        - Error handling for failed jobs
+        - Resource cleanup
     """
 
     def __init__(self, generator: JobGenerator, n_jobs: int) -> None:

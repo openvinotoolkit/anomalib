@@ -1,0 +1,68 @@
+# Code Quality Workflow
+#
+# This reusable workflow executes code quality checks using pre-commit hooks
+# and other quality assurance tools across multiple languages.
+#
+# Key Features:
+# - Pre-commit hook execution
+# - Multi-language support
+# - Dependency caching
+# - Configurable environments
+# - Parallel check execution
+#
+# Process Stages:
+# 1. Environment Preparation:
+#    - Python setup
+#    - Cache configuration
+#
+# 2. Quality Checks:
+#    - Code linting
+#    - Style verification
+#    - Type checking
+#    - Best practices validation
+#
+# 3. Results Processing:
+#    - Error reporting
+#    - Check summaries
+#    - Status updates
+#
+# Required Inputs:
+# - python-version: Python version for checks (default: "3.10")
+#
+# Example Usage:
+# 1. Default Configuration:
+#    jobs:
+#      quality:
+#        uses: ./.github/workflows/_reusable-code-quality.yaml
+#
+# 2. Custom Versions:
+#    jobs:
+#      quality:
+#        uses: ./.github/workflows/_reusable-code-quality.yaml
+#        with:
+#          python-version: "3.11"
+#
+# Note: Requires configured pre-commit hooks in repository
+
+name: Reusable Code Quality
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: "Python version for checks"
+        type: string
+        default: "3.10"
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+      - uses: ./.github/actions/code-quality/pre-commit
+        with:
+          python-version: ${{ inputs.python-version }}

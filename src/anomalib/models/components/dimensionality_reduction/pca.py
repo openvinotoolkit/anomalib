@@ -1,6 +1,22 @@
-"""Principle Component Analysis (PCA) with PyTorch."""
+"""Principal Component Analysis (PCA) implementation using PyTorch.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides a PyTorch-based implementation of Principal Component Analysis
+for dimensionality reduction.
+
+Example:
+    >>> import torch
+    >>> from anomalib.models.components import PCA
+    >>> # Create sample data
+    >>> data = torch.randn(100, 10)  # 100 samples, 10 features
+    >>> # Initialize PCA with 3 components
+    >>> pca = PCA(n_components=3)
+    >>> # Fit and transform the data
+    >>> transformed_data = pca.fit_transform(data)
+    >>> print(transformed_data.shape)
+    torch.Size([100, 3])
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
@@ -9,31 +25,34 @@ from anomalib.models.components.base import DynamicBufferMixin
 
 
 class PCA(DynamicBufferMixin):
-    """Principle Component Analysis (PCA).
+    """Principal Component Analysis (PCA) for dimensionality reduction.
 
     Args:
-        n_components (float): Number of components. Can be either integer number of components
-          or a ratio between 0-1.
+        n_components (int | float): Number of components to keep. If float between
+            0 and 1, represents the variance ratio to preserve. If int, represents
+            the exact number of components to keep.
+
+    Attributes:
+        singular_vectors (torch.Tensor): Right singular vectors from SVD.
+        singular_values (torch.Tensor): Singular values from SVD.
+        mean (torch.Tensor): Mean of the training data.
+        num_components (torch.Tensor): Number of components kept.
 
     Example:
         >>> import torch
         >>> from anomalib.models.components import PCA
-
-        Create a PCA model with 2 components:
-
-        >>> pca = PCA(n_components=2)
-
-        Create a random embedding and fit a PCA model.
-
-        >>> embedding = torch.rand(1000, 5).cuda()
-        >>> pca = PCA(n_components=2)
-        >>> pca.fit(embedding)
-
-        Apply transformation:
-
-        >>> transformed = pca.transform(embedding)
-        >>> transformed.shape
-        torch.Size([1000, 2])
+        >>> # Create sample data
+        >>> data = torch.randn(100, 10)  # 100 samples, 10 features
+        >>> # Initialize with fixed number of components
+        >>> pca = PCA(n_components=3)
+        >>> pca.fit(data)
+        >>> # Transform new data
+        >>> transformed = pca.transform(data)
+        >>> print(transformed.shape)
+        torch.Size([100, 3])
+        >>> # Initialize with variance ratio
+        >>> pca = PCA(n_components=0.95)  # Keep 95% of variance
+        >>> pca.fit(data)
     """
 
     def __init__(self, n_components: int | float) -> None:
@@ -50,18 +69,21 @@ class PCA(DynamicBufferMixin):
         self.num_components: torch.Tensor
 
     def fit(self, dataset: torch.Tensor) -> None:
-        """Fits the PCA model to the dataset.
+        """Fit the PCA model to the dataset.
 
         Args:
-          dataset (torch.Tensor): Input dataset to fit the model.
+            dataset (torch.Tensor): Input dataset of shape ``(n_samples,
+                n_features)``.
 
         Example:
-            >>> pca.fit(embedding)
-            >>> pca.singular_vectors
-            tensor([9.6053, 9.2763], device='cuda:0')
-
-            >>> pca.mean
-            tensor([0.4859, 0.4959, 0.4906, 0.5010, 0.5042], device='cuda:0')
+            >>> data = torch.randn(100, 10)
+            >>> pca = PCA(n_components=3)
+            >>> pca.fit(data)
+            >>> # Access fitted attributes
+            >>> print(pca.singular_vectors.shape)
+            torch.Size([10, 3])
+            >>> print(pca.mean.shape)
+            torch.Size([10])
         """
         mean = dataset.mean(dim=0)
         dataset -= mean
@@ -74,31 +96,34 @@ class PCA(DynamicBufferMixin):
         else:
             num_components = int(self.n_components)
 
-        self.num_components = torch.Tensor([num_components])
+        self.num_components = torch.tensor([num_components], device=dataset.device)
 
         self.singular_vectors = v_h.transpose(-2, -1)[:, :num_components].float()
         self.singular_values = sig[:num_components].float()
         self.mean = mean
 
     def fit_transform(self, dataset: torch.Tensor) -> torch.Tensor:
-        """Fit and transform PCA to dataset.
+        """Fit the model and transform the input dataset.
 
         Args:
-            dataset (torch.Tensor): Dataset to which the PCA if fit and transformed
+            dataset (torch.Tensor): Input dataset of shape ``(n_samples,
+                n_features)``.
 
         Returns:
-            Transformed dataset
+            torch.Tensor: Transformed dataset of shape ``(n_samples,
+                n_components)``.
 
         Example:
-            >>> pca.fit_transform(embedding)
-            >>> transformed_embedding = pca.fit_transform(embedding)
-            >>> transformed_embedding.shape
-            torch.Size([1000, 2])
+            >>> data = torch.randn(100, 10)
+            >>> pca = PCA(n_components=3)
+            >>> transformed = pca.fit_transform(data)
+            >>> print(transformed.shape)
+            torch.Size([100, 3])
         """
         mean = dataset.mean(dim=0)
         dataset -= mean
         num_components = int(self.n_components)
-        self.num_components = torch.Tensor([num_components])
+        self.num_components = torch.tensor([num_components], device=dataset.device)
 
         v_h = torch.linalg.svd(dataset)[-1]
         self.singular_vectors = v_h.transpose(-2, -1)[:, :num_components]
@@ -107,54 +132,66 @@ class PCA(DynamicBufferMixin):
         return torch.matmul(dataset, self.singular_vectors)
 
     def transform(self, features: torch.Tensor) -> torch.Tensor:
-        """Transform the features based on singular vectors calculated earlier.
+        """Transform features using the fitted PCA model.
 
         Args:
-            features (torch.Tensor): Input features
+            features (torch.Tensor): Input features of shape ``(n_samples,
+                n_features)``.
 
         Returns:
-            Transformed features
+            torch.Tensor: Transformed features of shape ``(n_samples,
+                n_components)``.
 
         Example:
-            >>> pca.transform(embedding)
-            >>> transformed_embedding = pca.transform(embedding)
-
-            >>> embedding.shape
-            torch.Size([1000, 5])
-            #
-            >>> transformed_embedding.shape
-            torch.Size([1000, 2])
+            >>> data = torch.randn(100, 10)
+            >>> pca = PCA(n_components=3)
+            >>> pca.fit(data)
+            >>> new_data = torch.randn(50, 10)
+            >>> transformed = pca.transform(new_data)
+            >>> print(transformed.shape)
+            torch.Size([50, 3])
         """
         features -= self.mean
         return torch.matmul(features, self.singular_vectors)
 
     def inverse_transform(self, features: torch.Tensor) -> torch.Tensor:
-        """Inverses the transformed features.
+        """Inverse transform features back to original space.
 
         Args:
-            features (torch.Tensor): Transformed features
+            features (torch.Tensor): Transformed features of shape ``(n_samples,
+                n_components)``.
 
         Returns:
-            Inverse features
+            torch.Tensor: Reconstructed features of shape ``(n_samples,
+                n_features)``.
 
         Example:
-            >>> inverse_embedding = pca.inverse_transform(transformed_embedding)
-            >>> inverse_embedding.shape
-            torch.Size([1000, 5])
+            >>> data = torch.randn(100, 10)
+            >>> pca = PCA(n_components=3)
+            >>> transformed = pca.fit_transform(data)
+            >>> reconstructed = pca.inverse_transform(transformed)
+            >>> print(reconstructed.shape)
+            torch.Size([100, 10])
         """
         return torch.matmul(features, self.singular_vectors.transpose(-2, -1))
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        """Transform the features.
+        """Transform features (alias for transform method).
 
         Args:
-            features (torch.Tensor): Input features
+            features (torch.Tensor): Input features of shape ``(n_samples,
+                n_features)``.
 
         Returns:
-            Transformed features
+            torch.Tensor: Transformed features of shape ``(n_samples,
+                n_components)``.
 
         Example:
-            >>> pca(embedding).shape
-            torch.Size([1000, 2])
+            >>> data = torch.randn(100, 10)
+            >>> pca = PCA(n_components=3)
+            >>> pca.fit(data)
+            >>> transformed = pca(data)  # Using forward
+            >>> print(transformed.shape)
+            torch.Size([100, 3])
         """
         return self.transform(features)

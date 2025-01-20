@@ -1,6 +1,14 @@
-"""Helper functions for CFlow implementation."""
+"""Helper functions for CFlow implementation.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides utility functions used by the CFlow model implementation,
+including:
+
+- Log likelihood estimation
+- 2D positional encoding generation
+- Subnet and decoder network creation
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -17,33 +25,50 @@ logger = logging.getLogger(__name__)
 
 
 def get_logp(dim_feature_vector: int, p_u: torch.Tensor, logdet_j: torch.Tensor) -> torch.Tensor:
-    """Return the log likelihood estimation.
+    """Calculate the log likelihood estimation.
 
     Args:
-        dim_feature_vector (int): Dimensions of the condition vector
-        p_u (torch.Tensor): Random variable u
-        logdet_j (torch.Tensor): log of determinant of jacobian returned from the invertable decoder
+        dim_feature_vector (int): Dimension of the feature vector
+        p_u (torch.Tensor): Random variable ``u`` sampled from the base distribution
+        logdet_j (torch.Tensor): Log determinant of the Jacobian returned from the
+            invertible decoder
 
     Returns:
-        Tensor: Log probability
+        torch.Tensor: Log probability estimation
+
+    Example:
+        >>> dim = 128
+        >>> p_u = torch.randn(32, dim)
+        >>> logdet_j = torch.zeros(32)
+        >>> logp = get_logp(dim, p_u, logdet_j)
     """
     ln_sqrt_2pi = -np.log(np.sqrt(2 * np.pi))  # ln(sqrt(2*pi))
     return dim_feature_vector * ln_sqrt_2pi - 0.5 * torch.sum(p_u**2, 1) + logdet_j
 
 
 def positional_encoding_2d(condition_vector: int, height: int, width: int) -> torch.Tensor:
-    """Create embedding to store relative position of the feature vector using sine and cosine functions.
+    """Create 2D positional encoding using sine and cosine functions.
+
+    Creates an embedding to store relative position of feature vectors using
+    sinusoidal functions at different frequencies.
 
     Args:
-        condition_vector (int): Length of the condition vector
-        height (int): H of the positions
-        width (int): W of the positions
+        condition_vector (int): Length of the condition vector (must be multiple
+            of 4)
+        height (int): Height of the positions grid
+        width (int): Width of the positions grid
 
     Raises:
-        ValueError: Cannot generate encoding with conditional vector length not as multiple of 4
+        ValueError: If ``condition_vector`` is not a multiple of 4
 
     Returns:
-        Tensor: condition_vector x HEIGHT x WIDTH position matrix
+        torch.Tensor: Position encoding of shape
+            ``(condition_vector, height, width)``
+
+    Example:
+        >>> encoding = positional_encoding_2d(128, 32, 32)
+        >>> encoding.shape
+        torch.Size([128, 32, 32])
     """
     if condition_vector % 4 != 0:
         msg = f"Cannot use sin/cos positional encoding with odd dimension (got dim={condition_vector})"
@@ -70,14 +95,21 @@ def positional_encoding_2d(condition_vector: int, height: int, width: int) -> to
 
 
 def subnet_fc(dims_in: int, dims_out: int) -> nn.Sequential:
-    """Subnetwork which predicts the affine coefficients.
+    """Create a feed-forward subnetwork that predicts affine coefficients.
 
     Args:
-        dims_in (int): input dimensions
-        dims_out (int): output dimensions
+        dims_in (int): Input dimensions
+        dims_out (int): Output dimensions
 
     Returns:
-        nn.Sequential: Feed-forward subnetwork
+        nn.Sequential: Feed-forward subnetwork with ReLU activation
+
+    Example:
+        >>> net = subnet_fc(64, 128)
+        >>> x = torch.randn(32, 64)
+        >>> out = net(x)
+        >>> out.shape
+        torch.Size([32, 128])
     """
     return nn.Sequential(nn.Linear(dims_in, 2 * dims_in), nn.ReLU(), nn.Linear(2 * dims_in, dims_out))
 
@@ -89,19 +121,28 @@ def cflow_head(
     n_features: int,
     permute_soft: bool = False,
 ) -> SequenceINN:
-    """Create invertible decoder network.
+    """Create an invertible decoder network for CFlow.
 
     Args:
-        condition_vector (int): length of the condition vector
-        coupling_blocks (int): number of coupling blocks to build the decoder
-        clamp_alpha (float): clamping value to avoid exploding values
-        n_features (int): number of decoder features
-        permute_soft (bool): Whether to sample the permutation matrix :math:`R` from :math:`SO(N)`,
-            or to use hard permutations instead. Note, ``permute_soft=True`` is very slow
-            when working with >512 dimensions.
+        condition_vector (int): Length of the condition vector
+        coupling_blocks (int): Number of coupling blocks in the decoder
+        clamp_alpha (float): Clamping value to avoid exploding values
+        n_features (int): Number of decoder features
+        permute_soft (bool, optional): Whether to sample the permutation matrix
+            from SO(N) (True) or use hard permutations (False). Note that
+            ``permute_soft=True`` is very slow for >512 dimensions.
+            Defaults to False.
 
     Returns:
-        SequenceINN: decoder network block
+        SequenceINN: Invertible decoder network
+
+    Example:
+        >>> decoder = cflow_head(
+        ...     condition_vector=128,
+        ...     coupling_blocks=4,
+        ...     clamp_alpha=1.9,
+        ...     n_features=256
+        ... )
     """
     coder = SequenceINN(n_features)
     logger.info("CNF coder: %d", n_features)

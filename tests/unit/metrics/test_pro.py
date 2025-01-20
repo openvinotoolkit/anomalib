@@ -3,11 +3,13 @@
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import pytest
 import torch
 from torchvision.transforms import RandomAffine
 
-from anomalib.data.utils import random_2d_perlin
-from anomalib.metrics.pro import PRO, connected_components_cpu, connected_components_gpu
+from anomalib.data.utils.generators.perlin import generate_perlin_noise
+from anomalib.metrics.pro import _PRO as PRO
+from anomalib.metrics.pro import connected_components_cpu, connected_components_gpu
 
 
 def test_pro() -> None:
@@ -43,13 +45,17 @@ def test_pro() -> None:
         assert pro.compute() == target
 
 
+@pytest.mark.gpu
 def test_device_consistency() -> None:
-    """Test if the pro metric yields the same results between cpu and gpu."""
+    """Test if the pro metric yields the same results between cpu and gpu.
+
+    Note: This test will only run on a GPU-enabled device.
+    """
     transform = RandomAffine(5, None, (0.95, 1.05), 5)
 
     batch = torch.zeros((32, 256, 256))
     for i in range(batch.shape[0]):
-        batch[i, ...] = random_2d_perlin((256, 256), (torch.tensor(4), torch.tensor(4))) > 0.5
+        batch[i, ...] = generate_perlin_noise(256, 256, scale=(4, 4)) > 0.5
     # ground truth mask is int type
     batch = batch.type(torch.int32)
 
@@ -64,12 +70,16 @@ def test_device_consistency() -> None:
     assert torch.isclose(pro_cpu.compute(), pro_gpu.compute().cpu())
 
 
+@pytest.mark.gpu
 def test_connected_component_labeling() -> None:
-    """Tests if the connected component labeling algorithms on cpu and gpu yield the same result."""
+    """Tests if the connected component labeling algorithms on cpu and gpu yield the same result.
+
+    Note: This test will only run on a GPU-enabled device.
+    """
     # generate batch of random binary images using perlin noise
     batch = torch.zeros((32, 1, 256, 256))
     for i in range(batch.shape[0]):
-        batch[i, ...] = random_2d_perlin((256, 256), (torch.tensor(4), torch.tensor(4))) > 0.5
+        batch[i, ...] = generate_perlin_noise(256, 256, scale=(4, 4)) > 0.5
 
     # get connected component results on both cpu and gpu
     cc_cpu = connected_components_cpu(batch.cpu())

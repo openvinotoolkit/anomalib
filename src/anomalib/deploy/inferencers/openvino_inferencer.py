@@ -1,97 +1,94 @@
-"""OpenVINO Inferencer implementation."""
+"""OpenVINO Inferencer for optimized model inference.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides the OpenVINO inferencer implementation for running optimized
+inference with OpenVINO IR models.
+
+Example:
+    Assume we have OpenVINO IR model files in the following structure:
+
+    .. code-block:: bash
+
+        $ tree weights
+        ./weights
+        ├── model.bin
+        ├── model.xml
+        └── metadata.json
+
+    Create an OpenVINO inferencer:
+
+    >>> from anomalib.deploy import OpenVINOInferencer
+    >>> inferencer = OpenVINOInferencer(
+    ...     path="weights/model.xml",
+    ...     device="CPU"
+    ... )
+
+    Make predictions:
+
+    >>> # From image path
+    >>> prediction = inferencer.predict("path/to/image.jpg")
+
+    >>> # From PIL Image
+    >>> from PIL import Image
+    >>> image = Image.open("path/to/image.jpg")
+    >>> prediction = inferencer.predict(image)
+
+    >>> # From numpy array
+    >>> import numpy as np
+    >>> image = np.random.rand(224, 224, 3)
+    >>> prediction = inferencer.predict(image)
+
+    The prediction result contains anomaly maps and scores:
+
+    >>> prediction.anomaly_map  # doctest: +SKIP
+    array([[0.1, 0.2, ...]], dtype=float32)
+
+    >>> prediction.pred_score  # doctest: +SKIP
+    0.86
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
 from pathlib import Path
 from typing import Any
 
-import cv2
 import numpy as np
 from lightning_utilities.core.imports import module_available
-from omegaconf import DictConfig
-from PIL import Image
+from openvino.runtime.utils.data_helpers.wrappers import OVDict
 
-from anomalib import TaskType
-from anomalib.data.utils.label import LabelName
-from anomalib.utils.visualization import ImageResult
-
-from .base_inferencer import Inferencer
+from anomalib.data import NumpyImageBatch
+from anomalib.data.utils import read_image
 
 logger = logging.getLogger("anomalib")
 
 
-class OpenVINOInferencer(Inferencer):
-    """OpenVINO implementation for the inference.
+class OpenVINOInferencer:
+    """OpenVINO inferencer for optimized model inference.
 
     Args:
-        path (str | Path): Path to the openvino onnx, xml or bin file.
-        metadata (str | Path | dict, optional): Path to metadata file or a dict object defining the
-            metadata.
-            Defaults to ``None``.
-        device (str | None, optional): Device to run the inference on (AUTO, CPU, GPU, NPU).
-            Defaults to ``AUTO``.
-        task (TaskType | None, optional): Task type.
-            Defaults to ``None``.
-        config (dict | None, optional): Configuration parameters for the inference
+        path (str | Path | tuple[bytes, bytes]): Path to OpenVINO IR files
+            (``.xml`` and ``.bin``) or ONNX model, or tuple of xml/bin data as
+            bytes.
+        device (str | None, optional): Inference device.
+            Options: ``"AUTO"``, ``"CPU"``, ``"GPU"``, ``"NPU"``.
+            Defaults to ``"AUTO"``.
+        config (dict | None, optional): OpenVINO configuration parameters.
             Defaults to ``None``.
 
-    Examples:
-        Assume that we have an OpenVINO IR model and metadata files in the following structure:
-
-        .. code-block:: bash
-
-            $ tree weights
-            ./weights
-            ├── model.bin
-            ├── model.xml
-            └── metadata.json
-
-        We could then create ``OpenVINOInferencer`` as follows:
-
-        >>> from anomalib.deploy.inferencers import OpenVINOInferencer
-        >>> inferencer = OpenVINOInferencer(
-        ...     path="weights/model.xml",
-        ...     metadata="weights/metadata.json",
-        ...     device="CPU",
+    Example:
+        >>> from anomalib.deploy import OpenVINOInferencer
+        >>> model = OpenVINOInferencer(
+        ...     path="model.xml",
+        ...     device="CPU"
         ... )
-
-        This will ensure that the model is loaded on the ``CPU`` device and the
-        metadata is loaded from the ``metadata.json`` file. To make a prediction,
-        we can simply call the ``predict`` method:
-
-        >>> prediction = inferencer.predict(image="path/to/image.jpg")
-
-        Alternatively we can also pass the image as a PIL image or numpy array:
-
-        >>> from PIL import Image
-        >>> image = Image.open("path/to/image.jpg")
-        >>> prediction = inferencer.predict(image=image)
-
-        >>> import numpy as np
-        >>> image = np.random.rand(224, 224, 3)
-        >>> prediction = inferencer.predict(image=image)
-
-        ``prediction`` will be an ``ImageResult`` object containing the prediction
-        results. For example, to visualize the heatmap, we can do the following:
-
-        >>> from matplotlib import pyplot as plt
-        >>> plt.imshow(result.heatmap)
-
-        It is also possible to visualize the true and predicted masks if the
-        task is ``TaskType.SEGMENTATION``:
-
-        >>> plt.imshow(result.gt_mask)
-        >>> plt.imshow(result.pred_mask)
+        >>> prediction = model.predict("test.jpg")
     """
 
     def __init__(
         self,
         path: str | Path | tuple[bytes, bytes],
-        metadata: str | Path | dict | None = None,
         device: str | None = "AUTO",
-        task: str | None = None,
         config: dict | None = None,
     ) -> None:
         if not module_available("openvino"):
@@ -99,23 +96,24 @@ class OpenVINOInferencer(Inferencer):
             raise ImportError(msg)
 
         self.device = device
-
         self.config = config
         self.input_blob, self.output_blob, self.model = self.load_model(path)
-        self.metadata = super()._load_metadata(metadata)
-
-        self.task = TaskType(task) if task else TaskType(self.metadata["task"])
 
     def load_model(self, path: str | Path | tuple[bytes, bytes]) -> tuple[Any, Any, Any]:
-        """Load the OpenVINO model.
+        """Load OpenVINO model from file or bytes.
 
         Args:
-            path (str | Path | tuple[bytes, bytes]): Path to the onnx or xml and bin files
-                                                        or tuple of .xml and .bin data as bytes.
+            path (str | Path | tuple[bytes, bytes]): Path to model files or model
+                data as bytes tuple.
 
         Returns:
-            [tuple[str, str, ExecutableNetwork]]: Input and Output blob names
-                together with the Executable network.
+            tuple[Any, Any, Any]: Tuple containing:
+                - Input blob
+                - Output blob
+                - Compiled model
+
+        Raises:
+            ValueError: If model path has invalid extension.
         """
         import openvino as ov
 
@@ -141,7 +139,11 @@ class OpenVINOInferencer(Inferencer):
         cache_folder.mkdir(exist_ok=True)
         core.set_property({"CACHE_DIR": cache_folder})
 
-        compile_model = core.compile_model(model=model, device_name=self.device, config=self.config)
+        compile_model = core.compile_model(
+            model=model,
+            device_name=self.device,
+            config=self.config,
+        )
 
         input_blob = compile_model.input(0)
         output_blob = compile_model.output(0)
@@ -150,190 +152,63 @@ class OpenVINOInferencer(Inferencer):
 
     @staticmethod
     def pre_process(image: np.ndarray) -> np.ndarray:
-        """Pre-process the input image by applying transformations.
+        """Pre-process input image.
 
         Args:
             image (np.ndarray): Input image.
 
         Returns:
-            np.ndarray: pre-processed image.
+            np.ndarray: Pre-processed image with shape (N,C,H,W).
         """
-        processed_image = image
-
-        if len(processed_image.shape) == 3:
-            processed_image = np.expand_dims(processed_image, axis=0)
-
-        if processed_image.shape[-1] == 3:
-            processed_image = processed_image.transpose(0, 3, 1, 2)
-
-        return processed_image
-
-    def predict(
-        self,
-        image: str | Path | np.ndarray,
-        metadata: dict[str, Any] | None = None,
-    ) -> ImageResult:
-        """Perform a prediction for a given input image.
-
-        The main workflow is (i) pre-processing, (ii) forward-pass, (iii) post-process.
-
-        Args:
-            image (Union[str, np.ndarray]): Input image whose output is to be predicted.
-                It could be either a path to image or numpy array itself.
-
-            metadata: Metadata information such as shape, threshold.
-
-        Returns:
-            ImageResult: Prediction results to be visualized.
-        """
-        # Convert file path or string to image if necessary
-        if isinstance(image, str | Path):
-            image = Image.open(image)
-
-        # Convert PIL image to numpy array
-        if isinstance(image, Image.Image):
-            image = np.array(image, dtype=np.float32)
-        if not isinstance(image, np.ndarray):
-            msg = f"Input image must be a numpy array or a path to an image. Got {type(image)}"
-            raise TypeError(msg)
-
-        # Resize image to model input size if not dynamic
-        if self.input_blob.partial_shape[2].is_static and self.input_blob.partial_shape[3].is_static:
-            image = cv2.resize(image, tuple(list(self.input_blob.shape)[2:][::-1]))
-
         # Normalize numpy array to range [0, 1]
         if image.dtype != np.float32:
             image = image.astype(np.float32)
         if image.max() > 1.0:
             image /= 255.0
 
-        # Check if metadata is provided, if not use the default metadata.
-        if metadata is None:
-            metadata = self.metadata if hasattr(self, "metadata") else {}
-        metadata["image_shape"] = image.shape[:2]
+        if len(image.shape) == 3:
+            image = np.expand_dims(image, axis=0)
 
-        processed_image = self.pre_process(image)
-        predictions = self.forward(processed_image)
-        output = self.post_process(predictions, metadata=metadata)
+        if image.shape[-1] == 3:
+            image = image.transpose(0, 3, 1, 2)
 
-        return ImageResult(
-            image=(image * 255).astype(np.uint8),
-            pred_score=output["pred_score"],
-            pred_label=output["pred_label"],
-            anomaly_map=output["anomaly_map"],
-            pred_mask=output["pred_mask"],
-            pred_boxes=output["pred_boxes"],
-            box_labels=output["box_labels"],
-        )
-
-    def forward(self, image: np.ndarray) -> np.ndarray:
-        """Forward-Pass input tensor to the model.
-
-        Args:
-            image (np.ndarray): Input tensor.
-
-        Returns:
-            np.ndarray: Output predictions.
-        """
-        return self.model(image)
-
-    def post_process(self, predictions: np.ndarray, metadata: dict | DictConfig | None = None) -> dict[str, Any]:
-        """Post process the output predictions.
-
-        Args:
-            predictions (np.ndarray): Raw output predicted by the model.
-            metadata (Dict, optional): Metadata. Post-processing step sometimes requires
-                additional metadata such as image shape. This variable comprises such info.
-                Defaults to None.
-
-        Returns:
-            dict[str, Any]: Post processed prediction results.
-        """
-        if metadata is None:
-            metadata = self.metadata
-
-        predictions = predictions[self.output_blob]
-
-        # Initialize the result variables.
-        anomaly_map: np.ndarray | None = None
-        pred_label: LabelName | None = None
-        pred_mask: float | None = None
-
-        # If predictions returns a single value, this means that the task is
-        # classification, and the value is the classification prediction score.
-        if len(predictions.shape) == 1:
-            task = TaskType.CLASSIFICATION
-            pred_score = predictions
-        else:
-            task = TaskType.SEGMENTATION
-            anomaly_map = predictions.squeeze()
-            pred_score = anomaly_map.reshape(-1).max()
-
-        # Common practice in anomaly detection is to assign anomalous
-        # label to the prediction if the prediction score is greater
-        # than the image threshold.
-        if "image_threshold" in metadata:
-            pred_idx = pred_score >= metadata["image_threshold"]
-            pred_label = LabelName.ABNORMAL if pred_idx else LabelName.NORMAL
-
-        if task == TaskType.CLASSIFICATION:
-            _, pred_score = self._normalize(pred_scores=pred_score, metadata=metadata)
-        elif task in {TaskType.SEGMENTATION, TaskType.DETECTION}:
-            if "pixel_threshold" in metadata:
-                pred_mask = (anomaly_map >= metadata["pixel_threshold"]).astype(np.uint8)
-
-            anomaly_map, pred_score = self._normalize(
-                pred_scores=pred_score,
-                anomaly_maps=anomaly_map,
-                metadata=metadata,
-            )
-            if anomaly_map is None:
-                msg = "Anomaly map cannot be None."
-                raise ValueError(msg)
-
-            if "image_shape" in metadata and anomaly_map.shape != metadata["image_shape"]:
-                image_height = metadata["image_shape"][0]
-                image_width = metadata["image_shape"][1]
-                anomaly_map = cv2.resize(anomaly_map, (image_width, image_height))
-
-                if pred_mask is not None:
-                    pred_mask = cv2.resize(pred_mask, (image_width, image_height))
-        else:
-            msg = f"Unknown task type: {task}"
-            raise ValueError(msg)
-
-        if self.task == TaskType.DETECTION:
-            pred_boxes = self._get_boxes(pred_mask)
-            box_labels = np.ones(pred_boxes.shape[0])
-        else:
-            pred_boxes = None
-            box_labels = None
-
-        return {
-            "anomaly_map": anomaly_map,
-            "pred_label": pred_label,
-            "pred_score": pred_score,
-            "pred_mask": pred_mask,
-            "pred_boxes": pred_boxes,
-            "box_labels": box_labels,
-        }
+        return image
 
     @staticmethod
-    def _get_boxes(mask: np.ndarray) -> np.ndarray:
-        """Get bounding boxes from masks.
+    def post_process(predictions: OVDict) -> dict:
+        """Convert OpenVINO predictions to dictionary.
 
         Args:
-            mask (np.ndarray): Input mask of shape (H, W)
+            predictions (OVDict): Raw predictions from OpenVINO model.
 
         Returns:
-            np.ndarray: array of shape (N, 4) containing the bounding box coordinates of the objects in the masks
-            in xyxy format.
+            dict: Dictionary of prediction tensors.
         """
-        _, comps = cv2.connectedComponents(mask)
+        names = [next(iter(name)) for name in predictions.names()]
+        values = predictions.to_tuple()
+        return dict(zip(names, values, strict=False))
 
-        labels = np.unique(comps)
-        boxes = []
-        for label in labels[labels != 0]:
-            y_loc, x_loc = np.where(comps == label)
-            boxes.append([np.min(x_loc), np.min(y_loc), np.max(x_loc), np.max(y_loc)])
-        return np.stack(boxes) if boxes else np.empty((0, 4))
+    def predict(self, image: str | Path | np.ndarray) -> NumpyImageBatch:
+        """Run inference on an input image.
+
+        Args:
+            image (str | Path | np.ndarray): Input image as file path or array.
+
+        Returns:
+            NumpyImageBatch: Batch containing the predictions.
+
+        Raises:
+            TypeError: If image input is invalid type.
+        """
+        # Convert file path or string to image if necessary
+        if isinstance(image, str | Path):
+            image = read_image(image, as_tensor=False)
+        if not isinstance(image, np.ndarray):
+            msg = f"Input image must be a numpy array or a path to an image. Got {type(image)}"
+            raise TypeError(msg)
+
+        image = self.pre_process(image)
+        predictions = self.model(image)
+        pred_dict = self.post_process(predictions)
+
+        return NumpyImageBatch(image=image, **pred_dict)

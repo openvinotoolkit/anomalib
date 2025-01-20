@@ -1,9 +1,36 @@
 """GANomaly: Semi-Supervised Anomaly Detection via Adversarial Training.
 
-https://arxiv.org/abs/1805.06725
+GANomaly is an anomaly detection model that uses a conditional GAN architecture to
+learn the normal data distribution. The model consists of a generator network that
+learns to reconstruct normal images, and a discriminator that helps ensure the
+reconstructions are realistic.
+
+Example:
+    >>> from anomalib.data import MVTec
+    >>> from anomalib.models import Ganomaly
+    >>> from anomalib.engine import Engine
+
+    >>> datamodule = MVTec()
+    >>> model = Ganomaly()
+    >>> engine = Engine()
+
+    >>> engine.fit(model, datamodule=datamodule)  # doctest: +SKIP
+    >>> predictions = engine.predict(model, datamodule=datamodule)  # doctest: +SKIP
+
+Paper:
+    Title: GANomaly: Semi-Supervised Anomaly Detection via Adversarial Training
+    URL: https://arxiv.org/abs/1805.06725
+
+See Also:
+    :class:`anomalib.models.image.ganomaly.torch_model.GanomalyModel`:
+        PyTorch implementation of the GANomaly model architecture.
+    :class:`anomalib.models.image.ganomaly.loss.GeneratorLoss`:
+        Loss function for the generator network.
+    :class:`anomalib.models.image.ganomaly.loss.DiscriminatorLoss`:
+        Loss function for the discriminator network.
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -14,7 +41,12 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import optim
 
 from anomalib import LearningType
-from anomalib.models.components import AnomalyModule
+from anomalib.data import Batch
+from anomalib.metrics import AUROC, Evaluator, F1Score
+from anomalib.models.components import AnomalibModule
+from anomalib.post_processing import PostProcessor
+from anomalib.pre_processing import PreProcessor
+from anomalib.visualization import Visualizer
 
 from .loss import DiscriminatorLoss, GeneratorLoss
 from .torch_model import GanomalyModel
@@ -22,32 +54,66 @@ from .torch_model import GanomalyModel
 logger = logging.getLogger(__name__)
 
 
-class Ganomaly(AnomalyModule):
+class Ganomaly(AnomalibModule):
     """PL Lightning Module for the GANomaly Algorithm.
 
+    The GANomaly model consists of a generator and discriminator network. The
+    generator learns to reconstruct normal images while the discriminator helps
+    ensure the reconstructions are realistic. Anomalies are detected by measuring
+    the reconstruction error and latent space differences.
+
     Args:
-        batch_size (int): Batch size.
+        batch_size (int): Number of samples in each batch.
             Defaults to ``32``.
-        n_features (int): Number of features layers in the CNNs.
+        n_features (int): Number of feature channels in CNN layers.
             Defaults to ``64``.
-        latent_vec_size (int): Size of autoencoder latent vector.
+        latent_vec_size (int): Dimension of the latent space vectors.
             Defaults to ``100``.
-        extra_layers (int, optional): Number of extra layers for encoder/decoder.
+        extra_layers (int, optional): Number of extra layers in encoder/decoder.
             Defaults to ``0``.
         add_final_conv_layer (bool, optional): Add convolution layer at the end.
             Defaults to ``True``.
-        wadv (int, optional): Weight for adversarial loss.
+        wadv (int, optional): Weight for adversarial loss component.
             Defaults to ``1``.
-        wcon (int, optional): Image regeneration weight.
+        wcon (int, optional): Weight for image reconstruction loss component.
             Defaults to ``50``.
-        wenc (int, optional): Latent vector encoder weight.
+        wenc (int, optional): Weight for latent vector encoding loss component.
             Defaults to ``1``.
-        lr (float, optional): Learning rate.
+        lr (float, optional): Learning rate for optimizers.
             Defaults to ``0.0002``.
-        beta1 (float, optional): Adam beta1.
+        beta1 (float, optional): Beta1 parameter for Adam optimizers.
             Defaults to ``0.5``.
-        beta2 (float, optional): Adam beta2.
+        beta2 (float, optional): Beta2 parameter for Adam optimizers.
             Defaults to ``0.999``.
+        pre_processor (PreProcessor | bool, optional): Pre-processor to transform
+            inputs before passing to model.
+            Defaults to ``True``.
+        post_processor (PostProcessor | bool, optional): Post-processor to generate
+            predictions from model outputs.
+            Defaults to ``True``.
+        evaluator (Evaluator | bool, optional): Evaluator to compute metrics.
+            Defaults to ``True``.
+        visualizer (Visualizer | bool, optional): Visualizer to display results.
+            Defaults to ``True``.
+
+    Example:
+        >>> from anomalib.models import Ganomaly
+        >>> model = Ganomaly(
+        ...     batch_size=32,
+        ...     n_features=64,
+        ...     latent_vec_size=100,
+        ...     wadv=1,
+        ...     wcon=50,
+        ...     wenc=1,
+        ... )
+
+    See Also:
+        :class:`anomalib.models.image.ganomaly.torch_model.GanomalyModel`:
+            PyTorch implementation of the GANomaly model architecture.
+        :class:`anomalib.models.image.ganomaly.loss.GeneratorLoss`:
+            Loss function for the generator network.
+        :class:`anomalib.models.image.ganomaly.loss.DiscriminatorLoss`:
+            Loss function for the discriminator network.
     """
 
     def __init__(
@@ -63,8 +129,20 @@ class Ganomaly(AnomalyModule):
         lr: float = 0.0002,
         beta1: float = 0.5,
         beta2: float = 0.999,
+        pre_processor: PreProcessor | bool = True,
+        post_processor: PostProcessor | bool = True,
+        evaluator: Evaluator | bool = True,
+        visualizer: Visualizer | bool = True,
     ) -> None:
-        super().__init__()
+        super().__init__(
+            pre_processor=pre_processor,
+            post_processor=post_processor,
+            evaluator=evaluator,
+            visualizer=visualizer,
+        )
+        if self.input_size is None:
+            msg = "GANomaly needs input size to build torch model."
+            raise ValueError(msg)
 
         self.n_features = n_features
         self.latent_vec_size = latent_vec_size
@@ -77,6 +155,15 @@ class Ganomaly(AnomalyModule):
         self.min_scores: torch.Tensor = torch.tensor(float("inf"), dtype=torch.float32)  # pylint: disable=not-callable
         self.max_scores: torch.Tensor = torch.tensor(float("-inf"), dtype=torch.float32)  # pylint: disable=not-callable
 
+        self.model = GanomalyModel(
+            input_size=self.input_size,
+            num_input_channels=3,
+            n_features=self.n_features,
+            latent_vec_size=self.latent_vec_size,
+            extra_layers=self.extra_layers,
+            add_final_conv_layer=self.add_final_conv_layer,
+        )
+
         self.generator_loss = GeneratorLoss(wadv, wcon, wenc)
         self.discriminator_loss = DiscriminatorLoss()
         self.automatic_optimization = False
@@ -88,20 +175,6 @@ class Ganomaly(AnomalyModule):
         self.beta2 = beta2
 
         self.model: GanomalyModel
-
-    def _setup(self) -> None:
-        if self.input_size is None:
-            msg = "GANomaly needs input size to build torch model."
-            raise ValueError(msg)
-
-        self.model = GanomalyModel(
-            input_size=self.input_size,
-            num_input_channels=3,
-            n_features=self.n_features,
-            latent_vec_size=self.latent_vec_size,
-            extra_layers=self.extra_layers,
-            add_final_conv_layer=self.add_final_conv_layer,
-        )
 
     def _reset_min_max(self) -> None:
         """Reset min_max scores."""
@@ -128,7 +201,7 @@ class Ganomaly(AnomalyModule):
 
     def training_step(
         self,
-        batch: dict[str, str | torch.Tensor],
+        batch: Batch,
         batch_idx: int,
     ) -> STEP_OUTPUT:
         """Perform the training step.
@@ -145,7 +218,7 @@ class Ganomaly(AnomalyModule):
         d_opt, g_opt = self.optimizers()
 
         # forward pass
-        padded, fake, latent_i, latent_o = self.model(batch["image"])
+        padded, fake, latent_i, latent_o = self.model(batch.image)
         pred_real, _ = self.model.discriminator(padded)
 
         # generator update
@@ -177,11 +250,11 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_validation_start()
 
-    def validation_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
+    def validation_step(self, batch: Batch, *args, **kwargs) -> Batch:
         """Update min and max scores from the current step.
 
         Args:
-            batch (dict[str, str | torch.Tensor]): Predicted difference between z and z_hat.
+            batch (Batch): Predicted difference between z and z_hat.
             args: Additional arguments.
             kwargs: Additional keyword arguments.
 
@@ -190,20 +263,20 @@ class Ganomaly(AnomalyModule):
         """
         del args, kwargs  # Unused arguments.
 
-        batch["pred_scores"] = self.model(batch["image"])
-        self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
-        self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
-        return batch
+        predictions = self.model(batch.image)
+        self.max_scores = max(self.max_scores, torch.max(predictions.pred_score))
+        self.min_scores = min(self.min_scores, torch.min(predictions.pred_score))
+        return batch.update(**predictions._asdict())
 
     def on_validation_batch_end(
         self,
-        outputs: STEP_OUTPUT,
+        outputs: Batch,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
         """Normalize outputs based on min/max values."""
-        outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
+        outputs.pred_score = self._normalize(outputs.pred_score)
         super().on_validation_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
     def on_test_start(self) -> None:
@@ -211,24 +284,24 @@ class Ganomaly(AnomalyModule):
         self._reset_min_max()
         return super().on_test_start()
 
-    def test_step(self, batch: dict[str, str | torch.Tensor], batch_idx: int, *args, **kwargs) -> STEP_OUTPUT:
+    def test_step(self, batch: Batch, batch_idx: int, *args, **kwargs) -> Batch:
         """Update min and max scores from the current step."""
         del args, kwargs  # Unused arguments.
 
         super().test_step(batch, batch_idx)
-        self.max_scores = max(self.max_scores, torch.max(batch["pred_scores"]))
-        self.min_scores = min(self.min_scores, torch.min(batch["pred_scores"]))
+        self.max_scores = max(self.max_scores, torch.max(batch.pred_score))
+        self.min_scores = min(self.min_scores, torch.min(batch.pred_score))
         return batch
 
     def on_test_batch_end(
         self,
-        outputs: STEP_OUTPUT,
+        outputs: Batch,
         batch: Any,  # noqa: ANN401
         batch_idx: int,
         dataloader_idx: int = 0,
     ) -> None:
         """Normalize outputs based on min/max values."""
-        outputs["pred_scores"] = self._normalize(outputs["pred_scores"])
+        outputs.pred_score = self._normalize(outputs.pred_score)
         super().on_test_batch_end(outputs, batch, batch_idx, dataloader_idx=dataloader_idx)
 
     def _normalize(self, scores: torch.Tensor) -> torch.Tensor:
@@ -257,3 +330,11 @@ class Ganomaly(AnomalyModule):
             LearningType: Learning type of the model.
         """
         return LearningType.ONE_CLASS
+
+    @staticmethod
+    def configure_evaluator() -> Evaluator:
+        """Default evaluator for GANomaly."""
+        image_auroc = AUROC(fields=["pred_score", "gt_label"], prefix="image_")
+        image_f1score = F1Score(fields=["pred_label", "gt_label"], prefix="image_")
+        test_metrics = [image_auroc, image_f1score]
+        return Evaluator(test_metrics=test_metrics)

@@ -1,0 +1,88 @@
+# Pull Request Workflow
+#
+# This workflow orchestrates quality checks, tests, and security scans for
+# pull requests using reusable workflows.
+#
+# Key Features:
+# - Code quality validation
+# - Test suite execution
+# - Security scanning
+# - Concurrent execution handling
+# - Automated feedback
+#
+# Process Stages:
+# 1. Quality Checks:
+#    - Code style verification
+#    - Type checking
+#    - Pre-commit hook validation
+#
+# 2. Testing:
+#    - Unit test execution
+#    - Integration testing
+#    - Coverage reporting
+#
+# 3. Security:
+#    - Changed files scanning
+#    - Vulnerability detection
+#    - Security report generation
+#
+# Required Secrets:
+# - CODECOV_TOKEN: Coverage reporting token
+#
+# Example Usage:
+# Automatically triggered on:
+# 1. Pull requests to main branch
+# 2. Pull requests to feature/* branches
+#
+# Note: Configured to cancel outdated runs when new commits are pushed
+
+name: PR Checks
+
+on:
+  pull_request:
+    branches: ["main", "feature/**"]
+  merge_group:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Code quality job using reusable workflow
+  quality:
+    uses: ./.github/workflows/_reusable-code-quality.yaml
+    with:
+      python-version: "3.10"
+
+  # Test suite job using reusable workflow
+  unit-tests:
+    uses: ./.github/workflows/_reusable-test-suite.yaml
+    with:
+      test-type: "unit"
+      runner: "ubuntu-latest"
+      timeout: 15
+      enable-cache: "true"
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  integration-tests:
+    uses: ./.github/workflows/_reusable-test-suite.yaml
+    with:
+      test-type: "integration"
+      runner: "self-hosted"
+      timeout: 60
+      enable-cache: "false"
+    secrets:
+      codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  # NOTE: When we have e2e or other tests, we can add them here.
+
+  # Security scanning job using reusable workflow
+  security:
+    needs: [] # No dependencies, can run in parallel
+    uses: ./.github/workflows/_reusable-security-scan.yaml
+    with:
+      tools: "semgrep" # Security tools to run
+      scan-scope: "changed" # Only scan changed files
+      severity-level: "MEDIUM" # Minimum severity to report

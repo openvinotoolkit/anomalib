@@ -209,8 +209,6 @@ class TestCLI:
             *data_args,
             "--default_root_dir",
             str(project_path),
-            "--task",
-            "SEGMENTATION",
             "--trainer.max_epochs",
             "1",
         ]

@@ -4,7 +4,7 @@ This script performs torch inference by reading model weights
 from command line, and show the visualization results.
 """
 
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -15,8 +15,8 @@ import torch
 
 from anomalib.data.utils import generate_output_image_filename, get_image_filenames, read_image
 from anomalib.data.utils.image import save_image, show_image
-from anomalib.deploy import TorchInferencer
-from anomalib.utils.visualization import ImageVisualizer
+from anomalib.deploy.inferencers.torch_inferencer import TorchInferencer
+from anomalib.utils.visualization import ImageResult, ImageVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,9 @@ def infer(args: Namespace) -> None:
     for filename in filenames:
         image = read_image(filename, as_tensor=True)
         predictions = inferencer.predict(image=image)
-        output = visualizer.visualize_image(predictions)
+
+        image_result = ImageResult.from_dataset_item(predictions.items[0])
+        output = visualizer.visualize_image(image_result)
 
         if args.output is None and args.show is False:
             msg = "Neither output path is provided nor show flag is set. Inferencer will run but return nothing."

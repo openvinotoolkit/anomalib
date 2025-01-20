@@ -1,4 +1,28 @@
-"""Torch model defining the decoder."""
+"""PyTorch model defining the decoder network for Reverse Distillation.
+
+This module implements the decoder network used in the Reverse Distillation model
+architecture. The decoder reconstructs features from the bottleneck representation
+back to the original feature space.
+
+The module contains:
+- Decoder block implementations using transposed convolutions
+- Helper functions for creating decoder layers
+- Full decoder network architecture
+
+Example:
+    >>> from anomalib.models.image.reverse_distillation.components.de_resnet import (
+    ...     get_decoder
+    ... )
+    >>> decoder = get_decoder()
+    >>> features = torch.randn(32, 512, 28, 28)
+    >>> reconstructed = decoder(features)
+
+See Also:
+    - :class:`anomalib.models.image.reverse_distillation.torch_model.ReverseDistillationModel`:
+        Main model implementation using this decoder
+    - :class:`anomalib.models.image.reverse_distillation.components.DecoderBasicBlock`:
+        Basic building block for the decoder network
+"""
 
 # Original Code
 # Copyright (c) 2022 hq-deng
@@ -6,7 +30,7 @@
 # SPDX-License-Identifier: MIT
 #
 # Modified
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable
@@ -19,20 +43,46 @@ from torchvision.models.resnet import conv1x1, conv3x3
 class DecoderBasicBlock(nn.Module):
     """Basic block for decoder ResNet architecture.
 
+    This module implements a basic decoder block used in the decoder network. It performs
+    upsampling and feature reconstruction through transposed convolutions and skip
+    connections.
+
+    The block consists of:
+    1. Optional upsampling via transposed convolution when ``stride=2``
+    2. Two convolutional layers with batch normalization and ReLU activation
+    3. Skip connection that adds input to output features
+
     Args:
-        inplanes (int): Number of input channels.
-        planes (int): Number of output channels.
-        stride (int, optional): Stride for convolution and de-convolution layers. Defaults to 1.
-        upsample (nn.Module | None, optional): Module used for upsampling output. Defaults to None.
-        groups (int, optional): Number of blocked connections from input channels to output channels.
-            Defaults to 1.
-        base_width (int, optional): Number of layers in each intermediate convolution layer. Defaults to 64.
-        dilation (int, optional): Spacing between kernel elements. Defaults to 1.
-        norm_layer (Callable[..., nn.Module] | None, optional): Batch norm layer to use.Defaults to None.
+        inplanes (int): Number of input channels
+        planes (int): Number of output channels
+        stride (int, optional): Stride for convolution and transposed convolution.
+            When ``stride=2``, upsampling is performed. Defaults to ``1``.
+        upsample (nn.Module | None, optional): Module used for upsampling the
+            identity branch. Defaults to ``None``.
+        groups (int, optional): Number of blocked connections from input to output
+            channels. Must be ``1``. Defaults to ``1``.
+        base_width (int, optional): Width of intermediate conv layers. Must be
+            ``64``. Defaults to ``64``.
+        dilation (int, optional): Dilation rate for convolutions. Must be ``1``.
+            Defaults to ``1``.
+        norm_layer (Callable[..., nn.Module] | None, optional): Normalization layer
+            to use. Defaults to ``None`` which uses ``BatchNorm2d``.
 
     Raises:
-        ValueError: If groups are not equal to 1 and base width is not 64.
-        NotImplementedError: If dilation is greater than 1.
+        ValueError: If ``groups != 1`` or ``base_width != 64``
+        NotImplementedError: If ``dilation > 1``
+
+    Example:
+        >>> block = DecoderBasicBlock(64, 128, stride=2)
+        >>> x = torch.randn(1, 64, 32, 32)
+        >>> output = block(x)  # Shape: (1, 128, 64, 64)
+
+    Notes:
+        - When ``stride=2``, the first conv is replaced with transposed conv for
+          upsampling
+        - The block maintains the same architectural pattern as ResNet's BasicBlock
+          but in reverse
+        - Skip connections help preserve spatial information during reconstruction
     """
 
     expansion: int = 1
@@ -78,7 +128,15 @@ class DecoderBasicBlock(nn.Module):
         self.stride = stride
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
-        """Forward-pass of de-resnet block."""
+        """Forward pass of the decoder basic block.
+
+        Args:
+            batch (torch.Tensor): Input tensor of shape ``(B, C, H, W)``
+
+        Returns:
+            torch.Tensor: Output tensor of shape ``(B, C', H', W')``, where C' is
+                determined by ``planes`` and H', W' depend on ``stride``
+        """
         identity = batch
 
         out = self.conv1(batch)
@@ -96,18 +154,50 @@ class DecoderBasicBlock(nn.Module):
 
 
 class DecoderBottleneck(nn.Module):
-    """Bottleneck for Decoder.
+    """Bottleneck block for the decoder network.
+
+    This module implements a bottleneck block used in the decoder part of the Reverse
+    Distillation model. It performs upsampling and feature reconstruction through a series of
+    convolutional layers.
+
+    The block consists of three convolution layers:
+    1. 1x1 conv to adjust channels
+    2. 3x3 conv (or transpose conv) for processing
+    3. 1x1 conv to expand channels
 
     Args:
         inplanes (int): Number of input channels.
-        planes (int): Number of output channels.
-        stride (int, optional): Stride for convolution and de-convolution layers. Defaults to 1.
-        upsample (nn.Module | None, optional): Module used for upsampling output. Defaults to None.
-        groups (int, optional): Number of blocked connections from input channels to output channels.
-            Defaults to 1.
-        base_width (int, optional): Number of layers in each intermediate convolution layer. Defaults to 64.
-        dilation (int, optional): Spacing between kernel elements. Defaults to 1.
-        norm_layer (Callable[..., nn.Module] | None, optional): Batch norm layer to use.Defaults to None.
+        planes (int): Number of intermediate channels (will be expanded by ``expansion``).
+        stride (int, optional): Stride for convolution and transpose convolution layers.
+            Defaults to ``1``.
+        upsample (nn.Module | None, optional): Module used for upsampling the residual branch.
+            Defaults to ``None``.
+        groups (int, optional): Number of blocked connections from input to output channels.
+            Defaults to ``1``.
+        base_width (int, optional): Base width for the conv layers.
+            Defaults to ``64``.
+        dilation (int, optional): Dilation rate for conv layers.
+            Defaults to ``1``.
+        norm_layer (Callable[..., nn.Module] | None, optional): Normalization layer to use.
+            Defaults to ``None`` which will use ``nn.BatchNorm2d``.
+
+    Attributes:
+        expansion (int): Channel expansion factor (4 for bottleneck blocks).
+
+    Example:
+        >>> import torch
+        >>> from anomalib.models.image.reverse_distillation.components.de_resnet import (
+        ...     DecoderBottleneck
+        ... )
+        >>> layer = DecoderBottleneck(256, 64)
+        >>> x = torch.randn(32, 256, 28, 28)
+        >>> output = layer(x)
+        >>> output.shape
+        torch.Size([32, 256, 28, 28])
+
+    Notes:
+        - When ``stride=2``, the middle conv layer becomes a transpose conv for upsampling
+        - The actual output channels will be ``planes * expansion``
     """
 
     expansion: int = 4
@@ -150,7 +240,15 @@ class DecoderBottleneck(nn.Module):
         self.stride = stride
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
-        """Forward-pass of de-resnet bottleneck block."""
+        """Forward pass of the decoder bottleneck block.
+
+        Args:
+            batch (torch.Tensor): Input tensor of shape ``(B, C, H, W)``
+
+        Returns:
+            torch.Tensor: Output tensor of shape ``(B, C', H', W')``, where ``C'`` is
+                ``planes * expansion`` and ``H'``, ``W'`` depend on ``stride``
+        """
         identity = batch
 
         out = self.conv1(batch)
@@ -172,17 +270,55 @@ class DecoderBottleneck(nn.Module):
 
 
 class ResNet(nn.Module):
-    """ResNet model for decoder.
+    """Decoder ResNet model for feature reconstruction.
+
+    This module implements a decoder version of the ResNet architecture, which
+    reconstructs features from a bottleneck representation back to higher
+    dimensional feature spaces.
+
+    The decoder consists of multiple layers that progressively upsample and
+    reconstruct features through transposed convolutions and skip connections.
 
     Args:
-        block (Type[DecoderBasicBlock | DecoderBottleneck]): Type of block to use in a layer.
-        layers (list[int]): List to specify number for blocks per layer.
-        zero_init_residual (bool, optional): If true, initializes the last batch norm in each layer to zero.
-            Defaults to False.
-        groups (int, optional): Number of blocked connections per layer from input channels to output channels.
-            Defaults to 1.
-        width_per_group (int, optional): Number of layers in each intermediate convolution layer.. Defaults to 64.
-        norm_layer (Callable[..., nn.Module] | None, optional): Batch norm layer to use. Defaults to None.
+        block (Type[DecoderBasicBlock | DecoderBottleneck]): Type of decoder block
+            to use in each layer. Can be either ``DecoderBasicBlock`` or
+            ``DecoderBottleneck``.
+        layers (list[int]): List specifying number of blocks in each decoder
+            layer.
+        zero_init_residual (bool, optional): If ``True``, initializes the last
+            batch norm in each layer to zero. This improves model performance by
+            0.2~0.3% according to https://arxiv.org/abs/1706.02677.
+            Defaults to ``False``.
+        groups (int, optional): Number of blocked connections from input channels
+            to output channels per layer. Defaults to ``1``.
+        width_per_group (int, optional): Number of channels in each intermediate
+            convolution layer. Defaults to ``64``.
+        norm_layer (Callable[..., nn.Module] | None, optional): Normalization
+            layer to use. If ``None``, uses ``BatchNorm2d``. Defaults to ``None``.
+
+    Example:
+        >>> from anomalib.models.image.reverse_distillation.components import (
+        ...     DecoderBasicBlock,
+        ...     ResNet
+        ... )
+        >>> model = ResNet(
+        ...     block=DecoderBasicBlock,
+        ...     layers=[2, 2, 2, 2]
+        ... )
+        >>> x = torch.randn(1, 512, 8, 8)
+        >>> features = model(x)  # Returns list of features at different scales
+
+    Notes:
+        - The decoder reverses the typical ResNet architecture, starting from a
+          bottleneck and expanding to larger feature maps
+        - Features are returned at multiple scales for multi-scale reconstruction
+        - The implementation follows the original ResNet paper but in reverse
+          for decoding
+
+    See Also:
+        - :class:`DecoderBasicBlock`: Basic building block for decoder layers
+        - :class:`DecoderBottleneck`: Bottleneck building block for deeper
+          decoder architectures
     """
 
     def __init__(
@@ -270,7 +406,30 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, batch: torch.Tensor) -> list[torch.Tensor]:
-        """Forward pass for Decoder ResNet. Returns list of features."""
+        """Forward pass through the decoder ResNet.
+
+        Progressively reconstructs features through multiple decoder layers,
+        returning features at different scales.
+
+        Args:
+            batch (torch.Tensor): Input tensor of shape ``(B, C, H, W)`` where:
+                - ``B`` is batch size
+                - ``C`` is number of input channels (512 * block.expansion)
+                - ``H`` and ``W`` are spatial dimensions
+
+        Returns:
+            list[torch.Tensor]: List of feature tensors at different scales:
+                - ``feature_c``: ``(B, 64, H*8, W*8)``
+                - ``feature_b``: ``(B, 128, H*4, W*4)``
+                - ``feature_a``: ``(B, 256, H*2, W*2)``
+
+        Example:
+            >>> model = ResNet(DecoderBasicBlock, [2, 2, 2])
+            >>> x = torch.randn(1, 512, 8, 8)
+            >>> features = model(x)
+            >>> [f.shape for f in features]
+            [(1, 64, 64, 64), (1, 128, 32, 32), (1, 256, 16, 16)]
+        """
         feature_a = self.layer1(batch)  # 512*8*8->256*16*16
         feature_b = self.layer2(feature_a)  # 256*16*16->128*32*32
         feature_c = self.layer3(feature_b)  # 128*32*32->64*64*64

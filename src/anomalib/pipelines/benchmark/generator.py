@@ -1,4 +1,22 @@
-"""Benchmark job generator."""
+"""Benchmark job generator for running model benchmarking experiments.
+
+This module provides functionality for generating benchmark jobs that evaluate model
+performance. It generates jobs based on provided configurations for models,
+datasets and other parameters.
+
+Example:
+    >>> from anomalib.pipelines.benchmark.generator import BenchmarkJobGenerator
+    >>> generator = BenchmarkJobGenerator(accelerator="gpu")
+    >>> args = {
+    ...     "seed": 42,
+    ...     "model": {"class_path": "Padim"},
+    ...     "data": {"class_path": "MVTec", "init_args": {"category": "bottle"}}
+    ... }
+    >>> jobs = list(generator.generate_jobs(args, None))
+
+The generator creates :class:`BenchmarkJob` instances that can be executed to run
+benchmarking experiments with specified models and datasets.
+"""
 
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -17,10 +35,25 @@ from .job import BenchmarkJob
 
 
 class BenchmarkJobGenerator(JobGenerator):
-    """Generate BenchmarkJob.
+    """Generate benchmark jobs for evaluating model performance.
+
+    This class generates benchmark jobs based on provided configurations for models,
+    datasets and other parameters. Each job evaluates a specific model-dataset
+    combination.
 
     Args:
-        accelerator (str): The accelerator to use.
+        accelerator (str): Type of accelerator to use for running the jobs (e.g.
+            ``"cpu"``, ``"gpu"``).
+
+    Example:
+        >>> from anomalib.pipelines.benchmark.generator import BenchmarkJobGenerator
+        >>> generator = BenchmarkJobGenerator(accelerator="gpu")
+        >>> args = {
+        ...     "seed": 42,
+        ...     "model": {"class_path": "Padim"},
+        ...     "data": {"class_path": "MVTec", "init_args": {"category": "bottle"}}
+        ... }
+        >>> jobs = list(generator.generate_jobs(args, None))
     """
 
     def __init__(self, accelerator: str) -> None:
@@ -28,7 +61,11 @@ class BenchmarkJobGenerator(JobGenerator):
 
     @property
     def job_class(self) -> type:
-        """Return the job class."""
+        """Get the job class used by this generator.
+
+        Returns:
+            type: The :class:`BenchmarkJob` class.
+        """
         return BenchmarkJob
 
     @hide_output
@@ -37,7 +74,27 @@ class BenchmarkJobGenerator(JobGenerator):
         args: dict,
         previous_stage_result: PREV_STAGE_RESULT,
     ) -> Generator[BenchmarkJob, None, None]:
-        """Return iterator based on the arguments."""
+        """Generate benchmark jobs from the provided arguments.
+
+        Args:
+            args (dict): Dictionary containing job configuration including model,
+                dataset and other parameters.
+            previous_stage_result (PREV_STAGE_RESULT): Results from previous pipeline
+                stage (unused).
+
+        Yields:
+            Generator[BenchmarkJob, None, None]: Generator yielding benchmark job
+                instances.
+
+        Example:
+            >>> generator = BenchmarkJobGenerator(accelerator="cpu")
+            >>> args = {
+            ...     "seed": 42,
+            ...     "model": {"class_path": "Padim"},
+            ...     "data": {"class_path": "MVTec"}
+            ... }
+            >>> jobs = list(generator.generate_jobs(args, None))
+        """
         del previous_stage_result  # Not needed for this job
         for _container in get_iterator_from_grid_dict(args):
             # Pass experimental configs as a flatten dictionary to the job runner.

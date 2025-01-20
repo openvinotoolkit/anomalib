@@ -1,6 +1,29 @@
-"""Kernel Density Estimation Classifier."""
+"""Kernel Density Estimation Classifier.
 
-# Copyright (C) 2022-2024 Intel Corporation
+This module provides a classifier based on kernel density estimation (KDE) for
+anomaly detection. The classifier fits a KDE model to feature embeddings and uses
+it to compute anomaly probabilities.
+
+Example:
+    >>> from anomalib.models.components.classification import KDEClassifier
+    >>> from anomalib.models.components.classification import FeatureScalingMethod
+    >>> # Create classifier with default settings
+    >>> classifier = KDEClassifier()
+    >>> # Create classifier with custom settings
+    >>> classifier = KDEClassifier(
+    ...     n_pca_components=32,
+    ...     feature_scaling_method=FeatureScalingMethod.NORM,
+    ...     max_training_points=50000
+    ... )
+    >>> # Fit classifier on embeddings
+    >>> embeddings = torch.randn(1000, 512)  # Example embeddings
+    >>> classifier.fit(embeddings)
+    >>> # Get anomaly probabilities for new samples
+    >>> new_embeddings = torch.randn(10, 512)
+    >>> probabilities = classifier.predict(new_embeddings)
+"""
+
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -16,21 +39,43 @@ logger = logging.getLogger(__name__)
 
 
 class FeatureScalingMethod(str, Enum):
-    """Determines how the feature embeddings are scaled."""
+    """Feature scaling methods for KDE classifier.
+
+    The scaling method determines how feature embeddings are normalized before
+    being passed to the KDE model.
+
+    Attributes:
+        NORM: Scale features to unit vector length (L2 normalization)
+        SCALE: Scale features by maximum length observed during training
+            (preserves relative magnitudes)
+    """
 
     NORM = "norm"  # scale to unit vector length
-    SCALE = "scale"  # scale to max length observed in training (preserve relative magnitude)
+    SCALE = "scale"  # scale to max length observed in training
 
 
 class KDEClassifier(nn.Module):
     """Classification module for KDE-based anomaly detection.
 
+    This classifier uses kernel density estimation to model the distribution of
+    normal samples in feature space. It first applies dimensionality reduction
+    via PCA, then fits a Gaussian KDE model to the reduced features.
+
     Args:
-        n_pca_components (int, optional): Number of PCA components. Defaults to 16.
-        feature_scaling_method (FeatureScalingMethod, optional): Scaling method applied to features before passing to
-            KDE. Options are `norm` (normalize to unit vector length) and `scale` (scale to max length observed in
-            training).
-        max_training_points (int, optional): Maximum number of training points to fit the KDE model. Defaults to 40000.
+        n_pca_components: Number of PCA components to retain. Lower values reduce
+            computational cost but may lose information.
+            Defaults to 16.
+        feature_scaling_method: Method used to scale features before KDE.
+            Options are ``norm`` (unit vector) or ``scale`` (max length).
+            Defaults to ``FeatureScalingMethod.SCALE``.
+        max_training_points: Maximum number of points used to fit the KDE model.
+            If more points are provided, a random subset is selected.
+            Defaults to 40000.
+
+    Attributes:
+        pca_model: PCA model for dimensionality reduction
+        kde_model: Gaussian KDE model for density estimation
+        max_length: Maximum feature length observed during training
     """
 
     def __init__(
@@ -56,15 +101,20 @@ class KDEClassifier(nn.Module):
         feature_stack: torch.Tensor,
         max_length: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Pre-process the CNN features.
+        """Pre-process feature embeddings before KDE.
+
+        Scales the features according to the specified scaling method.
 
         Args:
-          feature_stack (torch.Tensor): Features extracted from CNN
-          max_length (Tensor | None): Used to unit normalize the feature_stack vector. If ``max_len`` is not
-            provided, the length is calculated from the ``feature_stack``. Defaults to None.
+            feature_stack: Features extracted from the model, shape (N, D)
+            max_length: Maximum feature length for scaling. If ``None``, computed
+                from ``feature_stack``. Defaults to None.
 
         Returns:
-            (Tuple): Stacked features and length
+            tuple: (scaled_features, max_length)
+
+        Raises:
+            RuntimeError: If unknown scaling method is specified
         """
         if max_length is None:
             max_length = torch.max(torch.linalg.norm(feature_stack, ord=2, dim=1))
@@ -79,13 +129,21 @@ class KDEClassifier(nn.Module):
         return feature_stack, max_length
 
     def fit(self, embeddings: torch.Tensor) -> bool:
-        """Fit a kde model to embeddings.
+        """Fit the KDE classifier to training embeddings.
+
+        Applies PCA, scales the features, and fits the KDE model.
 
         Args:
-            embeddings (torch.Tensor): Input embeddings to fit the model.
+            embeddings: Training embeddings of shape (N, D)
 
         Returns:
-            Boolean confirming whether the training is successful.
+            bool: True if fitting succeeded, False if insufficient samples
+
+        Example:
+            >>> classifier = KDEClassifier()
+            >>> embeddings = torch.randn(1000, 512)
+            >>> success = classifier.fit(embeddings)
+            >>> assert success
         """
         if embeddings.shape[0] < self.n_pca_components:
             logger.info("Not enough features to commit. Not making a model.")
@@ -93,7 +151,10 @@ class KDEClassifier(nn.Module):
 
         # if max training points is non-zero and smaller than number of staged features, select random subset
         if embeddings.shape[0] > self.max_training_points:
-            selected_idx = torch.tensor(random.sample(range(embeddings.shape[0]), self.max_training_points))
+            selected_idx = torch.tensor(
+                random.sample(range(embeddings.shape[0]), self.max_training_points),
+                device=embeddings.device,
+            )
             selected_features = embeddings[selected_idx]
         else:
             selected_features = embeddings
@@ -106,17 +167,17 @@ class KDEClassifier(nn.Module):
         return True
 
     def compute_kde_scores(self, features: torch.Tensor, as_log_likelihood: bool | None = False) -> torch.Tensor:
-        """Compute the KDE scores.
+        """Compute KDE scores for input features.
 
-        The scores calculated from the KDE model are converted to densities. If `as_log_likelihood` is set to true then
-            the log of the scores are calculated.
+        Transforms features via PCA and scaling, then computes KDE scores.
 
         Args:
-            features (torch.Tensor): Features to which the PCA model is fit.
-            as_log_likelihood (bool | None, optional): If true, gets log likelihood scores. Defaults to False.
+            features: Input features of shape (N, D)
+            as_log_likelihood: If True, returns log of KDE scores.
+                Defaults to False.
 
         Returns:
-            (torch.Tensor): Score
+            torch.Tensor: KDE scores of shape (N,)
         """
         features = self.pca_model.transform(features)
         features, _ = self.pre_process(features, self.max_length)
@@ -133,28 +194,50 @@ class KDEClassifier(nn.Module):
 
     @staticmethod
     def compute_probabilities(scores: torch.Tensor) -> torch.Tensor:
-        """Convert density scores to anomaly probabilities (see https://www.desmos.com/calculator/ifju7eesg7).
+        """Convert density scores to anomaly probabilities.
+
+        Uses sigmoid function to map scores to [0,1] range.
+        See https://www.desmos.com/calculator/ifju7eesg7
 
         Args:
-          scores (torch.Tensor): density of an image.
+            scores: Density scores of shape (N,)
 
         Returns:
-          probability that image with {density} is anomalous
+            torch.Tensor: Anomaly probabilities of shape (N,)
         """
         return 1 / (1 + torch.exp(0.05 * (scores - 12)))
 
     def predict(self, features: torch.Tensor) -> torch.Tensor:
-        """Predicts the probability that the features belong to the anomalous class.
+        """Predict anomaly probabilities for input features.
+
+        Computes KDE scores and converts them to probabilities.
 
         Args:
-          features (torch.Tensor): Feature from which the output probabilities are detected.
+            features: Input features of shape (N, D)
 
         Returns:
-          Detection probabilities
+            torch.Tensor: Anomaly probabilities of shape (N,)
+
+        Example:
+            >>> classifier = KDEClassifier()
+            >>> features = torch.randn(10, 512)
+            >>> classifier.fit(features)
+            >>> probs = classifier.predict(features)
+            >>> assert probs.shape == (10,)
+            >>> assert (probs >= 0).all() and (probs <= 1).all()
         """
         scores = self.compute_kde_scores(features, as_log_likelihood=True)
         return self.compute_probabilities(scores)
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        """Make predictions on extracted features."""
+        """Forward pass of the classifier.
+
+        Equivalent to calling ``predict()``.
+
+        Args:
+            features: Input features of shape (N, D)
+
+        Returns:
+            torch.Tensor: Anomaly probabilities of shape (N,)
+        """
         return self.predict(features)

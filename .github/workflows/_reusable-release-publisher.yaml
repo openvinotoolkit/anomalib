@@ -1,0 +1,101 @@
+# Release Publisher Workflow
+#
+# This reusable workflow handles package publication to PyPI and GitHub,
+# supporting both production and pre-release deployments.
+#
+# Key Features:
+# - PyPI package publishing
+# - GitHub release creation
+# - Pre-release support
+# - Release notes generation
+# - Artifact management
+#
+# Process Stages:
+# 1. Artifact Processing:
+#    - Download validation
+#    - Package verification
+#    - Distribution preparation
+#
+# 2. PyPI Publication:
+#    - Environment selection
+#    - Package upload
+#    - Publication verification
+#
+# 3. GitHub Release:
+#    - Release creation
+#    - Asset attachment
+#    - Notes generation
+#
+# Required Inputs:
+# - version: Version to release
+# - artifact-name: Name of artifact to publish
+# - is-prerelease: Whether this is a pre-release
+#
+# Required Secrets:
+# - pypi-token: Production PyPI token
+# - test-pypi-token: Test PyPI token (for pre-releases)
+#
+# Example Usage:
+# 1. Production Release:
+#    jobs:
+#      publish:
+#        uses: ./.github/workflows/_reusable-release-publisher.yaml
+#        with:
+#          version: "v1.0.0"
+#          artifact-name: "dist-123456789"
+#          is-prerelease: false
+#        secrets:
+#          pypi-token: ${{ secrets.PYPI_TOKEN }}
+#
+# Note: Requires appropriate tokens and permissions for publishing
+
+name: Reusable Release Publisher
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Version to release"
+        required: true
+        type: string
+      artifact-name:
+        description: "Name of the artifact to publish"
+        required: true
+        type: string
+      is-prerelease:
+        description: "Whether this is a pre-release"
+        type: boolean
+        default: false
+    secrets:
+      pypi-token:
+        required: true
+        description: "PyPI token for package publishing"
+      test-pypi-token:
+        required: false
+        description: "Test PyPI token for pre-releases"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.is-prerelease && 'staging' || 'production' }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: dist
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ inputs.is-prerelease && secrets.test-pypi-token || secrets.pypi-token }}
+          TWINE_REPOSITORY_URL: ${{ inputs.is-prerelease && 'https://test.pypi.org/legacy/' || '' }}
+        run: |
+          pip install --upgrade pip twine
+          twine upload dist/*
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: Release ${{ inputs.version }}
+          draft: false
+          prerelease: ${{ inputs.is-prerelease }}
+          files: dist/*
+          generate_release_notes: true

@@ -1,4 +1,10 @@
-"""PyTorch model for the DRAEM model implementation."""
+"""PyTorch model for the DRAEM model implementation.
+
+The DRAEM model consists of two sub-networks:
+1. A reconstructive sub-network that learns to reconstruct input images
+2. A discriminative sub-network that detects anomalies by comparing original and
+   reconstructed images
+"""
 
 # Original Code
 # Copyright (c) 2021 VitjanZ
@@ -6,21 +12,26 @@
 # SPDX-License-Identifier: MIT
 #
 # Modified
-# Copyright (C) 2022-2024 Intel Corporation
+# Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
 from torch import nn
 
+from anomalib.data import InferenceBatch
 from anomalib.models.components.layers import SSPCAB
 
 
 class DraemModel(nn.Module):
-    """DRAEM PyTorch model consisting of the reconstructive and discriminative sub networks.
+    """DRAEM PyTorch model with reconstructive and discriminative sub-networks.
 
     Args:
-        sspcab (bool): Enable SSPCAB training.
-            Defaults to ``False``.
+        sspcab (bool, optional): Enable SSPCAB training. Defaults to ``False``.
+
+    Example:
+        >>> model = DraemModel(sspcab=True)
+        >>> input_tensor = torch.randn(32, 3, 256, 256)
+        >>> reconstruction, prediction = model(input_tensor)
     """
 
     def __init__(self, sspcab: bool = False) -> None:
@@ -28,36 +39,56 @@ class DraemModel(nn.Module):
         self.reconstructive_subnetwork = ReconstructiveSubNetwork(sspcab=sspcab)
         self.discriminative_subnetwork = DiscriminativeSubNetwork(in_channels=6, out_channels=2)
 
-    def forward(self, batch: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
-        """Compute the reconstruction and anomaly mask from an input image.
+    def forward(self, batch: torch.Tensor) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor] | InferenceBatch:
+        """Forward pass through both sub-networks.
 
         Args:
-            batch (torch.Tensor): batch of input images
+            batch (torch.Tensor): Input batch of images of shape
+                ``(batch_size, channels, height, width)``
 
         Returns:
-            Predicted confidence values of the anomaly mask. During training the reconstructed input images are
-            returned as well.
+            During training:
+                tuple: Tuple containing:
+                    - Reconstructed images
+                    - Predicted anomaly masks
+            During inference:
+                InferenceBatch: Contains anomaly map and prediction score
+
+        Example:
+            >>> model = DraemModel()
+            >>> batch = torch.randn(32, 3, 256, 256)
+            >>> reconstruction, prediction = model(batch)  # Training mode
+            >>> model.eval()
+            >>> output = model(batch)  # Inference mode
+            >>> assert isinstance(output, InferenceBatch)
         """
         reconstruction = self.reconstructive_subnetwork(batch)
         concatenated_inputs = torch.cat([batch, reconstruction], axis=1)
         prediction = self.discriminative_subnetwork(concatenated_inputs)
         if self.training:
             return reconstruction, prediction
-        return torch.softmax(prediction, dim=1)[:, 1, ...]
+
+        anomaly_map = torch.softmax(prediction, dim=1)[:, 1, ...]
+        pred_score = torch.amax(anomaly_map, dim=(-2, -1))
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)
 
 
 class ReconstructiveSubNetwork(nn.Module):
-    """Autoencoder model that encodes and reconstructs the input image.
+    """Autoencoder model for image reconstruction.
 
     Args:
-        in_channels (int): Number of input channels.
-            Defaults to ``3``.
-        out_channels (int): Number of output channels.
-            Defaults to ``3``.
-        base_width (int): Base dimensionality of the layers of the autoencoder.
-            Defaults to ``128``.
-        sspcab (bool): Enable SSPCAB training.
-            Defaults to ``False``.
+        in_channels (int, optional): Number of input channels. Defaults to ``3``.
+        out_channels (int, optional): Number of output channels. Defaults to ``3``.
+        base_width (int, optional): Base dimensionality of layers. Defaults to
+            ``128``.
+        sspcab (bool, optional): Enable SSPCAB training. Defaults to ``False``.
+
+    Example:
+        >>> subnet = ReconstructiveSubNetwork(in_channels=3, base_width=64)
+        >>> input_tensor = torch.randn(32, 3, 256, 256)
+        >>> output = subnet(input_tensor)
+        >>> output.shape
+        torch.Size([32, 3, 256, 256])
     """
 
     def __init__(
@@ -72,28 +103,37 @@ class ReconstructiveSubNetwork(nn.Module):
         self.decoder = DecoderReconstructive(base_width, out_channels=out_channels)
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
-        """Encode and reconstruct the input images.
+        """Encode and reconstruct input images.
 
         Args:
-            batch (torch.Tensor): Batch of input images
+            batch (torch.Tensor): Batch of input images of shape
+                ``(batch_size, channels, height, width)``
 
         Returns:
-            Batch of reconstructed images.
+            torch.Tensor: Batch of reconstructed images of same shape as input
         """
         encoded = self.encoder(batch)
         return self.decoder(encoded)
 
 
 class DiscriminativeSubNetwork(nn.Module):
-    """Discriminative model that predicts the anomaly mask from the original image and its reconstruction.
+    """Discriminative model for anomaly mask prediction.
+
+    Compares original images with their reconstructions to predict anomaly masks.
 
     Args:
-        in_channels (int): Number of input channels.
-            Defaults to ``3``.
-        out_channels (int): Number of output channels.
-            Defaults to ``3``.
-        base_width (int): Base dimensionality of the layers of the autoencoder.
-            Defaults to ``64``.
+        in_channels (int, optional): Number of input channels. Defaults to ``3``.
+        out_channels (int, optional): Number of output channels. Defaults to ``3``.
+        base_width (int, optional): Base dimensionality of layers. Defaults to
+            ``64``.
+
+    Example:
+        >>> subnet = DiscriminativeSubNetwork(in_channels=6, out_channels=2)
+        >>> # Concatenated original and reconstructed images
+        >>> input_tensor = torch.randn(32, 6, 256, 256)
+        >>> output = subnet(input_tensor)
+        >>> output.shape
+        torch.Size([32, 2, 256, 256])
     """
 
     def __init__(self, in_channels: int = 3, out_channels: int = 3, base_width: int = 64) -> None:
@@ -102,25 +142,32 @@ class DiscriminativeSubNetwork(nn.Module):
         self.decoder_segment = DecoderDiscriminative(base_width, out_channels=out_channels)
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
-        """Generate the predicted anomaly masks for a batch of input images.
+        """Generate predicted anomaly masks.
 
         Args:
-            batch (torch.Tensor): Batch of inputs consisting of the concatenation of the original images
-             and their reconstructions.
+            batch (torch.Tensor): Concatenated original and reconstructed images of
+                shape ``(batch_size, channels*2, height, width)``
 
         Returns:
-            Activations of the output layer corresponding to the normal and anomalous class scores on the pixel level.
+            torch.Tensor: Pixel-level class scores for normal and anomalous regions
         """
         act1, act2, act3, act4, act5, act6 = self.encoder_segment(batch)
         return self.decoder_segment(act1, act2, act3, act4, act5, act6)
 
 
 class EncoderDiscriminative(nn.Module):
-    """Encoder part of the discriminator network.
+    """Encoder component of the discriminator network.
 
     Args:
-        in_channels (int): Number of input channels.
-        base_width (int): Base dimensionality of the layers of the autoencoder.
+        in_channels (int): Number of input channels
+        base_width (int): Base dimensionality of the layers
+
+    Example:
+        >>> encoder = EncoderDiscriminative(in_channels=6, base_width=64)
+        >>> input_tensor = torch.randn(32, 6, 256, 256)
+        >>> outputs = encoder(input_tensor)
+        >>> len(outputs)  # Returns 6 activation maps
+        6
     """
 
     def __init__(self, in_channels: int, base_width: int) -> None:
@@ -184,14 +231,14 @@ class EncoderDiscriminative(nn.Module):
         self,
         batch: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Convert the inputs to the salient space by running them through the encoder network.
+        """Convert inputs to salient space through encoder network.
 
         Args:
-            batch (torch.Tensor): Batch of inputs consisting of the concatenation of the original images
-             and their reconstructions.
+            batch (torch.Tensor): Input batch of concatenated original and
+                reconstructed images
 
         Returns:
-            Computed feature maps for each of the layers in the encoder sub network.
+            tuple: Contains 6 activation tensors from each encoder block
         """
         act1 = self.block1(batch)
         mp1 = self.mp1(act1)
@@ -208,12 +255,19 @@ class EncoderDiscriminative(nn.Module):
 
 
 class DecoderDiscriminative(nn.Module):
-    """Decoder part of the discriminator network.
+    """Decoder component of the discriminator network.
 
     Args:
-        base_width (int): Base dimensionality of the layers of the autoencoder.
-        out_channels (int): Number of output channels.
-            Defaults to ``1``.
+        base_width (int): Base dimensionality of the layers
+        out_channels (int, optional): Number of output channels. Defaults to ``1``
+
+    Example:
+        >>> decoder = DecoderDiscriminative(base_width=64, out_channels=2)
+        >>> # Create 6 mock activation tensors
+        >>> acts = [torch.randn(32, 64, 256>>i, 256>>i) for i in range(6)]
+        >>> output = decoder(*acts)
+        >>> output.shape
+        torch.Size([32, 2, 256, 256])
     """
 
     def __init__(self, base_width: int, out_channels: int = 1) -> None:
@@ -305,18 +359,18 @@ class DecoderDiscriminative(nn.Module):
         act5: torch.Tensor,
         act6: torch.Tensor,
     ) -> torch.Tensor:
-        """Compute predicted anomaly class scores from the intermediate outputs of the encoder sub network.
+        """Compute predicted anomaly scores from encoder activations.
 
         Args:
-            act1 (torch.Tensor): Encoder activations of the first block of convolutional layers.
-            act2 (torch.Tensor): Encoder activations of the second block of convolutional layers.
-            act3 (torch.Tensor): Encoder activations of the third block of convolutional layers.
-            act4 (torch.Tensor): Encoder activations of the fourth block of convolutional layers.
-            act5 (torch.Tensor): Encoder activations of the fifth block of convolutional layers.
-            act6 (torch.Tensor): Encoder activations of the sixth block of convolutional layers.
+            act1 (torch.Tensor): First block encoder activations
+            act2 (torch.Tensor): Second block encoder activations
+            act3 (torch.Tensor): Third block encoder activations
+            act4 (torch.Tensor): Fourth block encoder activations
+            act5 (torch.Tensor): Fifth block encoder activations
+            act6 (torch.Tensor): Sixth block encoder activations
 
         Returns:
-            Predicted anomaly class scores per pixel.
+            torch.Tensor: Predicted anomaly scores per pixel
         """
         up_b = self.up_b(act6)
         cat_b = torch.cat((up_b, act5), dim=1)
@@ -342,13 +396,19 @@ class DecoderDiscriminative(nn.Module):
 
 
 class EncoderReconstructive(nn.Module):
-    """Encoder part of the reconstructive network.
+    """Encoder component of the reconstructive network.
 
     Args:
-        in_channels (int): Number of input channels.
-        base_width (int): Base dimensionality of the layers of the autoencoder.
-        sspcab (bool): Enable SSPCAB training.
-            Defaults to ``False``.
+        in_channels (int): Number of input channels
+        base_width (int): Base dimensionality of the layers
+        sspcab (bool, optional): Enable SSPCAB training. Defaults to ``False``
+
+    Example:
+        >>> encoder = EncoderReconstructive(in_channels=3, base_width=64)
+        >>> input_tensor = torch.randn(32, 3, 256, 256)
+        >>> output = encoder(input_tensor)
+        >>> output.shape
+        torch.Size([32, 512, 16, 16])
     """
 
     def __init__(self, in_channels: int, base_width: int, sspcab: bool = False) -> None:
@@ -402,13 +462,14 @@ class EncoderReconstructive(nn.Module):
             )
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor:
-        """Encode a batch of input images to the salient space.
+        """Encode input images to the salient space.
 
         Args:
-            batch (torch.Tensor): Batch of input images.
+            batch (torch.Tensor): Input batch of images of shape
+                ``(batch_size, channels, height, width)``
 
         Returns:
-            Feature maps extracted from the bottleneck layer.
+            torch.Tensor: Feature maps from the bottleneck layer
         """
         act1 = self.block1(batch)
         mp1 = self.mp1(act1)
@@ -422,12 +483,18 @@ class EncoderReconstructive(nn.Module):
 
 
 class DecoderReconstructive(nn.Module):
-    """Decoder part of the reconstructive network.
+    """Decoder component of the reconstructive network.
 
     Args:
-        base_width (int): Base dimensionality of the layers of the autoencoder.
-        out_channels (int): Number of output channels.
-            Defaults to ``1``.
+        base_width (int): Base dimensionality of the layers
+        out_channels (int, optional): Number of output channels. Defaults to ``1``
+
+    Example:
+        >>> decoder = DecoderReconstructive(base_width=64, out_channels=3)
+        >>> input_tensor = torch.randn(32, 512, 16, 16)
+        >>> output = decoder(input_tensor)
+        >>> output.shape
+        torch.Size([32, 3, 256, 256])
     """
 
     def __init__(self, base_width: int, out_channels: int = 1) -> None:
@@ -497,13 +564,14 @@ class DecoderReconstructive(nn.Module):
         self.fin_out = nn.Sequential(nn.Conv2d(base_width, out_channels, kernel_size=3, padding=1))
 
     def forward(self, act5: torch.Tensor) -> torch.Tensor:
-        """Reconstruct the image from the activations of the bottleneck layer.
+        """Reconstruct image from bottleneck features.
 
         Args:
-            act5 (torch.Tensor): Activations of the bottleneck layer.
+            act5 (torch.Tensor): Activations from the bottleneck layer of shape
+                ``(batch_size, channels, height, width)``
 
         Returns:
-            Batch of reconstructed images.
+            torch.Tensor: Reconstructed images of same size as original input
         """
         up1 = self.up1(act5)
         db1 = self.db1(up1)
