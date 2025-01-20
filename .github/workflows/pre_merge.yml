@@ -4,6 +4,8 @@ permissions: read-all
 on:
   push:
     branches: [main]
+    merge_group:
+      branches: [main]
   pull_request:
     types:
       - opened
