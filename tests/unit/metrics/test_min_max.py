@@ -5,12 +5,12 @@
 
 import torch
 
-from anomalib.metrics import MinMax  # Assuming the metric is part of `anomalib`
+from anomalib.metrics.min_max import _MinMax  # Assuming the metric is part of `anomalib`
 
 
 def test_initialization() -> None:
     """Test if the metric initializes with correct default values."""
-    metric = MinMax()
+    metric = _MinMax()
     assert torch.isinf(metric.min), "Initial min should be positive infinity."
     assert metric.min > 0, "Initial min should be positive infinity."
     assert torch.isinf(metric.max), "Initial max should be negative infinity."
@@ -19,7 +19,7 @@ def test_initialization() -> None:
 
 def test_update_single_batch() -> None:
     """Test updating the metric with a single batch."""
-    metric = MinMax()
+    metric = _MinMax()
     batch = torch.tensor([1.0, 2.0, 3.0, -1.0])
     metric.update(batch)
 
@@ -29,7 +29,7 @@ def test_update_single_batch() -> None:
 
 def test_update_multiple_batches() -> None:
     """Test updating the metric with multiple batches."""
-    metric = MinMax()
+    metric = _MinMax()
     batch1 = torch.tensor([0.5, 1.5, 3.0])
     batch2 = torch.tensor([-0.5, 0.0, 2.5])
 
@@ -42,7 +42,7 @@ def test_update_multiple_batches() -> None:
 
 def test_compute() -> None:
     """Test computation of the min and max values after updates."""
-    metric = MinMax()
+    metric = _MinMax()
     batch1 = torch.tensor([1.0, 2.0])
     batch2 = torch.tensor([-1.0, 0.0])
 
@@ -57,7 +57,7 @@ def test_compute() -> None:
 
 def test_no_updates() -> None:
     """Test behavior when no updates are made to the metric."""
-    metric = MinMax()
+    metric = _MinMax()
 
     min_val, max_val = metric.compute()
 
