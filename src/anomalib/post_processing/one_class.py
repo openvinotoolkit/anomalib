@@ -115,10 +115,14 @@ class OneClassPostProcessor(PostProcessor):
             pl_module (LightningModule): PyTorch Lightning module instance.
         """
         del trainer, pl_module
-        self.image_threshold = self._image_threshold.compute()
-        self.pixel_threshold = self._pixel_threshold.compute()
-        image_min_max = self._image_min_max.compute()
-        self.image_min, self.image_max = image_min_max if image_min_max is not None else (None, None)
+        if self._image_threshold.update_called:
+            self.image_threshold = self._image_threshold.compute()
+        if self._pixel_threshold.update_called:
+            self.pixel_threshold = self._pixel_threshold.compute()
+        if self._image_min_max.update_called:
+            self.image_min, self.image_max = self._image_min_max.compute()
+        if self._pixel_min_max.update_called:
+            self.pixel_min, self.pixel_max = self._pixel_min_max.compute()
 
     def on_test_batch_end(
         self,

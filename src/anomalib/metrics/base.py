@@ -192,11 +192,6 @@ class AnomalibMetric:
             return None
         return super().compute()  # type: ignore[misc]
 
-    @property
-    def update_called(self) -> bool:
-        """Check if the update method has been called."""
-        return self._update_count > 0 if self.strict else self.__update_count > 0  # type: ignore[attr-defined]
-
 
 def create_anomalib_metric(metric_cls: type) -> type:
     """Create an Anomalib version of a torchmetrics metric.
