@@ -180,7 +180,7 @@ runs:
 
     - name: Upload test results
       if: always() && steps.test-execution.outcome == 'failure'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: pytest-results-${{ inputs.test-type }}
         path: pytest_output.log

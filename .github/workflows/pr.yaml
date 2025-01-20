@@ -40,7 +40,9 @@ name: PR Checks
 
 on:
   pull_request:
-    branches: [main, "feature/**"]
+    branches: ["main", "feature/**"]
+  merge_group:
+    branches: [main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
