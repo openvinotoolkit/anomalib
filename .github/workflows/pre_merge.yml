@@ -2,7 +2,7 @@ name: Pre-Merge Checks
 permissions: read-all
 
 on:
-  push:
+  merge_group:
     branches: [main]
   pull_request:
     types:
