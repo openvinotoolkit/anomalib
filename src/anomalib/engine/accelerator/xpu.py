@@ -48,6 +48,7 @@ class XPUAccelerator(Accelerator):
     @staticmethod
     def get_device_stats(device: str | torch.device) -> dict[str, Any]:
         """Returns XPU devices stats."""
+        del device  # Unused
         return {}
 
     def teardown(self) -> None:
