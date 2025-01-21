@@ -72,6 +72,13 @@ Learn more about anomalib's deployment capabilities
 Learn more about anomalib hpo, sweep and benchmarking pipelines
 :::
 
+:::{grid-item-card} {octicon}`cpu` Training on Intel GPUs
+:link: ./training_on_intel_gpus/index
+:link-type: doc
+
+Learn more about training on Intel GPUs
+:::
+
 ::::
 
 ```{toctree}
@@ -83,4 +90,5 @@ Learn more about anomalib hpo, sweep and benchmarking pipelines
 ./models/index
 ./pipelines/index
 ./visualization/index
+./training_on_intel_gpus/index
 ```
