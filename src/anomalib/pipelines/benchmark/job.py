@@ -24,19 +24,39 @@ from anomalib.utils.logging import hide_output
 logger = logging.getLogger(__name__)
 
 # Import external loggers
-try:
-    from anomalib.loggers import (
-        AnomalibCometLogger,
-        AnomalibMLFlowLogger,
-        AnomalibTensorBoardLogger,
-        AnomalibWandbLogger,
-    )
+AVAILABLE_LOGGERS: dict[str, Any] = {}
 
-    LOGGERS_AVAILABLE = True
-    logger.info("Successfully imported logger modules.")
+try:
+    from anomalib.loggers import AnomalibCometLogger
+
+    AVAILABLE_LOGGERS["comet"] = AnomalibCometLogger
 except ImportError:
-    LOGGERS_AVAILABLE = False
-    logger.warning("To use external loggers, install required packages using `anomalib install -v`")
+    logger.debug("Comet logger not available. Install using `pip install comet-ml`")
+try:
+    from anomalib.loggers import AnomalibMLFlowLogger
+
+    AVAILABLE_LOGGERS["mlflow"] = AnomalibMLFlowLogger
+except ImportError:
+    logger.debug("MLflow logger not available. Install using `pip install mlflow`")
+try:
+    from anomalib.loggers import AnomalibTensorBoardLogger
+
+    AVAILABLE_LOGGERS["tensorboard"] = AnomalibTensorBoardLogger
+except ImportError:
+    logger.debug("TensorBoard logger not available. Install using `pip install tensorboard`")
+try:
+    from anomalib.loggers import AnomalibWandbLogger
+
+    AVAILABLE_LOGGERS["wandb"] = AnomalibWandbLogger
+except ImportError:
+    logger.debug("Weights & Biases logger not available. Install using `pip install wandb`")
+
+LOGGERS_AVAILABLE = len(AVAILABLE_LOGGERS) > 0
+
+if LOGGERS_AVAILABLE:
+    logger.info(f"Available loggers: {', '.join(AVAILABLE_LOGGERS.keys())}")
+else:
+    logger.warning("No external loggers available. Install required packages using `anomalib install -v`")
 
 
 class BenchmarkJob(Job):
@@ -84,7 +104,7 @@ class BenchmarkJob(Job):
                 accelerator=self.accelerator,
                 devices=devices,
                 default_root_dir=temp_dir,
-                logger=self._initialize_loggers(self.flat_cfg or {}) if LOGGERS_AVAILABLE else None,
+                logger=self._initialize_loggers(self.flat_cfg or {}) if LOGGERS_AVAILABLE else [],
             )
             fit_start_time = time.time()
             engine.fit(self.model, self.datamodule)
@@ -105,11 +125,13 @@ class BenchmarkJob(Job):
             **test_results[0],
         }
         logger.info(f"Completed with result {output}")
-
-        # Logging metrics to External Loggers
+        # Logging metrics to External Loggers (excluding TensorBoard)
         trainer = engine.trainer()
         for logger_instance in trainer.loggers:
-            if isinstance(logger_instance, AnomalibCometLogger | AnomalibWandbLogger | AnomalibMLFlowLogger):
+            if any(
+                isinstance(logger_instance, AVAILABLE_LOGGERS.get(name, object))
+                for name in ["comet", "wandb", "mlflow"]
+            ):
                 logger_instance.log_metrics(test_results[0])
                 logger.debug(f"Successfully logged metrics to {logger_instance.__class__.__name__}")
         return output
@@ -122,15 +144,8 @@ class BenchmarkJob(Job):
             logger_configs: Dictionary mapping logger names to their configurations.
 
         Returns:
-            Dictionary of initialized loggers.
+            List of initialized loggers.
         """
-        logger_mapping = {
-            "tensorboard": AnomalibTensorBoardLogger,
-            "comet": AnomalibCometLogger,
-            "wandb": AnomalibWandbLogger,
-            "mlflow": AnomalibMLFlowLogger,
-        }
-
         active_loggers = []
         default_configs = {
             "tensorboard": {"save_dir": "logs/benchmarks"},
@@ -139,7 +154,7 @@ class BenchmarkJob(Job):
             "mlflow": {"experiment_name": "anomalib"},
         }
 
-        for logger_name, logger_class in logger_mapping.items():
+        for logger_name, logger_class in AVAILABLE_LOGGERS.items():
             # Use provided config or fall back to defaults
             config = logger_configs.get(logger_name, default_configs.get(logger_name, {}))
             logger_instance = logger_class(**config)
