@@ -181,8 +181,8 @@ class OneClassPostProcessor(PostProcessor):
             msg = "At least one of pred_score or anomaly_map must be provided."
             raise ValueError(msg)
         pred_score = predictions.pred_score or torch.amax(predictions.anomaly_map, dim=(-2, -1))
-        pred_score = self._normalize(pred_score, self.image_min, self.image_max, self._image_threshold)
-        anomaly_map = self._normalize(predictions.anomaly_map, self.pixel_min, self.pixel_max, self._pixel_threshold)
+        pred_score = self._normalize(pred_score, self.image_min, self.image_max, self.image_threshold)
+        anomaly_map = self._normalize(predictions.anomaly_map, self.pixel_min, self.pixel_max, self.pixel_threshold)
         pred_label = self._apply_threshold(pred_score, self.normalized_image_threshold)
         pred_mask = self._apply_threshold(anomaly_map, self.normalized_pixel_threshold)
         return InferenceBatch(
