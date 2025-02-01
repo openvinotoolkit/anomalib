@@ -180,6 +180,34 @@ anomalib predict --model anomalib.models.Patchcore \
 
 > 📘 **Note:** For advanced inference options including Gradio and OpenVINO, check our [Inference Documentation](https://anomalib.readthedocs.io).
 
+# Training on Intel GPUs
+
+> [!Note]
+> Currently, only single GPU training is supported on Intel GPUs.
+> These commands were tested on Arc 750 and Arc 770.
+
+Ensure that you have PyTorch with XPU support installed. For more information, please refer to the [PyTorch XPU documentation](https://pytorch.org/docs/stable/notes/get_start_xpu.html)
+
+## 🔌 API
+
+```python
+from anomalib.data import MVTec
+from anomalib.engine import Engine, SingleXPUStrategy, XPUAccelerator
+from anomalib.models import Stfpm
+
+engine = Engine(
+    strategy=SingleXPUStrategy(),
+    accelerator=XPUAccelerator(),
+)
+engine.train(Stfpm(), datamodule=MVTec())
+```
+
+## ⌨️ CLI
+
+```bash
+anomalib train --model Padim --data MVTec --trainer.accelerator xpu --trainer.strategy xpu_single
+```
+
 # ⚙️ Hyperparameter Optimization
 
 Anomalib supports hyperparameter optimization (HPO) using [Weights & Biases](https://wandb.ai/) and [Comet.ml](https://www.comet.com/).

@@ -23,9 +23,11 @@ Example:
     >>> engine = Engine(config=config)  # doctest: +SKIP
 """
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from .accelerator import XPUAccelerator
 from .engine import Engine
+from .strategy import SingleXPUStrategy
 
-__all__ = ["Engine"]
+__all__ = ["Engine", "SingleXPUStrategy", "XPUAccelerator"]
