@@ -37,6 +37,13 @@ class OneClassPostProcessor(PostProcessor):
         - Formatting results for downstream use
 
     Args:
+        enable_normalization (bool, optional): Enable normalization of anomaly scores.
+            Defaults to True.
+        enable_thresholding (bool, optional): Enable thresholding of anomaly scores.
+            Defaults to True.
+        enable_threshold_matching (bool, optional): Use image-level threshold for pixel-level predictions when
+            pixel-level threshold is not available, and vice-versa.
+            Defaults to True.
         image_sensitivity (float | None, optional): Sensitivity value for image-level
             predictions. Higher values make the model more sensitive to anomalies.
             Defaults to None.
