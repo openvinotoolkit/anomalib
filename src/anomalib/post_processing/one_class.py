@@ -63,8 +63,8 @@ class OneClassPostProcessor(PostProcessor):
         enable_normalization: bool = True,
         enable_thresholding: bool = True,
         enable_threshold_matching: bool = True,
-        image_sensitivity: float | None = None,
-        pixel_sensitivity: float | None = None,
+        image_sensitivity: float = 0.5,
+        pixel_sensitivity: float = 0.5,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
@@ -346,8 +346,6 @@ class OneClassPostProcessor(PostProcessor):
         Returns:
             float: Normalized image-level threshold value, adjusted by sensitivity.
         """
-        if self.image_sensitivity is None:
-            return torch.tensor(0.5)
         return torch.tensor(1.0) - self.image_sensitivity
 
     @property
@@ -357,6 +355,4 @@ class OneClassPostProcessor(PostProcessor):
         Returns:
             float: Normalized pixel-level threshold value, adjusted by sensitivity.
         """
-        if self.pixel_sensitivity is None:
-            return torch.tensor(0.5)
         return torch.tensor(1.0) - self.pixel_sensitivity
