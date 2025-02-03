@@ -62,6 +62,10 @@ def dataset_path(project_path: Path) -> Path:
             dataset_generator = DummyImageDatasetGenerator(data_format=data_format, root=_dataset_path)
             dataset_generator.generate_dataset()
 
+    # Generate RealIAD dataset separately since it has a unique format
+    dataset_generator = DummyImageDatasetGenerator(data_format="realiad", root=_dataset_path)
+    dataset_generator.generate_dataset()
+
     # 2. Create the dummy video datasets.
     for data_format in list(VideoDataFormat):
         dataset_generator = DummyVideoDatasetGenerator(data_format=data_format, root=_dataset_path)

@@ -468,6 +468,52 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         self.dataset_root = self.dataset_root.parent / "visa_pytorch"
         self._generate_dummy_mvtec_dataset(normal_dir="good", abnormal_dir="bad", image_extension=".jpg")
 
+    def _generate_dummy_realiad_dataset(self) -> None:
+        """Generate dummy RealIAD dataset in directory using the same convention as RealIAD."""
+        # Create the resolution directory
+        resolution_dir = self.dataset_root / "realiad_256"
+        resolution_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create category directory
+        category_dir = resolution_dir / "audiojack"
+        category_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create normal (OK) samples
+        ok_dir = category_dir / "OK"
+        ok_dir.mkdir(parents=True, exist_ok=True)
+
+        for i in range(self.num_train):
+            sample_dir = ok_dir / f"S{i:04d}"
+            sample_dir.mkdir(parents=True, exist_ok=True)
+            label = LabelName.NORMAL
+            image_filename = sample_dir / f"audiojack_{i:04d}_OK_C1_123456.jpg"
+            self.image_generator.generate_image(label=label, image_filename=image_filename)
+
+        # Create abnormal (NG) samples
+        ng_dir = category_dir / "NG" / "defect"
+        ng_dir.mkdir(parents=True, exist_ok=True)
+
+        for i in range(self.num_test):
+            sample_dir = ng_dir / f"S{i:04d}"
+            sample_dir.mkdir(parents=True, exist_ok=True)
+            label = LabelName.ABNORMAL
+            image_filename = sample_dir / f"audiojack_{i:04d}_NG_C1_123456.jpg"
+            mask_filename = sample_dir / f"audiojack_{i:04d}_NG_C1_123456_mask.png"
+            self.image_generator.generate_image(label=label, image_filename=image_filename, mask_filename=mask_filename)
+
+        # Create JSON metadata
+        json_dir = self.dataset_root / "realiad_jsons" / "realiad_jsons"
+        json_dir.mkdir(parents=True, exist_ok=True)
+
+        metadata = {
+            "train": [f"OK/S{i:04d}/audiojack_{i:04d}_OK_C1_123456.jpg" for i in range(self.num_train)],
+            "test": [f"NG/defect/S{i:04d}/audiojack_{i:04d}_NG_C1_123456.jpg" for i in range(self.num_test)],
+        }
+
+        json_file = Path(json_dir) / "audiojack.json"
+        with json_file.open("w", encoding="utf-8") as f:
+            json.dump(metadata, f, indent=4)
+
 
 class DummyVideoDatasetGenerator(DummyDatasetGenerator):
     """Dummy video dataset generator.

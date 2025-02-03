@@ -20,7 +20,7 @@ Example:
         ... )
 """
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from enum import Enum
@@ -30,6 +30,7 @@ from .datumaro import Datumaro
 from .folder import Folder
 from .kolektor import Kolektor
 from .mvtec import MVTec
+from .realiad import RealIAD
 from .visa import Visa
 
 
@@ -45,6 +46,7 @@ class ImageDataFormat(str, Enum):
     - ``KOLEKTOR``: Kolektor Surface-Defect Dataset
     - ``MVTEC``: MVTec AD Dataset
     - ``MVTEC_3D``: MVTec 3D AD Dataset
+    - ``REALIAD``: Real-IAD Dataset
     - ``VISA``: Visual Inspection for Steel Anomaly Dataset
     """
 
@@ -55,7 +57,8 @@ class ImageDataFormat(str, Enum):
     KOLEKTOR = "kolektor"
     MVTEC = "mvtec"
     MVTEC_3D = "mvtec_3d"
+    REAL_IAD = "real_iad"
     VISA = "visa"
 
 
-__all__ = ["BTech", "Datumaro", "Folder", "Kolektor", "MVTec", "Visa"]
+__all__ = ["BTech", "Datumaro", "Folder", "Kolektor", "MVTec", "RealIAD", "Visa"]
