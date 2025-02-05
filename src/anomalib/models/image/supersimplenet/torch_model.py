@@ -151,10 +151,10 @@ class FeatureExtractor(nn.Module):
         super().__init__()
 
         self.feature_extractor = TimmFeatureExtractor(
-            backbone=backbone, 
-            layers=layers
-            )
-        
+            backbone=backbone,
+            layers=layers,
+        )
+
         self.pooler = nn.AvgPool2d(
             kernel_size=patch_size,
             stride=1,

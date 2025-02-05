@@ -33,7 +33,6 @@ import torch
 from torch.fx.graph_module import GraphModule
 
 
-
 def dryrun_find_featuremap_dims(
     feature_extractor: GraphModule,
     input_size: tuple[int, int],

@@ -13,7 +13,7 @@ For specifics of implementation refer to implementation classes {py:class}`Timm 
 :::{tab-item} Timm
 
 Available Timm models are listed on [Timm GitHub page](https://github.com/huggingface/pytorch-image-models#models).
-The Timm feature extractor also supports custom models of the type nn.Module. 
+The Timm feature extractor also supports custom models of the type nn.Module.
 
 In most cases, we want to use a pretrained backbone, so can get a list of all such models using the following code:
 
@@ -112,7 +112,7 @@ engine.fit(datamodule=datamodule, model=model)
 
 To use a custom backbone model, e.g. locally saved models or models with modified weights, the model instance
 is simply passed as backbone argument with the layers specified as the model layers where the features are extracted
-from. 
+from.
 
 ```{code-block} python
 :lineno-start: 1

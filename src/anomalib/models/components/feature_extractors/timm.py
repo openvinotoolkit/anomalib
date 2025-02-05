@@ -1,7 +1,7 @@
 """Feature extractor using timm models and any nn.Module torch model.
 
 This module provides a feature extractor implementation that leverages the timm
-library to extract intermediate features from various CNN architectures. If a 
+library to extract intermediate features from various CNN architectures. If a
 nn.Module is passed as backbone argument, the TorchFX feature extractor is
 used to extract features of the given layers.
 
@@ -110,17 +110,13 @@ class TimmFeatureExtractor(nn.Module):
         if isinstance(backbone, nn.Module):
             self.feature_extractor = create_feature_extractor(
                 backbone,
-                return_nodes={layer: layer for layer in self.layers}
-                )
-            
-            layer_metadata = dryrun_find_featuremap_dims(
-                 self.feature_extractor, 
-                 (256, 256), 
-                 layers=self.layers)
-            
+                return_nodes={layer: layer for layer in self.layers},
+            )
+
+            layer_metadata = dryrun_find_featuremap_dims(self.feature_extractor, (256, 256), layers=self.layers)
+
             self.out_dims = [feature_info["num_features"] for layer_name, feature_info in layer_metadata.items()]
 
-        
         elif isinstance(backbone, str):
             self.idx = self._map_layer_to_idx()
             self.feature_extractor = timm.create_model(
@@ -132,10 +128,11 @@ class TimmFeatureExtractor(nn.Module):
                 out_indices=self.idx,
             )
             self.out_dims = self.feature_extractor.feature_info.channels()
-        
+
         else:
-             raise TypeError(f"Backbone of type {type(backbone)} must be of type str or nn.Module.")
-        
+            msg = f"Backbone of type {type(backbone)} must be of type str or nn.Module."
+            raise TypeError(msg)
+
         self._features = {layer: torch.empty(0) for layer in self.layers}
 
     def _map_layer_to_idx(self) -> list[int]:
@@ -201,6 +198,5 @@ class TimmFeatureExtractor(nn.Module):
             with torch.no_grad():
                 features = self.feature_extractor(inputs)
         if not isinstance(features, dict):
-                    features = dict(zip(self.layers, features, strict=True))
+            features = dict(zip(self.layers, features, strict=True))
         return features
-
