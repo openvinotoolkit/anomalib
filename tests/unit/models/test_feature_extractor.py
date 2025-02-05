@@ -47,6 +47,20 @@ class TestFeatureExtractor:
             pass
 
     @staticmethod
+    def test_timm_feature_extraction_custom_backbone() -> None:
+        """Test if the feature extractor can be instantiated and if the output is as expected."""
+        layers = ["layer1", "layer2", "layer3"]
+        backbone = resnet18(weights=ResNet18_Weights)
+        model = TimmFeatureExtractor(backbone=backbone, layers=layers, pre_trained=False)
+        test_input = torch.rand((32, 3, 256, 256))
+        features = model(test_input)
+
+        assert features["layer1"].shape == torch.Size((32, 64, 64, 64))
+        assert features["layer2"].shape == torch.Size((32, 128, 32, 32))
+        assert features["layer3"].shape == torch.Size((32, 256, 16, 16))
+        assert model.out_dims == [64, 128, 256]
+
+    @staticmethod
     def test_torchfx_feature_extraction() -> None:
         """Test types of inputs for instantiating the feature extractor."""
         model = TorchFXFeatureExtractor("resnet18", ["layer1", "layer2", "layer3"])

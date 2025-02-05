@@ -27,10 +27,11 @@ from FrEIA.framework import GraphINN, InputNode, Node, OutputNode
 from FrEIA.modules import InvertibleModule
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
-from torchvision.models.efficientnet import EfficientNet_B5_Weights
+from torchvision.models import efficientnet_b5, EfficientNet_B5_Weights
+
 
 from anomalib.data import InferenceBatch
-from anomalib.models.components.feature_extractors import TorchFXFeatureExtractor
+from anomalib.models.components.feature_extractors import TimmFeatureExtractor
 
 from .anomaly_map import AnomalyMapGenerator, AnomalyMapMode
 
@@ -632,11 +633,9 @@ class MultiScaleFeatureExtractor(nn.Module):
 
         self.n_scales = n_scales
         self.input_size = input_size
-        self.feature_extractor = TorchFXFeatureExtractor(
-            backbone="efficientnet_b5",
-            weights=EfficientNet_B5_Weights.DEFAULT,
-            return_nodes=["features.6.8"],
-        )
+        self.feature_extractor = TimmFeatureExtractor(
+            backbone=efficientnet_b5(weights=EfficientNet_B5_Weights.IMAGENET1K_V1),
+            layers=["features.6.8"])
 
     def forward(self, input_tensor: torch.Tensor) -> list[torch.Tensor]:
         """Extract features at multiple scales.

@@ -1,6 +1,6 @@
 # Feature extractors
 
-This guide demonstrates how different backbones can be used as feature extractors for anomaly detection models. Most of these models use Timm Feature Extractor except **CSFLOW** which uses TorchFx Feature Extractor. Here we show how to use API and CLI to use different backbones as feature extractors.
+This guide demonstrates how different backbones can be used as feature extractors for anomaly detection models. Here we show how to use API and CLI to use different backbones as feature extractors.
 
 ```{seealso}
 For specifics of implementation refer to implementation classes {py:class}`Timm Feature Extractor <anomalib.models.components.feature_extractors.TimmFeatureExtractor>` and {py:class}`TorchFx Feature Extractor <anomalib.models.components.feature_extractors.TorchFXFeatureExtractor>`
@@ -13,6 +13,7 @@ For specifics of implementation refer to implementation classes {py:class}`Timm 
 :::{tab-item} Timm
 
 Available Timm models are listed on [Timm GitHub page](https://github.com/huggingface/pytorch-image-models#models).
+The Timm feature extractor also supports custom models of the type nn.Module. 
 
 In most cases, we want to use a pretrained backbone, so can get a list of all such models using the following code:
 
@@ -103,6 +104,36 @@ from anomalib.engine import Engine
 datamodule = MVTec(num_workers=0)
 # Specify backbone and layers
 model = Padim(backbone="resnet18", layers=["layer1", "layer2"])
+engine = Engine(image_metrics=["AUROC"], pixel_metrics=["AUROC"])
+
+# Train the model
+engine.fit(datamodule=datamodule, model=model)
+```
+
+To use a custom backbone model, e.g. locally saved models or models with modified weights, the model instance
+is simply passed as backbone argument with the layers specified as the model layers where the features are extracted
+from. 
+
+```{code-block} python
+:lineno-start: 1
+# Import the required modules
+import torch
+from torchvision import models
+
+from anomalib.data import MVTec
+from anomalib.models import Padim
+from anomalib.engine import Engine
+
+# Initialize the datamodule, model, and engine
+datamodule = MVTec(num_workers=0)
+
+# Specify custom model
+weights = torch.hub.load_state_dict_from_url("https://huggingface.co/mzweilin/robust-imagenet-models/resolve/main/wide_resnet50_2_l2_eps5.pth")
+custom_backbone = models.wide_resnet50_2()
+custom_backbone.load_state_dict(weights)
+
+# Specify backbone and layers
+model = Padim(backbone=custom_backbone, layers=["layer1", "layer3"])
 engine = Engine(image_metrics=["AUROC"], pixel_metrics=["AUROC"])
 
 # Train the model

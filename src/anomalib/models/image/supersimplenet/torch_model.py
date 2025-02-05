@@ -22,7 +22,7 @@ from torch import nn
 from torch.nn import Parameter
 
 from anomalib.data import InferenceBatch
-from anomalib.models.components import GaussianBlur2d, TorchFXFeatureExtractor
+from anomalib.models.components import GaussianBlur2d, TimmFeatureExtractor
 from anomalib.models.image.supersimplenet.anomaly_generator import AnomalyGenerator
 
 
@@ -150,11 +150,11 @@ class FeatureExtractor(nn.Module):
     def __init__(self, backbone: str, layers: list[str], patch_size: int = 3) -> None:
         super().__init__()
 
-        self.feature_extractor = TorchFXFeatureExtractor(
-            backbone=backbone,
-            return_nodes=layers,
-            weights="IMAGENET1K_V1",
-        )
+        self.feature_extractor = TimmFeatureExtractor(
+            backbone=backbone, 
+            layers=layers
+            )
+        
         self.pooler = nn.AvgPool2d(
             kernel_size=patch_size,
             stride=1,

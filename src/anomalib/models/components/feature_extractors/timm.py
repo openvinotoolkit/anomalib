@@ -1,7 +1,9 @@
-"""Feature extractor using timm models.
+"""Feature extractor using timm models and any nn.Module torch model.
 
 This module provides a feature extractor implementation that leverages the timm
-library to extract intermediate features from various CNN architectures.
+library to extract intermediate features from various CNN architectures. If a 
+nn.Module is passed as backbone argument, the TorchFX feature extractor is
+used to extract features of the given layers.
 
 Example:
     >>> import torch
@@ -30,16 +32,18 @@ from collections.abc import Sequence
 import timm
 import torch
 from torch import nn
+from torchvision.models.feature_extraction import create_feature_extractor
+
+from .utils import dryrun_find_featuremap_dims
 
 logger = logging.getLogger(__name__)
 
 
 class TimmFeatureExtractor(nn.Module):
-    """Extract intermediate features from timm models.
+    """Extract intermediate features from timm models or any nn.Module torch model.
 
     Args:
-        backbone (str): Name of the timm model architecture to use as backbone.
-            Can include custom weights URI in format ``name__AT__uri``.
+        backbone (str | nn.Module): Name of the timm model architecture or any torch model to use as backbone.
         layers (Sequence[str]): Names of layers from which to extract features.
         pre_trained (bool, optional): Whether to use pre-trained weights.
             Defaults to ``True``.
@@ -48,7 +52,7 @@ class TimmFeatureExtractor(nn.Module):
             ``False``.
 
     Attributes:
-        backbone (str): Name of the backbone model.
+        backbone (str | nn.Module): Name of the backbone model or actual torch backbone model
         layers (list[str]): Layer names for feature extraction.
         idx (list[int]): Indices mapping layer names to model outputs.
         requires_grad (bool): Whether gradients are computed.
@@ -57,6 +61,9 @@ class TimmFeatureExtractor(nn.Module):
 
     Example:
         >>> import torch
+        >>> import torchvision
+        >>> from torchvision.models import efficientnet_b5, EfficientNet_B5_Weights
+
         >>> from anomalib.models.components.feature_extractors import (
         ...     TimmFeatureExtractor
         ... )
@@ -73,39 +80,62 @@ class TimmFeatureExtractor(nn.Module):
         ...     print(f"{name}: {feat.shape}")
         layer1: torch.Size([1, 64, 56, 56])
         layer2: torch.Size([1, 128, 28, 28])
+
+        >>> # Custom backbone model
+        >>> custom_backbone = efficientnet_b5(weights=EfficientNet_B5_Weights.IMAGENET1K_V1)
+        >>> model = TimmFeatureExtractor(
+        ...    backbone=custom_backbone,
+        ...    layers=["features.6.8"])
+        >>> features = model(inputs)
+        >>> # Print shapes
+        >>> for name, feat in features.items():
+        ...     print(f"{name}: {feat.shape}")
+        features.6.8: torch.Size([32, 304, 8, 8])
+
     """
 
     def __init__(
         self,
-        backbone: str,
+        backbone: str | nn.Module,
         layers: Sequence[str],
         pre_trained: bool = True,
         requires_grad: bool = False,
     ) -> None:
         super().__init__()
 
-        # Extract backbone-name and weight-URI from the backbone string.
-        if "__AT__" in backbone:
-            backbone, uri = backbone.split("__AT__")
-            pretrained_cfg = timm.models.registry.get_pretrained_cfg(backbone)
-            # Override pretrained_cfg["url"] to use different pretrained weights.
-            pretrained_cfg["url"] = uri
-        else:
-            pretrained_cfg = None
-
         self.backbone = backbone
         self.layers = list(layers)
-        self.idx = self._map_layer_to_idx()
         self.requires_grad = requires_grad
-        self.feature_extractor = timm.create_model(
-            backbone,
-            pretrained=pre_trained,
-            pretrained_cfg=pretrained_cfg,
-            features_only=True,
-            exportable=True,
-            out_indices=self.idx,
-        )
-        self.out_dims = self.feature_extractor.feature_info.channels()
+
+        if isinstance(backbone, nn.Module):
+            self.feature_extractor = create_feature_extractor(
+                backbone,
+                return_nodes={layer: layer for layer in self.layers}
+                )
+            
+            layer_metadata = dryrun_find_featuremap_dims(
+                 self.feature_extractor, 
+                 (256, 256), 
+                 layers=self.layers)
+            
+            self.out_dims = [feature_info["num_features"] for layer_name, feature_info in layer_metadata.items()]
+
+        
+        elif isinstance(backbone, str):
+            self.idx = self._map_layer_to_idx()
+            self.feature_extractor = timm.create_model(
+                backbone,
+                pretrained=pre_trained,
+                pretrained_cfg=None,
+                features_only=True,
+                exportable=True,
+                out_indices=self.idx,
+            )
+            self.out_dims = self.feature_extractor.feature_info.channels()
+        
+        else:
+             raise TypeError(f"Backbone of type {type(backbone)} must be of type str or nn.Module.")
+        
         self._features = {layer: torch.empty(0) for layer in self.layers}
 
     def _map_layer_to_idx(self) -> list[int]:
@@ -165,9 +195,12 @@ class TimmFeatureExtractor(nn.Module):
             torch.Size([1, 64, 56, 56])
         """
         if self.requires_grad:
-            features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
+            features = self.feature_extractor(inputs)
         else:
             self.feature_extractor.eval()
             with torch.no_grad():
-                features = dict(zip(self.layers, self.feature_extractor(inputs), strict=True))
+                features = self.feature_extractor(inputs)
+        if not isinstance(features, dict):
+                    features = dict(zip(self.layers, features, strict=True))
         return features
+
