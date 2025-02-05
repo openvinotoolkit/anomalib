@@ -112,9 +112,7 @@ class TimmFeatureExtractor(nn.Module):
                 backbone,
                 return_nodes={layer: layer for layer in self.layers},
             )
-
             layer_metadata = dryrun_find_featuremap_dims(self.feature_extractor, (256, 256), layers=self.layers)
-
             self.out_dims = [feature_info["num_features"] for layer_name, feature_info in layer_metadata.items()]
 
         elif isinstance(backbone, str):
