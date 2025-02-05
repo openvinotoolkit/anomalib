@@ -52,7 +52,7 @@ class TimmFeatureExtractor(nn.Module):
             ``False``.
 
     Attributes:
-        backbone (str | nn.Module): Name of the backbone model or actual torch backbone model
+        backbone (str | nn.Module): Name of the backbone model or actual torch backbone model.
         layers (list[str]): Layer names for feature extraction.
         idx (list[int]): Indices mapping layer names to model outputs.
         requires_grad (bool): Whether gradients are computed.
