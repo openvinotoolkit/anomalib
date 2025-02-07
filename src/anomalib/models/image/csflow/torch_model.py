@@ -608,7 +608,7 @@ class CrossScaleFlow(nn.Module):
         return self.graph(inputs)
 
 
-class MultiScaleFeatureExtractor(nn.Module):
+class CsFlowMultiScaleFeatureExtractor(nn.Module):
     """Multi-scale feature extractor using EfficientNet-B5.
 
     This module extracts features at multiple scales using the 36th layer of
@@ -619,7 +619,7 @@ class MultiScaleFeatureExtractor(nn.Module):
         input_size (tuple[int, int]): Input image size (H, W).
 
     Example:
-        >>> extractor = MultiScaleFeatureExtractor(3, (256, 256))
+        >>> extractor = CsFlowMultiScaleFeatureExtractor(3, (256, 256))
         >>> x = torch.randn(1, 3, 256, 256)
         >>> features = extractor(x)
         >>> [f.shape for f in features]
@@ -698,7 +698,7 @@ class CsFlowModel(nn.Module):
         self.input_dims = (num_channels, *input_size)
         self.clamp = clamp
         self.cross_conv_hidden_channels = cross_conv_hidden_channels
-        self.feature_extractor = MultiScaleFeatureExtractor(n_scales=3, input_size=input_size).eval()
+        self.feature_extractor = CsFlowMultiScaleFeatureExtractor(n_scales=3, input_size=input_size).eval()
         self.graph = CrossScaleFlow(
             input_dims=self.input_dims,
             n_coupling_blocks=n_coupling_blocks,

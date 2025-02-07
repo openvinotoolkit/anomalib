@@ -46,7 +46,7 @@ class SupersimplenetModel(nn.Module):
         stop_grad: bool = True,
     ) -> None:
         super().__init__()
-        self.feature_extractor = FeatureExtractor(backbone=backbone, layers=layers)
+        self.feature_extractor = UpscalingFeatureExtractor(backbone=backbone, layers=layers)
 
         channels = self.feature_extractor.get_channels_dim()
         self.adaptor = FeatureAdapter(channels)
@@ -139,7 +139,7 @@ def init_weights(module: nn.Module) -> None:
         nn.init.constant_(module.weight, 1)
 
 
-class FeatureExtractor(nn.Module):
+class UpscalingFeatureExtractor(nn.Module):
     """Feature extractor module.
 
     Args:
