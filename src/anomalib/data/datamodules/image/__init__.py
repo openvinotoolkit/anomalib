@@ -54,7 +54,6 @@ class ImageDataFormat(str, Enum):
     FOLDER_3D = "folder_3d"
     KOLEKTOR = "kolektor"
     MVTEC_AD = "mvtec_ad"
-    MVTEC = "mvtec"  # Keep the value same for backward compatibility
     MVTEC_3D = "mvtec_3d"
     VISA = "visa"
 

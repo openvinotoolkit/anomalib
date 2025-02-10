@@ -50,9 +50,9 @@ class TestVisualizer:
             fast_dev_run=True,
             devices=1,
         )
-        datamodule = MVTecAD(root=dataset_path / "mvtec", category="dummy")
+        datamodule = MVTecAD(root=dataset_path / "mvtec_ad", category="dummy")
         engine.test(model=model, datamodule=datamodule, ckpt_path=str(_ckpt_path))
 
-        dataset = PredictDataset(path=dataset_path / "mvtec" / "dummy" / "test")
+        dataset = PredictDataset(path=dataset_path / "mvtec_ad" / "dummy" / "test")
         datamodule = DataLoader(dataset, collate_fn=ImageBatch.collate)
         engine.predict(model=model, dataloaders=datamodule, ckpt_path=str(_ckpt_path))
