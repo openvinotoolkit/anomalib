@@ -65,7 +65,7 @@ class MVTecADDataset(AnomalibDataset):
 
     Args:
         root (Path | str): Path to root directory containing the dataset.
-            Defaults to ``"./datasets/MVTec"``.
+            Defaults to ``"./datasets/MVTecAD"``.
         category (str): Category name, must be one of ``CATEGORIES``.
             Defaults to ``"bottle"``.
         augmentations (Transform, optional): Augmentations that should be applied to the input images.
@@ -77,7 +77,7 @@ class MVTecADDataset(AnomalibDataset):
         >>> from pathlib import Path
         >>> from anomalib.data.datasets import MVTecADDataset
         >>> dataset = MVTecADDataset(
-        ...     root=Path("./datasets/MVTec"),
+        ...     root=Path("./datasets/MVTecAD"),
         ...     category="bottle",
         ...     split="train"
         ... )
@@ -104,7 +104,7 @@ class MVTecADDataset(AnomalibDataset):
 
     def __init__(
         self,
-        root: Path | str = "./datasets/MVTec",
+        root: Path | str = "./datasets/MVTecAD",
         category: str = "bottle",
         augmentations: Transform | None = None,
         split: str | Split | None = None,
@@ -233,7 +233,7 @@ class MVTecDataset(MVTecADDataset):
         import warnings
 
         warnings.warn(
-            "MVTecDataset is deprecated and will be removed in a future version. Please use MVTecADDataset instead.",
+            "MVTecADDataset is deprecated and will be removed in a future version. Please use MVTecADDataset instead.",
             DeprecationWarning,
             stacklevel=2,
         )

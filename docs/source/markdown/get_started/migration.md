@@ -69,9 +69,9 @@ between the old and new configuration files highlighted in a markdown diff forma
 +data:
 -  name: mvtec
 -  format: mvtec
-+  class_path: anomalib.data.MVTec
++  class_path: anomalib.data.MVTecAD
 +  init_args:
--  path: ./datasets/MVTec
+-  path: ./datasets/MVTecAD
 +    root: ./datasets/MVTec
      category: bottle
      image_size: 256

@@ -10,12 +10,12 @@ memory bank and computes anomaly scores based on these distances. It achieves
 high performance while maintaining interpretability through localization maps.
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models import Patchcore
     >>> from anomalib.engine import Engine
 
     >>> # Initialize model and data
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Patchcore(
     ...     backbone="wide_resnet50_2",
     ...     layers=["layer2", "layer3"],

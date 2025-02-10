@@ -7,11 +7,11 @@ The model can perform both anomaly classification and segmentation tasks by
 comparing image regions with normal reference examples through CLIP embeddings.
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.engine import Engine
     >>> from anomalib.models.image import WinClip
 
-    >>> datamodule = MVTec(root="./datasets/MVTec")  # doctest: +SKIP
+    >>> datamodule = MVTecAD(root="./datasets/MVTecAD")  # doctest: +SKIP
     >>> model = WinClip()  # doctest: +SKIP
 
     >>> Engine.test(model=model, datamodule=datamodule)  # doctest: +SKIP

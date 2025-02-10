@@ -14,7 +14,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from anomalib.data import AnomalibDataModule, MVTec
+from anomalib.data import AnomalibDataModule, MVTecAD
 from anomalib.deploy import ExportType
 from anomalib.engine import Engine
 from anomalib.models import AnomalibModule, get_available_models, get_model
@@ -201,7 +201,7 @@ class TestAPI:
         else:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.
-            dataset = MVTec(
+            dataset = MVTecAD(
                 root=dataset_path / "mvtec",
                 category="dummy",
                 # EfficientAd requires train batch size 1

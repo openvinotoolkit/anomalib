@@ -12,8 +12,8 @@ The model consists of:
 Example:
     >>> from anomalib.models.image import Stfpm
     >>> from anomalib.engine import Engine
-    >>> from anomalib.data import MVTec
-    >>> datamodule = MVTec()
+    >>> from anomalib.data import MVTecAD
+    >>> datamodule = MVTecAD()
     >>> model = Stfpm(
     ...     backbone="resnet18",
     ...     layers=["layer1", "layer2", "layer3"]
@@ -78,9 +78,9 @@ class Stfpm(AnomalibModule):
 
     Example:
         >>> from anomalib.models.image import Stfpm
-        >>> from anomalib.data import MVTec
+        >>> from anomalib.data import MVTecAD
         >>> from anomalib.engine import Engine
-        >>> datamodule = MVTec()
+        >>> datamodule = MVTecAD()
         >>> model = Stfpm(
         ...     backbone="resnet18",
         ...     layers=["layer1", "layer2", "layer3"]

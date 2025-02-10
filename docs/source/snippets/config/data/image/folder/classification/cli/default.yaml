@@ -1,6 +1,6 @@
 class_path: anomalib.data.Folder
 init_args:
-  name: "MVTec"
+  name: "MVTecAD"
   root: "datasets/MVTec/transistor"
   normal_dir: "train/good"
   abnormal_dir: "test/bent_lead"

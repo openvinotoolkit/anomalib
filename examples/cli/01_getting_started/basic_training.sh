@@ -20,7 +20,7 @@ anomalib train --model efficient_ad \
     --trainer.max_epochs 10
 
 # 3. Using a Different Dataset
-# Train on a specific category of MVTec dataset
-echo -e "\nTraining on MVTec bottle category..."
+# Train on a specific category of MVTecAD dataset
+echo -e "\nTraining on MVTecAD bottle category..."
 anomalib train --model efficient_ad \
     --data.category bottle

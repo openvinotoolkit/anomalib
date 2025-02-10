@@ -12,12 +12,12 @@ corresponding reference distributions.
 Paper: https://arxiv.org/abs/2011.08785
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models.image.padim import Padim
     >>> from anomalib.engine import Engine
 
     >>> # Initialize model and data
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Padim(
     ...     backbone="resnet18",
     ...     layers=["layer1", "layer2", "layer3"],
@@ -85,11 +85,11 @@ class Padim(MemoryBankMixin, AnomalibModule):
 
     Example:
         >>> from anomalib.models import Padim
-        >>> from anomalib.data import MVTec
+        >>> from anomalib.data import MVTecAD
         >>> from anomalib.engine import Engine
 
         >>> # Initialize model and data
-        >>> datamodule = MVTec()
+        >>> datamodule = MVTecAD()
         >>> model = Padim(
         ...     backbone="resnet18",
         ...     layers=["layer1", "layer2", "layer3"],

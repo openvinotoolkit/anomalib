@@ -7,7 +7,7 @@ Patchcore is a memory-based model that uses a pretrained CNN backbone
 to extract and store patch features for anomaly detection.
 """
 
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from anomalib.engine import Engine
 from anomalib.models import Patchcore
 
@@ -26,7 +26,7 @@ model = Patchcore(
 
 # 3. Training Pipeline
 # Set up the complete training pipeline
-datamodule = MVTec(
+datamodule = MVTecAD(
     root="./datasets/MVTec",
     category="bottle",
     train_batch_size=32,

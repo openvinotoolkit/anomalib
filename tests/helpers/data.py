@@ -276,7 +276,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         seed (int, optional): Fixes seed if any number greater than 0 is provided. 0 means no seed. Defaults to 0.
 
     Examples:
-        To create an MVTec dataset with 10 training images and 10 testing images per category, use the following code.
+        To create an MVTecAD dataset with 10 training images and 10 testing images per category, use the following code.
         >>> dataset_generator = DummyImageDatasetGenerator(data_format="mvtec", num_train=10, num_test=10)
         >>> dataset_generator.generate_dataset()
 

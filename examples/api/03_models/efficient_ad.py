@@ -7,7 +7,7 @@ EfficientAd is a fast and accurate model for anomaly detection,
 particularly well-suited for industrial inspection tasks.
 """
 
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from anomalib.engine import Engine
 from anomalib.models import EfficientAd
 
@@ -25,8 +25,8 @@ model = EfficientAd(
 
 # 3. Training Pipeline
 # Set up the complete training pipeline
-datamodule = MVTec(
-    root="./datasets/MVTec",
+datamodule = MVTecAD(
+    root="./datasets/MVTecAD",
     category="bottle",
     train_batch_size=32,
 )

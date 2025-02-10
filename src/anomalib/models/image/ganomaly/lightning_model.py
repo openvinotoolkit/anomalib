@@ -6,11 +6,11 @@ learns to reconstruct normal images, and a discriminator that helps ensure the
 reconstructions are realistic.
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models import Ganomaly
     >>> from anomalib.engine import Engine
 
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Ganomaly()
     >>> engine = Engine()
 

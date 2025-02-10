@@ -501,11 +501,11 @@ class Engine:
 
         Examples:
             # fit and test a one-class model
-            >>> from anomalib.data import MVTec
+            >>> from anomalib.data import MVTecAD
             >>> from anomalib.models import Padim
             >>> from anomalib.engine import Engine
 
-            >>> datamodule = MVTec()
+            >>> datamodule = MVTecAD()
             >>> model = Padim()
             >>> model.learning_type
             <LearningType.ONE_CLASS: 'one_class'>
@@ -515,11 +515,11 @@ class Engine:
             >>> engine.test(model, datamodule=datamodule)
 
             # Test a zero-shot model
-            >>> from anomalib.data import MVTec
+            >>> from anomalib.data import MVTecAD
             >>> from anomalib.models import Padim
             >>> from anomalib.engine import Engine
 
-            >>> datamodule = MVTec(image_size=240, normalization="clip")
+            >>> datamodule = MVTecAD(image_size=240, normalization="clip")
             >>> model = Padim()
             >>> model.learning_type
             <LearningType.ZERO_SHOT: 'zero_shot'>

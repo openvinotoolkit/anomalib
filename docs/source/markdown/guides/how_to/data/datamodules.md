@@ -103,9 +103,9 @@ The data flow is:
 ### 1. Image DataModule
 
 ```python
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 
-datamodule = MVTec(
+datamodule = MVTecAD(
     root="./datasets/MVTec",
     category="bottle",
     train_batch_size=32,

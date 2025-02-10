@@ -10,7 +10,7 @@ import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from torch.utils.data import DataLoader
 
-from anomalib.data import ImageBatch, MVTec, PredictDataset
+from anomalib.data import ImageBatch, MVTecAD, PredictDataset
 from anomalib.engine import Engine
 from anomalib.models import Padim
 from anomalib.utils.visualization.image import _ImageGrid
@@ -50,7 +50,7 @@ class TestVisualizer:
             fast_dev_run=True,
             devices=1,
         )
-        datamodule = MVTec(root=dataset_path / "mvtec", category="dummy")
+        datamodule = MVTecAD(root=dataset_path / "mvtec", category="dummy")
         engine.test(model=model, datamodule=datamodule, ckpt_path=str(_ckpt_path))
 
         dataset = PredictDataset(path=dataset_path / "mvtec" / "dummy" / "test")

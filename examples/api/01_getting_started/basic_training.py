@@ -8,13 +8,13 @@ using the Anomalib Python API.
 """
 
 # 1. Import required modules
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from anomalib.engine import Engine
 from anomalib.models import EfficientAd
 
 # 2. Create a dataset
-# MVTec is a popular dataset for anomaly detection
-datamodule = MVTec(
+# MVTecAD is a popular dataset for anomaly detection
+datamodule = MVTecAD(
     root="./datasets/MVTec",  # Path to download/store the dataset
     category="bottle",  # MVTec category to use
     train_batch_size=32,  # Number of images per training batch

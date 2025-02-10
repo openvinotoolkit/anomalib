@@ -11,7 +11,7 @@ This example demonstrates a complete workflow including:
 
 from pathlib import Path
 
-from anomalib.data import MVTec, PredictDataset
+from anomalib.data import MVTecAD, PredictDataset
 from anomalib.deploy import ExportType
 from anomalib.engine import Engine
 from anomalib.models import Patchcore
@@ -22,7 +22,7 @@ print("Starting Training Phase...")
 
 # Initialize components
 model = Patchcore()
-datamodule = MVTec(
+datamodule = MVTecAD(
     root=Path("./datasets/MVTec"),
     category="bottle",
     train_batch_size=32,
