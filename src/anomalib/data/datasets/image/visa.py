@@ -28,7 +28,7 @@ from pathlib import Path
 from torchvision.transforms.v2 import Transform
 
 from anomalib.data.datasets import AnomalibDataset
-from anomalib.data.datasets.image.mvtec_ad import make_mvtec_dataset
+from anomalib.data.datasets.image.mvtecad import make_mvtec_dataset
 from anomalib.data.utils import Split
 
 EXTENSIONS = (".png", ".jpg", ".JPG")

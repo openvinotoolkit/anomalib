@@ -26,8 +26,7 @@ from .btech import BTechDataset
 from .datumaro import DatumaroDataset
 from .folder import FolderDataset
 from .kolektor import KolektorDataset
-from .mvtec import MVTecDataset
-from .mvtec_ad import MVTecADDataset
+from .mvtecad import MVTecADDataset, MVTecDataset
 from .visa import VisaDataset
 
 __all__ = [

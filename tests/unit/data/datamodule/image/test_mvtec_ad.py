@@ -20,7 +20,7 @@ class TestMVTecAD(_TestAnomalibImageDatamodule):
     def datamodule(dataset_path: Path) -> MVTecAD:
         """Create and return a MVTec datamodule."""
         _datamodule = MVTecAD(
-            root=dataset_path / "mvtec_ad",
+            root=dataset_path / "mvtecad",
             category="dummy",
             train_batch_size=4,
             eval_batch_size=4,

@@ -29,7 +29,7 @@ from .btech import BTech
 from .datumaro import Datumaro
 from .folder import Folder
 from .kolektor import Kolektor
-from .mvtec import MVTec, MVTecAD  # MVTec is an alias for backward compatibility
+from .mvtecad import MVTec, MVTecAD
 from .visa import Visa
 
 
@@ -53,7 +53,7 @@ class ImageDataFormat(str, Enum):
     FOLDER = "folder"
     FOLDER_3D = "folder_3d"
     KOLEKTOR = "kolektor"
-    MVTEC_AD = "mvtec_ad"
+    MVTEC_AD = "mvtecad"
     MVTEC_3D = "mvtec_3d"
     VISA = "visa"
 

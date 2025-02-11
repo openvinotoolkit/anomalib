@@ -202,7 +202,7 @@ class TestAPI:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.
             dataset = MVTecAD(
-                root=dataset_path / "mvtec_ad",
+                root=dataset_path / "mvtecad",
                 category="dummy",
                 # EfficientAd requires train batch size 1
                 train_batch_size=1 if model_name == "efficient_ad" else 2,
