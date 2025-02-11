@@ -15,7 +15,7 @@ from anomalib.models import EfficientAd
 # 2. Create a dataset
 # MVTecAD is a popular dataset for anomaly detection
 datamodule = MVTecAD(
-    root="./datasets/MVTec",  # Path to download/store the dataset
+    root="./datasets/MVTecAD",  # Path to download/store the dataset
     category="bottle",  # MVTec category to use
     train_batch_size=32,  # Number of images per training batch
     eval_batch_size=32,  # Number of images per validation/test batch

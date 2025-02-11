@@ -11,7 +11,7 @@ The module contains:
 Example:
     >>> from anomalib.data import MVTecAD
     >>> datamodule = MVTecAD(
-    ...     root="./datasets/MVTec",
+    ...     root="./datasets/MVTecAD",
     ...     category="bottle",
     ...     image_size=(256, 256)
     ... )

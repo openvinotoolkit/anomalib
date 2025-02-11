@@ -55,7 +55,7 @@ engine = Engine(
 # 5. Complete Training Example with Logging
 model = Patchcore()
 datamodule = MVTecAD(
-    root=Path("./datasets/MVTec"),
+    root=Path("./datasets/MVTecAD"),
     category="bottle",
 )
 

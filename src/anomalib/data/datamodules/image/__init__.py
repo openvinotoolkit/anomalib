@@ -64,6 +64,7 @@ __all__ = [
     "Folder",
     "Kolektor",
     "MVTecAD",
-    "MVTec",  # Include both for backward compatibility
+    "MVTecAD",  # Include both for backward compatibility
     "Visa",
+    "MVTec",
 ]

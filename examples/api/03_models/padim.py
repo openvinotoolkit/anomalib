@@ -27,7 +27,7 @@ model = Padim(
 # 3. Training Pipeline
 # Set up the complete training pipeline
 datamodule = MVTecAD(
-    root="./datasets/MVTec",
+    root="./datasets/MVTecAD",
     category="bottle",
     train_batch_size=32,
     eval_batch_size=32,  # Important for feature extraction

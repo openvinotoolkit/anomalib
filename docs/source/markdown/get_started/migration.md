@@ -72,7 +72,7 @@ between the old and new configuration files highlighted in a markdown diff forma
 +  class_path: anomalib.data.MVTecAD
 +  init_args:
 -  path: ./datasets/MVTecAD
-+    root: ./datasets/MVTec
++    root: ./datasets/MVTecAD
      category: bottle
      image_size: 256
      center_crop: null

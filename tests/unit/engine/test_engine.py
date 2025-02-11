@@ -78,7 +78,7 @@ class TestEngine:
         data:
             class_path: anomalib.data.MVTec
             init_args:
-                root: datasets/MVTec
+                root: datasets/MVTecAD
                 category: bottle
                 train_batch_size: 32
                 eval_batch_size: 32

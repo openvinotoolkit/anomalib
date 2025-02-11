@@ -23,7 +23,7 @@ print("Starting Training Phase...")
 # Initialize components
 model = Patchcore()
 datamodule = MVTecAD(
-    root=Path("./datasets/MVTec"),
+    root=Path("./datasets/MVTecAD"),
     category="bottle",
     train_batch_size=32,
 )
