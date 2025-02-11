@@ -129,7 +129,7 @@ class TorchInferencer:
             msg = f"Unknown PyTorch checkpoint format {path.suffix}. Make sure you save the PyTorch model."
             raise ValueError(msg)
 
-        return torch.load(path, map_location=self.device)
+        return torch.load(path, map_location=self.device, weights_only=False)
 
     def load_model(self, path: str | Path) -> nn.Module:
         """Load the PyTorch model.

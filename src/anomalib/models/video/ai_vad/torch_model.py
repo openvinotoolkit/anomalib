@@ -37,7 +37,7 @@ from torch import nn
 from anomalib.data import InferenceBatch
 
 from .density import CombinedDensityEstimator
-from .features import FeatureExtractor
+from .features import VideoRegionFeatureExtractor
 from .flow import FlowExtractor
 from .regions import RegionExtractor
 
@@ -134,7 +134,7 @@ class AiVadModel(nn.Module):
             foreground_binary_threshold=foreground_binary_threshold,
         )
         # initialize feature extractor
-        self.feature_extractor = FeatureExtractor(
+        self.feature_extractor = VideoRegionFeatureExtractor(
             n_velocity_bins=n_velocity_bins,
             use_velocity_features=use_velocity_features,
             use_pose_features=use_pose_features,

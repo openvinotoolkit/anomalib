@@ -22,7 +22,7 @@ from torch import nn
 from torch.nn import Parameter
 
 from anomalib.data import InferenceBatch
-from anomalib.models.components import GaussianBlur2d, TorchFXFeatureExtractor
+from anomalib.models.components import GaussianBlur2d, TimmFeatureExtractor
 from anomalib.models.image.supersimplenet.anomaly_generator import AnomalyGenerator
 
 
@@ -46,7 +46,7 @@ class SupersimplenetModel(nn.Module):
         stop_grad: bool = True,
     ) -> None:
         super().__init__()
-        self.feature_extractor = FeatureExtractor(backbone=backbone, layers=layers)
+        self.feature_extractor = UpscalingFeatureExtractor(backbone=backbone, layers=layers)
 
         channels = self.feature_extractor.get_channels_dim()
         self.adaptor = FeatureAdapter(channels)
@@ -139,7 +139,7 @@ def init_weights(module: nn.Module) -> None:
         nn.init.constant_(module.weight, 1)
 
 
-class FeatureExtractor(nn.Module):
+class UpscalingFeatureExtractor(nn.Module):
     """Feature extractor module.
 
     Args:
@@ -150,11 +150,11 @@ class FeatureExtractor(nn.Module):
     def __init__(self, backbone: str, layers: list[str], patch_size: int = 3) -> None:
         super().__init__()
 
-        self.feature_extractor = TorchFXFeatureExtractor(
+        self.feature_extractor = TimmFeatureExtractor(
             backbone=backbone,
-            return_nodes=layers,
-            weights="IMAGENET1K_V1",
+            layers=layers,
         )
+
         self.pooler = nn.AvgPool2d(
             kernel_size=patch_size,
             stride=1,
