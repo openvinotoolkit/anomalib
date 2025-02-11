@@ -8,9 +8,9 @@ three types of features from video regions:
 - Deep features: CLIP embeddings of region crops
 
 Example:
-    >>> from anomalib.models.video.ai_vad.features import FeatureExtractor
+    >>> from anomalib.models.video.ai_vad.features import VideoRegionFeatureExtractor
     >>> import torch
-    >>> extractor = FeatureExtractor()
+    >>> extractor = VideoRegionFeatureExtractor()
     >>> frames = torch.randn(32, 2, 3, 256, 256)  # (N, L, C, H, W)
     >>> flow = torch.randn(32, 2, 256, 256)  # (N, 2, H, W)
     >>> regions = [{"boxes": torch.randn(5, 4)}] * 32  # List of region dicts
@@ -18,7 +18,7 @@ Example:
 
 The module provides the following components:
     - :class:`FeatureType`: Enum of available feature types
-    - :class:`FeatureExtractor`: Main class that handles feature extraction
+    - :class:`VideoRegionFeatureExtractor`: Main class that handles feature extraction
 """
 
 # Copyright (C) 2023-2024 Intel Corporation
@@ -63,7 +63,7 @@ class FeatureType(str, Enum):
     DEEP = "deep"
 
 
-class FeatureExtractor(nn.Module):
+class VideoRegionFeatureExtractor(nn.Module):
     """Feature extractor for AI-VAD.
 
     Extracts velocity, pose and deep features from video regions based on the enabled
@@ -84,8 +84,8 @@ class FeatureExtractor(nn.Module):
 
     Example:
         >>> import torch
-        >>> from anomalib.models.video.ai_vad.features import FeatureExtractor
-        >>> extractor = FeatureExtractor()
+        >>> from anomalib.models.video.ai_vad.features import VideoRegionFeatureExtractor
+        >>> extractor = VideoRegionFeatureExtractor()
         >>> rgb_batch = torch.randn(32, 3, 256, 256)  # (N, C, H, W)
         >>> flow_batch = torch.randn(32, 2, 256, 256)  # (N, 2, H, W)
         >>> regions = [{"boxes": torch.randn(5, 4)}] * 32  # List of region dicts
@@ -138,8 +138,8 @@ class FeatureExtractor(nn.Module):
 
         Example:
             >>> import torch
-            >>> from anomalib.models.video.ai_vad.features import FeatureExtractor
-            >>> extractor = FeatureExtractor()
+            >>> from anomalib.models.video.ai_vad.features import VideoRegionFeatureExtractor
+            >>> extractor = VideoRegionFeatureExtractor()
             >>> rgb_batch = torch.randn(32, 3, 256, 256)  # (N, C, H, W)
             >>> flow_batch = torch.randn(32, 2, 256, 256)  # (N, 2, H, W)
             >>> regions = [{"boxes": torch.randn(5, 4)}] * 32  # List of region dicts
