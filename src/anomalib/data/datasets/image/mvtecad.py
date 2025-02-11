@@ -149,12 +149,12 @@ def make_mvtec_dataset(
             - label_index: Numeric label (0=normal, 1=abnormal)
 
     Example:
-        >>> root = Path("./datasets/MVTec/bottle")
+        >>> root = Path("./datasets/MVTecAD/bottle")
         >>> samples = make_mvtec_dataset(root, split="train")
         >>> samples.head()
            path                split label image_path           mask_path label_index
-        0  datasets/MVTec/bottle train good  [...]/good/105.png           0
-        1  datasets/MVTec/bottle train good  [...]/good/017.png           0
+        0  datasets/MVTecAD/bottle train good  [...]/good/105.png           0
+        1  datasets/MVTecAD/bottle train good  [...]/good/017.png           0
 
     Raises:
         RuntimeError: If no valid images are found

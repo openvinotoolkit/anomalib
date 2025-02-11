@@ -87,13 +87,13 @@ class TestCLI:
     def test_predict_with_dataloader(self, dataset_path: Path, project_path: Path) -> None:
         """Test the predict method of the CLI.
 
-        This test uses the MVTecAD dataloader for predict test.
+        This test uses the MVTec AD dataloader for predict test.
 
         Args:
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
-        # Test with MVTecAD Dataset
+        # Test with MVTec AD Dataset
         AnomalibCLI(
             args=[
                 "predict",
@@ -188,10 +188,10 @@ class TestCLI:
             project_path (Path): Path to the project folder.
             model_name (str): Name of the model. Defaults to None.
         """
-        # We need to set the predict dataloader as MVTecAD and UCSDped do not
+        # We need to set the predict dataloader as MVTec AD and UCSDped do not
         # have predict_dataloader attribute defined.
         if dataset_path:
-            data_root = f"{dataset_path}/mvtec"
+            data_root = f"{dataset_path}/MVTecAD"
             dataclass = "MVTecAD"
             data_args = [
                 "--data",

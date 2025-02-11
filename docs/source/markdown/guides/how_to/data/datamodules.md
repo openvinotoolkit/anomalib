@@ -106,7 +106,7 @@ The data flow is:
 from anomalib.data import MVTecAD
 
 datamodule = MVTecAD(
-    root="./datasets/MVTec",
+    root="./datasets/MVTecAD",
     category="bottle",
     train_batch_size=32,
     eval_batch_size=32,

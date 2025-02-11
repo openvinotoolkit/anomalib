@@ -608,7 +608,7 @@ class Engine:
                 ```python
                 anomalib predict --model anomalib.models.Padim
                 anomalib predict --model Padim \
-                                 --data datasets/MVTec/bottle/test/broken_large
+                                 --data datasets/MVTecAD/bottle/test/broken_large
                 ```
             2. Of course, you can override the various values with commands.
                 ```python

@@ -50,7 +50,7 @@ from anomalib.data.datasets import MVTecADDataset
 
 # Create MVTecAD dataset
 dataset = MVTecADDataset(
-    root="./datasets/MVTec",
+    root="./datasets/MVTecAD",
     category="bottle",
     split="train"
 )

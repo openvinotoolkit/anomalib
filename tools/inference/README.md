@@ -14,7 +14,7 @@ Example:
 python tools/inference/lightning_inference.py \
   --model anomalib.models.Padim \
   --ckpt_path results/padim/mvtecad/bottle/weights/lightning/model.ckpt \
-  --data.path datasets/MVTec/bottle/test/broken_large \
+  --data.path datasets/MVTecAD/bottle/test/broken_large \
   --output ./outputs
 ```
 
@@ -25,7 +25,7 @@ Here is a simple YAML file for Padim Model.
 ```yaml
 ckpt_path: results/padim/mvtecad/bottle/weights/lightning/model.ckpt
 data:
-  path: datasets/MVTec/bottle/test/broken_large
+  path: datasets/MVTecAD/bottle/test/broken_large
   transform: null
   image_size:
     - 256

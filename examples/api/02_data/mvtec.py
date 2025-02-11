@@ -12,14 +12,14 @@ from anomalib.data import MVTecAD
 # 1. Basic Usage
 # Load a specific category with default settings
 datamodule = MVTecAD(
-    root="./datasets/MVTec",
+    root="./datasets/MVTecAD",
     category="bottle",
 )
 
 # 2. Advanced Configuration
 # Customize data loading and preprocessing
 datamodule = MVTecAD(
-    root="./datasets/MVTec",
+    root="./datasets/MVTecAD",
     category="bottle",
     train_batch_size=32,
     eval_batch_size=32,
@@ -32,7 +32,7 @@ datamodule = MVTecAD(
 # Train on multiple categories (if supported by the model)
 for category in ["bottle", "cable", "capsule"]:
     category_data = MVTecAD(
-        root="./datasets/MVTec",
+        root="./datasets/MVTecAD",
         category=category,
     )
     # Use category_data with your model...

@@ -247,7 +247,7 @@ anomalib benchmark --config tools/benchmarking/benchmark_params.yaml
 
 > 💡 **Tip:** Check individual model performance in their respective README files:
 >
-> - [Patchcore Results](src/anomalib/models/image/patchcore/README.md#MVTecAD-ad-dataset)
+> - [Patchcore Results](src/anomalib/models/image/patchcore/README.md#mvtec-ad-dataset)
 > - [Other Models](src/anomalib/models/)
 
 # ✍️ Reference
