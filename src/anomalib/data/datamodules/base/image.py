@@ -317,6 +317,9 @@ class AnomalibDataModule(LightningDataModule, ABC):
         This handles sampling from train/test sets and optionally creating
         synthetic anomalies.
         """
+        if self.val_split_mode == ValSplitMode.FROM_DIR:
+            # If the validation split mode is FROM_DIR, we don't need to create a validation set
+            return
         if self.val_split_mode == ValSplitMode.FROM_TRAIN:
             # randomly sample from train set
             self.train_data, self.val_data = random_split(
