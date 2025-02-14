@@ -57,13 +57,14 @@ class ReverseDistillation(AnomalyModule):
             msg = "Input size is required for Reverse Distillation model."
             raise ValueError(msg)
 
-        self.model = ReverseDistillationModel(
-            backbone=self.backbone,
-            pre_trained=self.pre_trained,
-            layers=self.layers,
-            input_size=self.input_size,
-            anomaly_map_mode=self.anomaly_map_mode,
-        )
+        if not hasattr(self, "model"):
+            self.model = ReverseDistillationModel(
+                backbone=self.backbone,
+                pre_trained=self.pre_trained,
+                layers=self.layers,
+                input_size=self.input_size,
+                anomaly_map_mode=self.anomaly_map_mode,
+            )
 
     def configure_optimizers(self) -> optim.Adam:
         """Configure optimizers for decoder and bottleneck.
