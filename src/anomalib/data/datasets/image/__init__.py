@@ -19,7 +19,7 @@ Example:
     ... )
 """
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .btech import BTechDataset
@@ -27,6 +27,7 @@ from .datumaro import DatumaroDataset
 from .folder import FolderDataset
 from .kolektor import KolektorDataset
 from .mvtec import MVTecDataset
+from .realiad import RealIADDataset
 from .visa import VisaDataset
 
 __all__ = [
@@ -35,5 +36,6 @@ __all__ = [
     "FolderDataset",
     "KolektorDataset",
     "MVTecDataset",
+    "RealIADDataset",
     "VisaDataset",
 ]
