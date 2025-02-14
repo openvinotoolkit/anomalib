@@ -95,7 +95,7 @@ class Ganomaly(AnomalyModule):
             msg = "GANomaly needs input size to build torch model."
             raise ValueError(msg)
 
-        if not hasattr(self, "model"):
+        if getattr(self, "model", None) is None:
             self.model = GanomalyModel(
                 input_size=self.input_size,
                 num_input_channels=3,

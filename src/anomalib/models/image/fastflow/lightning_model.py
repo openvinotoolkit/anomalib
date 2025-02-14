@@ -59,7 +59,7 @@ class Fastflow(AnomalyModule):
             msg = "Fastflow needs input size to build torch model."
             raise ValueError(msg)
 
-        if not hasattr(self, "model"):
+        if getattr(self, "model", None) is None:
             self.model = FastflowModel(
                 input_size=self.input_size,
                 backbone=self.backbone,

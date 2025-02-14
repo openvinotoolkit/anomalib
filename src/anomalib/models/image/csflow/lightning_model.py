@@ -59,7 +59,7 @@ class Csflow(AnomalyModule):
         if self.input_size is None:
             msg = "CsFlow needs input size to build torch model."
             raise ValueError(msg)
-        if not hasattr(self, "model"):
+        if getattr(self, "model", None) is None:
             self.model = CsFlowModel(
                 input_size=self.input_size,
                 cross_conv_hidden_channels=self.cross_conv_hidden_channels,

@@ -63,7 +63,7 @@ class Uflow(AnomalyModule):
         if self.input_size is None:
             msg = "Input size is required for UFlow model."
             raise ValueError(msg)
-        if not hasattr(self, "model"):
+        if getattr(self, "model", None) is None:
             self.model = UflowModel(
                 input_size=self.input_size,
                 backbone=self.backbone,
