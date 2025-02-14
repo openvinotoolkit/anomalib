@@ -54,6 +54,8 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import PIL.Image
+import torch
 from lightning_utilities.core.imports import module_available
 from openvino.runtime.utils.data_helpers.wrappers import OVDict
 
@@ -188,11 +190,11 @@ class OpenVINOInferencer:
         values = predictions.to_tuple()
         return dict(zip(names, values, strict=False))
 
-    def predict(self, image: str | Path | np.ndarray) -> NumpyImageBatch:
+    def predict(self, image: str | Path | np.ndarray | PIL.Image.Image | torch.Tensor) -> NumpyImageBatch:
         """Run inference on an input image.
 
         Args:
-            image (str | Path | np.ndarray): Input image as file path or array.
+            image (str | Path | np.ndarray | PIL.Image.Image | torch.Tensor): Input image as file path or array.
 
         Returns:
             NumpyImageBatch: Batch containing the predictions.
@@ -203,9 +205,10 @@ class OpenVINOInferencer:
         # Convert file path or string to image if necessary
         if isinstance(image, str | Path):
             image = read_image(image, as_tensor=False)
-        if not isinstance(image, np.ndarray):
-            msg = f"Input image must be a numpy array or a path to an image. Got {type(image)}"
-            raise TypeError(msg)
+        elif isinstance(image, PIL.Image.Image):
+            image = np.array(image) / 255.0
+        elif isinstance(image, torch.Tensor):
+            image = image.cpu().numpy()
 
         image = self.pre_process(image)
         predictions = self.model(image)
