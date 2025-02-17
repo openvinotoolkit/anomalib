@@ -54,10 +54,10 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import PIL.Image
 import torch
 from lightning_utilities.core.imports import module_available
 from openvino.runtime.utils.data_helpers.wrappers import OVDict
+from PIL.Image import Image as PILImage
 
 from anomalib.data import NumpyImageBatch
 from anomalib.data.utils import read_image
@@ -190,7 +190,7 @@ class OpenVINOInferencer:
         values = predictions.to_tuple()
         return dict(zip(names, values, strict=False))
 
-    def predict(self, image: str | Path | np.ndarray | PIL.Image.Image | torch.Tensor) -> NumpyImageBatch:
+    def predict(self, image: str | Path | np.ndarray | PILImage | torch.Tensor) -> NumpyImageBatch:
         """Run inference on an input image.
 
         Args:
@@ -205,7 +205,7 @@ class OpenVINOInferencer:
         # Convert file path or string to image if necessary
         if isinstance(image, str | Path):
             image = read_image(image, as_tensor=False)
-        elif isinstance(image, PIL.Image.Image):
+        elif isinstance(image, PILImage):
             image = np.array(image) / 255.0
         elif isinstance(image, torch.Tensor):
             image = image.cpu().numpy()

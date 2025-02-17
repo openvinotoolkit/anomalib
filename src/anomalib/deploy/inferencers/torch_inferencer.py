@@ -39,8 +39,8 @@ Example:
 from pathlib import Path
 
 import numpy as np
-import PIL.Image
 import torch
+from PIL.Image import Image as PILImage
 from torch import nn
 from torchvision.transforms.v2.functional import to_dtype, to_image
 
@@ -160,7 +160,7 @@ class TorchInferencer:
         model.eval()
         return model.to(self.device)
 
-    def predict(self, image: str | Path | np.ndarray | PIL.Image.Image | torch.Tensor) -> ImageBatch:
+    def predict(self, image: str | Path | np.ndarray | PILImage | torch.Tensor) -> ImageBatch:
         """Predict anomalies for an input image.
 
         Args:
@@ -178,7 +178,7 @@ class TorchInferencer:
         """
         if isinstance(image, str | Path):
             image = read_image(image, as_tensor=True)
-        elif isinstance(image, np.ndarray | PIL.Image.Image):
+        elif isinstance(image, np.ndarray | PILImage):
             image = to_dtype(to_image(image), torch.float32, scale=True)
 
         image = self.pre_process(image)
