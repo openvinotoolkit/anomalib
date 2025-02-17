@@ -164,7 +164,7 @@ class TorchInferencer:
         """Predict anomalies for an input image.
 
         Args:
-            image (str | Path | np.ndarray | PIL.Image.Image | torch.Tensor): Input image to predict.
+            image (str | Path | np.ndarray | PILImage | torch.Tensor): Input image to predict.
                 Can be a file path or PyTorch tensor.
 
         Returns:
