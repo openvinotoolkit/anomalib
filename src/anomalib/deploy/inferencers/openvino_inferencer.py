@@ -194,7 +194,7 @@ class OpenVINOInferencer:
         """Run inference on an input image.
 
         Args:
-            image (str | Path | np.ndarray | PIL.Image.Image | torch.Tensor): Input image as file path or array.
+            image (str | Path | np.ndarray | PILImage | torch.Tensor): Input image as file path or array.
 
         Returns:
             NumpyImageBatch: Batch containing the predictions.
