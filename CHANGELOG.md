@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Hotfix: check model attribute in setup method by @djdameln https://github.com/openvinotoolkit/anomalib/pull/2574
+
 ### New Contributors
 
 **Full Changelog**:
