@@ -59,14 +59,15 @@ class Fastflow(AnomalyModule):
             msg = "Fastflow needs input size to build torch model."
             raise ValueError(msg)
 
-        self.model = FastflowModel(
-            input_size=self.input_size,
-            backbone=self.backbone,
-            pre_trained=self.pre_trained,
-            flow_steps=self.flow_steps,
-            conv3x3_only=self.conv3x3_only,
-            hidden_ratio=self.hidden_ratio,
-        )
+        if getattr(self, "model", None) is None:
+            self.model = FastflowModel(
+                input_size=self.input_size,
+                backbone=self.backbone,
+                pre_trained=self.pre_trained,
+                flow_steps=self.flow_steps,
+                conv3x3_only=self.conv3x3_only,
+                hidden_ratio=self.hidden_ratio,
+            )
 
     def training_step(self, batch: dict[str, str | torch.Tensor], *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step input and return the loss.
