@@ -63,15 +63,15 @@ class Uflow(AnomalyModule):
         if self.input_size is None:
             msg = "Input size is required for UFlow model."
             raise ValueError(msg)
-
-        self.model = UflowModel(
-            input_size=self.input_size,
-            backbone=self.backbone,
-            flow_steps=self.flow_steps,
-            affine_clamp=self.affine_clamp,
-            affine_subnet_channels_ratio=self.affine_subnet_channels_ratio,
-            permute_soft=self.permute_soft,
-        )
+        if getattr(self, "model", None) is None:
+            self.model = UflowModel(
+                input_size=self.input_size,
+                backbone=self.backbone,
+                flow_steps=self.flow_steps,
+                affine_clamp=self.affine_clamp,
+                affine_subnet_channels_ratio=self.affine_subnet_channels_ratio,
+                permute_soft=self.permute_soft,
+            )
 
     def training_step(self, batch: dict[str, str | Tensor], *args, **kwargs) -> STEP_OUTPUT:  # noqa: ARG002 | unused arguments
         """Training step."""

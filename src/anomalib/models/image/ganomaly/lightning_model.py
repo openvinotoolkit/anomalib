@@ -95,14 +95,15 @@ class Ganomaly(AnomalyModule):
             msg = "GANomaly needs input size to build torch model."
             raise ValueError(msg)
 
-        self.model = GanomalyModel(
-            input_size=self.input_size,
-            num_input_channels=3,
-            n_features=self.n_features,
-            latent_vec_size=self.latent_vec_size,
-            extra_layers=self.extra_layers,
-            add_final_conv_layer=self.add_final_conv_layer,
-        )
+        if getattr(self, "model", None) is None:
+            self.model = GanomalyModel(
+                input_size=self.input_size,
+                num_input_channels=3,
+                n_features=self.n_features,
+                latent_vec_size=self.latent_vec_size,
+                extra_layers=self.extra_layers,
+                add_final_conv_layer=self.add_final_conv_layer,
+            )
 
     def _reset_min_max(self) -> None:
         """Reset min_max scores."""
