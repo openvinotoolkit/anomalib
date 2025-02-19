@@ -22,6 +22,7 @@ Example:
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from collections.abc import Sequence
 from typing import Any
 
 import torch
@@ -126,9 +127,9 @@ class ExportableCenterCrop(Transform):
         torch.Size([3, 224, 224])
     """
 
-    def __init__(self, size: int | tuple[int, int]) -> None:
+    def __init__(self, size: int | Sequence[int]) -> None:
         super().__init__()
-        self.size = list(size) if isinstance(size, tuple) else [size, size]
+        self.size = list(size) if isinstance(size, Sequence) else [size, size]
 
     def _transform(self, inpt: torch.Tensor, params: dict[str, Any]) -> torch.Tensor:
         """Apply the center crop transform.
