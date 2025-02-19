@@ -37,6 +37,13 @@ class OneClassPostProcessor(PostProcessor):
         - Formatting results for downstream use
 
     Args:
+        enable_normalization (bool, optional): Enable normalization of anomaly scores.
+            Defaults to True.
+        enable_thresholding (bool, optional): Enable thresholding of anomaly scores.
+            Defaults to True.
+        enable_threshold_matching (bool, optional): Use image-level threshold for pixel-level predictions when
+            pixel-level threshold is not available, and vice-versa.
+            Defaults to True.
         image_sensitivity (float | None, optional): Sensitivity value for image-level
             predictions. Higher values make the model more sensitive to anomalies.
             Defaults to None.
@@ -53,11 +60,18 @@ class OneClassPostProcessor(PostProcessor):
 
     def __init__(
         self,
-        image_sensitivity: float | None = None,
-        pixel_sensitivity: float | None = None,
+        enable_normalization: bool = True,
+        enable_thresholding: bool = True,
+        enable_threshold_matching: bool = True,
+        image_sensitivity: float = 0.5,
+        pixel_sensitivity: float = 0.5,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
+
+        self.enable_thresholding = enable_thresholding
+        self.enable_normalization = enable_normalization
+        self.enable_threshold_matching = enable_threshold_matching
 
         # configure sensitivity values
         self.image_sensitivity = image_sensitivity
@@ -70,12 +84,12 @@ class OneClassPostProcessor(PostProcessor):
         self._pixel_min_max_metric = MinMax(fields=["anomaly_map"], strict=False)
 
         # register buffers to persist threshold and normalization values
-        self.register_buffer("_image_threshold", torch.tensor(0))
-        self.register_buffer("_pixel_threshold", torch.tensor(0))
-        self.register_buffer("image_min", torch.tensor(0))
-        self.register_buffer("image_max", torch.tensor(1))
-        self.register_buffer("pixel_min", torch.tensor(0))
-        self.register_buffer("pixel_max", torch.tensor(1))
+        self.register_buffer("_image_threshold", torch.tensor(float("nan")))
+        self.register_buffer("_pixel_threshold", torch.tensor(float("nan")))
+        self.register_buffer("image_min", torch.tensor(float("nan")))
+        self.register_buffer("image_max", torch.tensor(float("nan")))
+        self.register_buffer("pixel_min", torch.tensor(float("nan")))
+        self.register_buffer("pixel_max", torch.tensor(float("nan")))
 
         self._image_threshold: torch.Tensor
         self._pixel_threshold: torch.Tensor
@@ -102,10 +116,14 @@ class OneClassPostProcessor(PostProcessor):
             **kwargs: Arbitrary keyword arguments.
         """
         del trainer, pl_module, args, kwargs  # Unused arguments.
-        self._image_threshold_metric.update(outputs)
-        self._pixel_threshold_metric.update(outputs)
-        self._image_min_max_metric.update(outputs)
-        self._pixel_min_max_metric.update(outputs)
+        if self.enable_thresholding:
+            # update threshold metrics
+            self._image_threshold_metric.update(outputs)
+            self._pixel_threshold_metric.update(outputs)
+        if self.enable_normalization:
+            # update normalization metrics
+            self._image_min_max_metric.update(outputs)
+            self._pixel_min_max_metric.update(outputs)
 
     def on_validation_epoch_end(self, trainer: Trainer, pl_module: LightningModule) -> None:
         """Compute final threshold and normalization values.
@@ -115,14 +133,22 @@ class OneClassPostProcessor(PostProcessor):
             pl_module (LightningModule): PyTorch Lightning module instance.
         """
         del trainer, pl_module
-        if self._image_threshold_metric.update_called:
-            self._image_threshold = self._image_threshold_metric.compute()
-        if self._pixel_threshold_metric.update_called:
-            self._pixel_threshold = self._pixel_threshold_metric.compute()
-        if self._image_min_max_metric.update_called:
-            self.image_min, self.image_max = self._image_min_max_metric.compute()
-        if self._pixel_min_max_metric.update_called:
-            self.pixel_min, self.pixel_max = self._pixel_min_max_metric.compute()
+        if self.enable_thresholding:
+            # compute threshold values
+            if self._image_threshold_metric.update_called:
+                self._image_threshold = self._image_threshold_metric.compute()
+                self._image_threshold_metric.reset()
+            if self._pixel_threshold_metric.update_called:
+                self._pixel_threshold = self._pixel_threshold_metric.compute()
+                self._pixel_threshold_metric.reset()
+        if self.enable_normalization:
+            # compute normalization values
+            if self._image_min_max_metric.update_called:
+                self.image_min, self.image_max = self._image_min_max_metric.compute()
+                self._image_min_max_metric.reset()
+            if self._pixel_min_max_metric.update_called:
+                self.pixel_min, self.pixel_max = self._pixel_min_max_metric.compute()
+                self._pixel_min_max_metric.reset()
 
     def on_test_batch_end(
         self,
@@ -181,10 +207,21 @@ class OneClassPostProcessor(PostProcessor):
             msg = "At least one of pred_score or anomaly_map must be provided."
             raise ValueError(msg)
         pred_score = predictions.pred_score or torch.amax(predictions.anomaly_map, dim=(-2, -1))
-        pred_score = self._normalize(pred_score, self.image_min, self.image_max, self.image_threshold)
-        anomaly_map = self._normalize(predictions.anomaly_map, self.pixel_min, self.pixel_max, self.pixel_threshold)
-        pred_label = self._apply_threshold(pred_score, self.normalized_image_threshold)
-        pred_mask = self._apply_threshold(anomaly_map, self.normalized_pixel_threshold)
+
+        if self.enable_normalization:
+            pred_score = self._normalize(pred_score, self.image_min, self.image_max, self.image_threshold)
+            anomaly_map = self._normalize(predictions.anomaly_map, self.pixel_min, self.pixel_max, self.pixel_threshold)
+        else:
+            pred_score = predictions.pred_score
+            anomaly_map = predictions.anomaly_map
+
+        if self.enable_thresholding:
+            pred_label = self._apply_threshold(pred_score, self.normalized_image_threshold)
+            pred_mask = self._apply_threshold(anomaly_map, self.normalized_pixel_threshold)
+        else:
+            pred_label = None
+            pred_mask = None
+
         return InferenceBatch(
             pred_label=pred_label,
             pred_score=pred_score,
@@ -201,9 +238,11 @@ class OneClassPostProcessor(PostProcessor):
             batch (Batch): Batch containing model predictions.
         """
         # apply normalization
-        self.normalize_batch(batch)
+        if self.enable_normalization:
+            self.normalize_batch(batch)
         # apply threshold
-        self.threshold_batch(batch)
+        if self.enable_thresholding:
+            self.threshold_batch(batch)
 
     def threshold_batch(self, batch: Batch) -> None:
         """Apply thresholding to batch predictions.
@@ -236,7 +275,7 @@ class OneClassPostProcessor(PostProcessor):
     @staticmethod
     def _apply_threshold(
         preds: torch.Tensor | None,
-        threshold: torch.Tensor | None,
+        threshold: torch.Tensor,
     ) -> torch.Tensor | None:
         """Apply thresholding to a single tensor.
 
@@ -247,16 +286,16 @@ class OneClassPostProcessor(PostProcessor):
         Returns:
             torch.Tensor | None: Thresholded predictions or None if input is None.
         """
-        if preds is None or threshold is None:
+        if preds is None or threshold.isnan():
             return preds
         return preds > threshold
 
     @staticmethod
     def _normalize(
         preds: torch.Tensor | None,
-        norm_min: torch.Tensor | None,
-        norm_max: torch.Tensor | None,
-        threshold: torch.Tensor | None,
+        norm_min: torch.Tensor,
+        norm_max: torch.Tensor,
+        threshold: torch.Tensor,
     ) -> torch.Tensor | None:
         """Normalize a tensor using min, max, and threshold values.
 
@@ -269,22 +308,26 @@ class OneClassPostProcessor(PostProcessor):
         Returns:
             torch.Tensor | None: Normalized predictions or None if input is None.
         """
-        if preds is None or norm_min is None or norm_max is None or threshold is None:
+        if preds is None or norm_min.isnan() or norm_max.isnan():
             return preds
+        if threshold.isnan():
+            threshold = (norm_max + norm_min) / 2
         preds = ((preds - threshold) / (norm_max - norm_min)) + 0.5
         return preds.clamp(min=0, max=1)
 
     @property
-    def image_threshold(self) -> float:
+    def image_threshold(self) -> torch.tensor:
         """Get the image-level threshold.
 
         Returns:
             float: Image-level threshold value.
         """
-        return self._image_threshold
+        if not self._image_threshold.isnan():
+            return self._image_threshold
+        return self._pixel_threshold if self.enable_threshold_matching else torch.tensor(float("nan"))
 
     @property
-    def pixel_threshold(self) -> float:
+    def pixel_threshold(self) -> torch.tensor:
         """Get the pixel-level threshold.
 
         If the pixel-level threshold is not set, the image-level threshold is used.
@@ -292,26 +335,24 @@ class OneClassPostProcessor(PostProcessor):
         Returns:
             float: Pixel-level threshold value.
         """
-        return self._pixel_threshold or self.image_threshold
+        if not self._pixel_threshold.isnan():
+            return self._pixel_threshold
+        return self._image_threshold if self.enable_threshold_matching else torch.tensor(float("nan"))
 
     @property
-    def normalized_image_threshold(self) -> float:
+    def normalized_image_threshold(self) -> torch.tensor:
         """Get the normalized image-level threshold.
 
         Returns:
             float: Normalized image-level threshold value, adjusted by sensitivity.
         """
-        if self.image_sensitivity is None:
-            return torch.tensor(0.5)
         return torch.tensor(1.0) - self.image_sensitivity
 
     @property
-    def normalized_pixel_threshold(self) -> float:
+    def normalized_pixel_threshold(self) -> torch.tensor:
         """Get the normalized pixel-level threshold.
 
         Returns:
             float: Normalized pixel-level threshold value, adjusted by sensitivity.
         """
-        if self.pixel_sensitivity is None:
-            return torch.tensor(0.5)
         return torch.tensor(1.0) - self.pixel_sensitivity
