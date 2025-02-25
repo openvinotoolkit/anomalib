@@ -14,7 +14,7 @@ FastFlow is a two-dimensional normalizing flow-based probability distribution es
 
 ## Usage
 
-`anomalib train --model Fastflow --data MVTec --data.category <category>`
+`anomalib train --model Fastflow --data MVTecAD --data.category <category>`
 
 ## Benchmark
 

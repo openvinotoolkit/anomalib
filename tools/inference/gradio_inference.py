@@ -22,7 +22,7 @@ def get_parser() -> ArgumentParser:
     Example:
         Example for Torch Inference.
         >>> python tools/inference/gradio_inference.py  \
-        ...     --weights ./results/padim/mvtec/bottle/weights/torch/model.pt
+        ...     --weights ./results/padim/mvtecad/bottle/weights/torch/model.pt
 
     Returns:
         ArgumentParser: Argument parser for gradio inference.

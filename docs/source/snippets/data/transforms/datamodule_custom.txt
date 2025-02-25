@@ -1,7 +1,7 @@
 from torchvision.transforms.v2 import Resize
 
 transform = Resize((256, 256))
-datamodule = MVTec(transform=transform)
+datamodule = MVTecAD(transform=transform)
 
 datamodule.prepare_data()
 datamodule.setup()

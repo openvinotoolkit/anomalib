@@ -11,7 +11,7 @@ The module supports both zero-shot and few-shot learning approaches:
 
 Example:
     >>> from anomalib.models.image import VlmAd
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.engine import Engine
 
     >>> model = VlmAd(  # doctest: +SKIP
@@ -19,7 +19,7 @@ Example:
     ...     api_key="YOUR_API_KEY",
     ...     k_shot=3
     ... )
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
 
     >>> engine = Engine()
     >>> predictions = engine.predict(model=model, datamodule=datamodule)  # doctest: +SKIP

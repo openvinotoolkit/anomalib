@@ -31,7 +31,7 @@ The anomaly score for each local position $(i,j)$ of the feature map $y^s$ at sc
 
 ## Usage
 
-`anomalib train --model Csflow --data MVTec --data.category <category>`
+`anomalib train --model Csflow --data MVTecAD --data.category <category>`
 
 ## Benchmark
 

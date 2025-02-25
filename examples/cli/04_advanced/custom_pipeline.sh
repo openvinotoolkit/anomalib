@@ -12,7 +12,7 @@
 echo "Training with custom pipeline components..."
 anomalib train \
     --model patchcore \
-    --data MVTec \
+    --data MVTecAD \
     --data.category bottle \
     --model.backbone resnet18 \
     --model.layers layer2 layer3 \
@@ -29,7 +29,7 @@ anomalib train \
 echo -e "\nTraining with advanced settings..."
 anomalib train \
     --model patchcore \
-    --data MVTec \
+    --data MVTecAD \
     --trainer.max_epochs 1 \
     --trainer.accelerator gpu \
     --trainer.devices 1 \
@@ -66,7 +66,7 @@ for backbone in "resnet18" "wide_resnet50_2"; do
         echo "Training with backbone: $backbone, layers: ${layers[*]}"
         anomalib train \
             --model patchcore \
-            --data MVTec \
+            --data MVTecAD \
             --model.backbone "$backbone" \
             --model.layers "${layers[@]}" \
             --trainer.default_root_dir "results/search/${backbone}_${layer_combo}"

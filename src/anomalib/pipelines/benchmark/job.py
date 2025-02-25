@@ -5,13 +5,13 @@ evaluate model performance on specific datasets. Each job runs a model on a data
 and collects performance metrics.
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models import Padim
     >>> from anomalib.pipelines.benchmark.job import BenchmarkJob
 
     >>> # Initialize model, datamodule and job
     >>> model = Padim()
-    >>> datamodule = MVTec(category="bottle")
+    >>> datamodule = MVTecAD(category="bottle")
     >>> job = BenchmarkJob(
     ...     accelerator="gpu",
     ...     model=model,
@@ -68,13 +68,13 @@ class BenchmarkJob(Job):
         flat_cfg (dict): Flattened configuration dictionary with dotted keys.
 
     Example:
-        >>> from anomalib.data import MVTec
+        >>> from anomalib.data import MVTecAD
         >>> from anomalib.models import Padim
         >>> from anomalib.pipelines.benchmark.job import BenchmarkJob
 
         >>> # Initialize model, datamodule and job
         >>> model = Padim()
-        >>> datamodule = MVTec(category="bottle")
+        >>> datamodule = MVTecAD(category="bottle")
         >>> job = BenchmarkJob(
         ...     accelerator="gpu",
         ...     model=model,

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from anomalib.engine import Engine
 from anomalib.models import Padim
 
@@ -78,7 +78,7 @@ class TestEngine:
         data:
             class_path: anomalib.data.MVTec
             init_args:
-                root: datasets/MVTec
+                root: datasets/MVTecAD
                 category: bottle
                 train_batch_size: 32
                 eval_batch_size: 32
@@ -107,7 +107,7 @@ class TestEngine:
         assert model is not None
         assert isinstance(model, Padim)
         assert datamodule is not None
-        assert isinstance(datamodule, MVTec)
+        assert isinstance(datamodule, MVTecAD)
         assert datamodule.train_batch_size == 32
         assert datamodule.num_workers == 8
 

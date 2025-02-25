@@ -6,11 +6,11 @@ in images by comparing them with reference normal images.
 
 Example:
     >>> from anomalib.models.image import VlmAd
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.engine import Engine
 
     >>> # Initialize model and data
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = VlmAd(
     ...     backend="chatgpt",
     ...     model_name="gpt-4-vision-preview"

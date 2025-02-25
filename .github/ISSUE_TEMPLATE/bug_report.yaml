@@ -22,7 +22,7 @@ body:
         - "Avenue"
         - "BTec"
         - "Folder"
-        - "MVTec"
+        - "MVTecAD"
         - "UCSD"
         - "Other (please specify in the text field below)"
     validations:

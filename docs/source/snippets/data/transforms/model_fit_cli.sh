@@ -1,1 +1,1 @@
-anomalib fit --model Patchcore --data MVTec
+anomalib fit --model Patchcore --data MVTecAD

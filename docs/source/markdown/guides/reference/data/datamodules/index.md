@@ -35,7 +35,7 @@ Custom folder-based datamodule for organizing your own image dataset.
 Kolektor Surface-Defect dataset datamodule.
 :::
 
-:::{grid-item-card} MVTec
+:::{grid-item-card} MVTecAD
 :link: image/mvtec
 :link-type: doc
 

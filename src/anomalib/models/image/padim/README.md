@@ -16,7 +16,7 @@ During inference, Mahalanobis distance is used to score each patch position of t
 
 ## Usage
 
-`anomalib train --model Padim --data MVTec --data.category <category>`
+`anomalib train --model Padim --data MVTecAD --data.category <category>`
 
 ## Benchmark
 

@@ -35,14 +35,14 @@ class TestValidatePath:
     @staticmethod
     def test_existing_file_within_base_dir(dataset_path: Path) -> None:
         """Test ``validate_path`` returns the validated path for an existing file within the base directory."""
-        file_path = dataset_path / "mvtec/dummy/train/good/000.png"
+        file_path = dataset_path / "mvtecad/dummy/train/good/000.png"
         validated_path = validate_path(file_path, base_dir=dataset_path)
         assert validated_path == file_path.resolve()
 
     @staticmethod
     def test_existing_directory_within_base_dir(dataset_path: Path) -> None:
         """Test ``validate_path`` returns the validated path for an existing directory within the base directory."""
-        directory_path = dataset_path / "mvtec/dummy/train/good"
+        directory_path = dataset_path / "mvtecad/dummy/train/good"
         validated_path = validate_path(directory_path, base_dir=dataset_path)
         assert validated_path == directory_path.resolve()
 

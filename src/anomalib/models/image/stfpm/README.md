@@ -16,13 +16,13 @@ During inference, the feature pyramids of teacher and student networks are compa
 
 ## Usage
 
-`anomalib train --model Stfpm --data MVTec --data.category <category>`
+`anomalib train --model Stfpm --data MVTecAD --data.category <category>`
 
 ## Benchmark
 
 All results gathered with seed `42`.
 
-## [MVTec AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
+## [MVTecAD AD Dataset](https://www.mvtec.com/company/research/datasets/mvtec-ad)
 
 ### Image-Level AUC
 

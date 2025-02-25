@@ -254,9 +254,6 @@ class AnomalibDataset(Dataset, ABC):
         Returns:
             DatasetItem: Dataset item containing image and ground truth (if available).
 
-        Raises:
-            ValueError: If task type is unknown.
-
         Example:
             >>> dataset = AnomalibDataset()
             >>> item = dataset[0]
@@ -273,15 +270,16 @@ class AnomalibDataset(Dataset, ABC):
         if self.task == TaskType.CLASSIFICATION:
             item["image"] = self.augmentations(image) if self.augmentations else image
         elif self.task == TaskType.SEGMENTATION:
-            # Only Anomalous (1) images have masks in anomaly datasets
-            # Therefore, create empty mask for Normal (0) images.
+            # Create empty mask for:
+            # - Normal samples (label_index = 0)
+            # - Unknown samples (label_index = -1)
+            # Only use mask for anomalous samples (label_index = 1)
             mask = (
                 Mask(torch.zeros(image.shape[-2:])).to(torch.uint8)
-                if label_index == LabelName.NORMAL
+                if label_index in {LabelName.NORMAL, LabelName.UNKNOWN}
                 else read_mask(mask_path, as_tensor=True)
             )
             item["image"], item["gt_mask"] = self.augmentations(image, mask) if self.augmentations else (image, mask)
-
         else:
             msg = f"Unknown task type: {self.task}"
             raise ValueError(msg)
@@ -289,7 +287,7 @@ class AnomalibDataset(Dataset, ABC):
         return ImageItem(
             image=item["image"],
             gt_mask=item.get("gt_mask"),
-            gt_label=int(label_index),
+            gt_label=torch.tensor(label_index),  # Convert to tensor to match type hints
             image_path=image_path,
             mask_path=mask_path,
         )

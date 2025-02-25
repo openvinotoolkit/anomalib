@@ -13,9 +13,9 @@ The model consists of:
 Example:
     >>> from anomalib.models.image import Stfpm
     >>> from anomalib.engine import Engine
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
 
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Stfpm()
     >>> engine = Engine(model=model, datamodule=datamodule)
 

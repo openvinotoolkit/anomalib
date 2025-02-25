@@ -3,12 +3,12 @@ anomalib predict -h
 
 # Predict by using the default values.
 anomalib predict --model anomalib.models.Patchcore \
-                 --data anomalib.data.MVTec \
+                 --data anomalib.data.MVTecAD \
                  --ckpt_path <path/to/model.ckpt>
 
 # Predict by overriding arguments.
 anomalib predict --model anomalib.models.Patchcore \
-                 --data anomalib.data.MVTec \
+                 --data anomalib.data.MVTecAD \
                  --ckpt_path <path/to/model.ckpt>
                  --return_predictions
 

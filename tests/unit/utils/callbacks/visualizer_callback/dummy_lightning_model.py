@@ -50,7 +50,7 @@ class DummyModule(AnomalibModule):
         """Only used to trigger on_test_epoch_end."""
         self.log(name="loss", value=0.0, prog_bar=True)
         return ImageBatch(
-            image_path=[Path(self.dataset_path / "mvtec" / "dummy" / "train" / "good" / "000.png")],
+            image_path=[Path(self.dataset_path / "mvtecad" / "dummy" / "train" / "good" / "000.png")],
             image=torch.rand((1, 3, 100, 100)).to(self.device),
             gt_mask=torch.zeros((1, 100, 100)).to(self.device),
             anomaly_map=torch.ones((1, 100, 100)).to(self.device),

@@ -3,6 +3,7 @@
 This module defines an enumeration class for labeling data in anomaly detection tasks.
 The labels are represented as integers, where:
 
+- ``UNKNOWN`` (-1): Represents samples with unknown/undefined labels
 - ``NORMAL`` (0): Represents normal/good samples
 - ``ABNORMAL`` (1): Represents anomalous/defective samples
 
@@ -14,6 +15,9 @@ Example:
     >>> label = LabelName.ABNORMAL
     >>> label.value
     1
+    >>> label = LabelName.UNKNOWN
+    >>> label.value
+    -1
 """
 
 # Copyright (C) 2023-2024 Intel Corporation
@@ -30,9 +34,11 @@ class LabelName(int, Enum):
     names and their corresponding integer values.
 
     Attributes:
+        UNKNOWN (int): Label value -1, representing samples with unknown/undefined labels
         NORMAL (int): Label value 0, representing normal/good samples
         ABNORMAL (int): Label value 1, representing anomalous/defective samples
     """
 
+    UNKNOWN = -1
     NORMAL = 0
     ABNORMAL = 1

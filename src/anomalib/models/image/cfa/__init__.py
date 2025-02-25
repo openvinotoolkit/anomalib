@@ -11,12 +11,12 @@ anomaly-sensitive representations.
 Paper: https://arxiv.org/abs/2206.04325
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models.image import Cfa
     >>> from anomalib.engine import Engine
 
     >>> # Initialize model and data
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Cfa()
 
     >>> # Train using the Engine
