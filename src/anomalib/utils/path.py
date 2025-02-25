@@ -281,9 +281,9 @@ def generate_output_filename(
     Examples:
         Basic usage with category:
 
-        >>> input_path = "/data/MVTec/bottle/test/broken_large/000.png"
+        >>> input_path = "/data/MVTecAD/bottle/test/broken_large/000.png"
         >>> output_base = "/results"
-        >>> dataset = "MVTec"
+        >>> dataset = "MVTecAD"
         >>> generate_output_filename(input_path, output_base, dataset, "bottle")
         PosixPath('/results/test/broken_large/000.png')
 

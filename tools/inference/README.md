@@ -13,8 +13,8 @@ Example:
 ```bash
 python tools/inference/lightning_inference.py \
   --model anomalib.models.Padim \
-  --ckpt_path results/padim/mvtec/bottle/weights/lightning/model.ckpt \
-  --data.path datasets/MVTec/bottle/test/broken_large \
+  --ckpt_path results/padim/mvtecad/bottle/weights/lightning/model.ckpt \
+  --data.path datasets/MVTecAD/bottle/test/broken_large \
   --output ./outputs
 ```
 
@@ -23,9 +23,9 @@ You can also use a config file with the entrypoint
 Here is a simple YAML file for Padim Model.
 
 ```yaml
-ckpt_path: results/padim/mvtec/bottle/weights/lightning/model.ckpt
+ckpt_path: results/padim/mvtecad/bottle/weights/lightning/model.ckpt
 data:
-  path: datasets/MVTec/bottle/test/broken_large
+  path: datasets/MVTecAD/bottle/test/broken_large
   transform: null
   image_size:
     - 256

@@ -18,7 +18,7 @@ def folder_dataset(dataset_path: Path) -> FolderDataset:
     """Fixture that returns a FolderDataset instance."""
     return FolderDataset(
         name="dummy",
-        root=dataset_path / "mvtec" / "dummy",
+        root=dataset_path / "mvtecad" / "dummy",
         normal_dir="train/good",
         abnormal_dir="test/bad",
         normal_test_dir="test/good",

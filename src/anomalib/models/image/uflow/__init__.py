@@ -12,9 +12,9 @@ The model consists of:
 Example:
     >>> from anomalib.models.image import Uflow
     >>> from anomalib.engine import Engine
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
 
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Uflow()
     >>> engine = Engine(model=model, datamodule=datamodule)
 

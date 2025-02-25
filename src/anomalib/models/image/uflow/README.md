@@ -52,7 +52,7 @@ In order to obtain the same exact results, although the architecture parameters 
 
 ## Usage
 
-`anomalib train --model Uflow --data MVTec --data.category <category>`
+`anomalib train --model Uflow --data MVTecAD --data.category <category>`
 
 ## Download data
 
@@ -109,9 +109,9 @@ Normalizing Flow outputs
 
 ### Anomalies
 
-#### MVTec
+#### MVTecAD
 
-![MVTec results - anomalies](/docs/source/images/uflow/results-mvtec-anomalies.jpg "MVTec results - anomalies")
+![MVTecAD results - anomalies](/docs/source/images/uflow/results-mvtec-anomalies.jpg "MVTecAD results - anomalies")
 
 #### BeanTech, LGG MRI, STC
 
@@ -119,9 +119,9 @@ Normalizing Flow outputs
 
 ### Normal images
 
-#### MVTec
+#### MVTecAD
 
-![MVTec results - normal](/docs/source/images/uflow/results-mvtec-good.jpg "MVTec results - normal")
+![MVTecAD results - normal](/docs/source/images/uflow/results-mvtec-good.jpg "MVTecAD results - normal")
 
 #### BeanTech, LGG MRI, STC
 

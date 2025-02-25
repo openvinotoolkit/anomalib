@@ -34,7 +34,7 @@ If the command returns `True`, then your PyTorch installation supports XPU.
 ## 🔌 API
 
 ```python
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from anomalib.engine import Engine, SingleXPUStrategy, XPUAccelerator
 from anomalib.models import Stfpm
 
@@ -42,11 +42,11 @@ engine = Engine(
     strategy=SingleXPUStrategy(),
     accelerator=XPUAccelerator(),
 )
-engine.train(Stfpm(), datamodule=MVTec())
+engine.train(Stfpm(), datamodule=MVTecAD())
 ```
 
 ## ⌨️ CLI
 
 ```bash
-anomalib train --model Padim --data MVTec --trainer.accelerator xpu --trainer.strategy xpu_single
+anomalib train --model Padim --data MVTecAD --trainer.accelerator xpu --trainer.strategy xpu_single
 ```

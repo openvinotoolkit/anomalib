@@ -6,11 +6,11 @@ to reconstruct them using a tied autoencoder. Anomalies are detected by measurin
 the reconstruction error between the original and reconstructed features.
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models import Fre
     >>> from anomalib.engine import Engine
 
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Fre()
     >>> engine = Engine()
 

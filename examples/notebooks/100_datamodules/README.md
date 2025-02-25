@@ -31,7 +31,7 @@ anomalib
 │   ├── inference.py
 │   │   ├── InferenceDataset
 │   │   mvtec.py
-│   │   ├── MVTecDataset
+│   │   ├── MVTecADDataset
 └── └── └── MVTec
 ```
 

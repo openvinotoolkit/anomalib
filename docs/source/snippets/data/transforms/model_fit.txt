@@ -1,7 +1,7 @@
 from anomalib.engine import Engine
 
 # instantiate the datamodule without passing custom transforms
-datamodule = MVTec()
+datamodule = MVTecAD()
 # initially, the datamodule will not have any transforms defined
 datamodule.train_transform is None
 # True

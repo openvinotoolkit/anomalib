@@ -35,8 +35,8 @@ Custom folder-based dataset organization.
 Surface defect detection in electrical commutators.
 :::
 
-:::{grid-item-card} MVTec
-:link: anomalib.data.datamodules.image.MVTec
+:::{grid-item-card} MVTecAD
+:link: anomalib.data.datamodules.image.MVTecAD
 :link-type: doc
 
 Industrial anomaly detection benchmark.
@@ -54,7 +54,7 @@ Visual inspection of surface anomalies.
 
 ```{eval-rst}
 .. automodule:: anomalib.data
-   :members: BTech, Datumaro, Folder, Kolektor, MVTec, Visa
+   :members: BTech, Datumaro, Folder, Kolektor, MVTecAD, Visa
    :undoc-members:
    :show-inheritance:
 ```

@@ -9,11 +9,11 @@ leveraging normalizing flows to transform feature distributions into a simpler f
 can be efficiently modeled.
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models import Fastflow
     >>> from anomalib.engine import Engine
 
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Fastflow()
     >>> engine = Engine()
 

@@ -5,11 +5,11 @@ to model the distribution of features extracted from a pre-trained CNN backbone.
 The model achieves competitive performance while maintaining fast inference times.
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models import Fastflow
     >>> from anomalib.engine import Engine
 
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Fastflow()
     >>> engine = Engine()
 

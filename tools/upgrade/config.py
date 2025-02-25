@@ -126,8 +126,8 @@ class ConfigAdapter:
         # Get the dataset class name based on the format in the old config
         dataset_class_name = convert_snake_to_pascal_case(self.old_config["dataset"]["format"])
 
-        # mvtec has an exception and is written as MVTec. Convert all Mvtec datasets to MVTec
-        dataset_class_name = dataset_class_name.replace("Mvtec", "MVTec")
+        # mvtec has an exception and is written as MVTecAD. Convert all Mvtec datasets to MVTecAD
+        dataset_class_name = dataset_class_name.replace("Mvtec", "MVTecAD")
 
         # Get the class path and init args.
         class_path = f"anomalib.data.{dataset_class_name}"

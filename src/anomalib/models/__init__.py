@@ -3,12 +3,12 @@
 This module contains all the anomaly detection models available in anomalib.
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models import Padim
     >>> from anomalib.engine import Engine
 
     >>> # Initialize model and datamodule
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Padim()
 
     >>> # Train using the engine

@@ -56,13 +56,13 @@ To use tiling from the API, we need to initialize the {py:class}`TilerConfigurat
 :lineno-start: 1
 :emphasize-lines: 12, 15
 # Import the required modules
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from anomalib.engine import Engine
 from anomalib.models import Padim
 from anomalib.callbacks import TilerConfigurationCallback
 
 # Initialize the datamodule and model
-datamodule = MVTec(num_workers=0, image_size=(128, 128))
+datamodule = MVTecAD(num_workers=0, image_size=(128, 128))
 model = Padim()
 
 # prepare tiling configuration callback
@@ -87,7 +87,7 @@ We pass it as trainer.callback, and then provide the parameters:
 
 ```{code-block} bash
 :emphasize-lines: 2, 3, 4, 5
-anomalib train --model Padim --data anomalib.data.MVTec
+anomalib train --model Padim --data anomalib.data.MVTecAD
     --trainer.callbacks anomalib.callbacks.tiler_configuration.TilerConfigurationCallback
     --trainer.callbacks.enable True
     --trainer.callbacks.tile_size 128
@@ -111,7 +111,7 @@ trainer.callbacks:
 Then use the config from the CLI:
 
 ```{code-block} bash
-anomalib train --model Padim --data anomalib.data.MVTec --config config.yaml
+anomalib train --model Padim --data anomalib.data.MVTecAD --config config.yaml
 ```
 
 :::
