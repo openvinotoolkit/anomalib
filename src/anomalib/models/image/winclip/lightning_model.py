@@ -260,7 +260,7 @@ class WinClip(AnomalibModule):
             OrderedDict[str, Any]: State dict with backbone parameters removed
         """
         state_dict = super().state_dict(**kwargs)
-        if self.trainer.state.fn in {
+        if self._trainer is not None and self.trainer.state.fn in {
             TrainerFn.FITTING,
             TrainerFn.VALIDATING,
         }:  # Keep backbone weights if exporting the model
