@@ -52,6 +52,7 @@ from torchmetrics import Metric
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType
+from anomalib.data import Batch
 
 if TYPE_CHECKING:
     from importlib.util import find_spec
@@ -359,6 +360,10 @@ class ExportMixin:
 
         # if task is not provided, use the task from the datamodule
         task = task or datamodule.task
+        print(task)
+
+        # Setting up the fields parameter in Metric.
+        setattr(metric, 'fields', ("anomaly_map", "gt_mask") if task == TaskType.SEGMENTATION else ("pred_label", "gt_label"))
 
         if metric is None:
             msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
@@ -376,15 +381,19 @@ class ExportMixin:
                 f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
             )
 
-        calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
+        calibration_dataset = nncf.Dataset(dataloader, lambda x: x.image)
         validation_dataset = nncf.Dataset(datamodule.test_dataloader())
 
         # validation function to evaluate the quality loss after quantization
         def val_fn(nncf_model: "CompiledModel", validation_data: Iterable) -> float:
             for batch in validation_data:
-                preds = torch.from_numpy(nncf_model(batch["image"])[0])
-                target = batch["label"] if task == TaskType.CLASSIFICATION else batch["mask"][:, None, :, :]
-                metric.update(preds, target)
+                preds = nncf_model(batch.image)
+                for key, pred in preds.items():
+                    key = key.get_any_name()
+                    setattr(batch, key, torch.from_numpy(pred))
+                if batch.gt_mask is not None:
+                    setattr(batch, 'gt_mask', batch.gt_mask.unsqueeze(dim=1))
+                metric.update(batch)
             return metric.compute()
 
         return nncf.quantize_with_accuracy_control(model, calibration_dataset, validation_dataset, val_fn)
