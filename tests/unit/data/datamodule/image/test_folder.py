@@ -28,7 +28,7 @@ class TestFolder(_TestAnomalibImageDatamodule):
         # Create and prepare the dataset
         _datamodule = Folder(
             name="dummy",
-            root=dataset_path / "mvtecad" / "dummy",
+            root=dataset_path / "MVTecAD" / "dummy",
             normal_dir="train/good",
             abnormal_dir="test/bad",
             normal_test_dir="test/good",

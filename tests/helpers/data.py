@@ -298,7 +298,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
 
     def __init__(
         self,
-        data_format: DataFormat | str = "MVTecAD",
+        data_format: DataFormat | str = "mvtecad",
         root: Path | str | None = None,
         normal_category: str = "good",
         abnormal_category: str = "bad",
@@ -369,6 +369,8 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         mask_extension: str = ".png",
     ) -> None:
         """Generates dummy MVTecAD dataset in a temporary directory using the same convention as MVTec AD."""
+        # Replace the default mvtecad dataset path to MVTecAD
+        self.dataset_root = self.dataset_root.with_name("MVTecAD")
         # MVTec has multiple subcategories within the dataset.
         dataset_category = "dummy"
 

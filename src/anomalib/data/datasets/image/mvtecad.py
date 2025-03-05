@@ -114,14 +114,14 @@ class MVTecADDataset(AnomalibDataset):
         self.root_category = Path(root) / Path(category)
         self.category = category
         self.split = split
-        self.samples = make_mvtec_dataset(
+        self.samples = make_mvtec_ad_dataset(
             self.root_category,
             split=self.split,
             extensions=IMG_EXTENSIONS,
         )
 
 
-def make_mvtec_dataset(
+def make_mvtec_ad_dataset(
     root: str | Path,
     split: str | Split | None = None,
     extensions: Sequence[str] | None = None,
