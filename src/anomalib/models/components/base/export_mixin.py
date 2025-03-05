@@ -363,7 +363,7 @@ class ExportMixin:
         print(task)
 
         # Setting up the fields parameter in Metric.
-        setattr(metric, 'fields', ("anomaly_map", "gt_mask") if task == TaskType.SEGMENTATION else ("pred_label", "gt_label"))
+        setattr(metric, 'fields', ("anomaly_map", "gt_mask") if task == TaskType.SEGMENTATION else ("pred_score", "gt_label"))
 
         if metric is None:
             msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
