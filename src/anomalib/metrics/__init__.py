@@ -156,7 +156,7 @@ def _get_metric_class_by_name(name: str) -> type[AnomalibMetric]:
         logger.exception(f"Could not find the metric {name}. Available metric are {get_available_metrics()}")
         raise UnknownMetricError
         
-    return model_class
+    return metric_class
 
 def get_metric(metric: DictConfig | str | dict | Namespace, *args, **kwdargs) -> AnomalibMetric:
     """Get an anomaly detection metric instance.
