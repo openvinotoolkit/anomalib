@@ -389,8 +389,8 @@ class ExportMixin:
             for batch in validation_data:
                 preds = nncf_model(batch.image)
                 for key, pred in preds.items():
-                    key = key.get_any_name()
-                    setattr(batch, key, torch.from_numpy(pred))
+                    name = key.get_any_name()
+                    setattr(batch, name, torch.from_numpy(pred))
                 if batch.gt_mask is not None:
                     setattr(batch, 'gt_mask', batch.gt_mask.unsqueeze(dim=1))
                 metric.update(batch)
