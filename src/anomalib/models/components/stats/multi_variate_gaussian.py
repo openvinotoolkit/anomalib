@@ -151,8 +151,16 @@ class MultiVariateGaussian(DynamicBufferMixin, nn.Module):
         for i in range(height * width):
             covariance[:, :, i] = self._cov(embedding_vectors[:, :, i], rowvar=False) + 0.01 * identity
 
-        # calculate inverse covariance as we need only the inverse
-        self.inv_covariance = torch.linalg.inv(covariance.permute(2, 0, 1))
+        # Stabilize the covariance matrix by adding a small regularization term
+        stabilized_covariance = covariance.permute(2, 0, 1) + 1e-5 * identity
+
+        # Check if the device is MPS and fallback to CPU if necessary
+        if device.type == "mps":
+            # Move stabilized covariance to CPU for inversion
+            self.inv_covariance = torch.linalg.inv(stabilized_covariance.cpu()).to(device)
+        else:
+            # Calculate inverse covariance as we need only the inverse
+            self.inv_covariance = torch.linalg.inv(stabilized_covariance)
 
         return [self.mean, self.inv_covariance]
 

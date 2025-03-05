@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 import torch
+from lightning.pytorch.trainer.states import TrainerFn
 from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Resize
 
@@ -259,10 +260,14 @@ class WinClip(AnomalibModule):
             OrderedDict[str, Any]: State dict with backbone parameters removed
         """
         state_dict = super().state_dict(**kwargs)
-        for pattern in self.EXCLUDE_FROM_STATE_DICT:
-            remove_keys = [key for key in state_dict if key.startswith(pattern)]
-            for key in remove_keys:
-                state_dict.pop(key)
+        if self._trainer is not None and self.trainer.state.fn in {
+            TrainerFn.FITTING,
+            TrainerFn.VALIDATING,
+        }:  # Keep backbone weights if exporting the model
+            for pattern in self.EXCLUDE_FROM_STATE_DICT:
+                remove_keys = [key for key in state_dict if key.startswith(pattern)]
+                for key in remove_keys:
+                    state_dict.pop(key)
         return state_dict
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:  # noqa: ANN401
