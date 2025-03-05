@@ -360,7 +360,6 @@ class ExportMixin:
 
         # if task is not provided, use the task from the datamodule
         task = task or datamodule.task
-        print(task)
 
         # Setting up the fields parameter in Metric.
         setattr(metric, 'fields', ("anomaly_map", "gt_mask") if task == TaskType.SEGMENTATION else ("pred_score", "gt_label"))
