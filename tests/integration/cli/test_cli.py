@@ -12,7 +12,7 @@ import pytest
 import torch
 
 from anomalib.cli import AnomalibCLI
-from anomalib.deploy import ExportType
+from anomalib.deploy import CompressionType, ExportType
 
 
 class TestCLI:
@@ -174,6 +174,33 @@ class TestCLI:
                 "--export_type",
                 export_type,
                 *self._get_common_cli_args(None, project_path),
+                "--ckpt_path",
+                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+            ],
+        )
+
+    def test_export_acq_compression_type(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+    ) -> None:
+        """Test the export method of the CLI.
+
+        Args:
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+            export_type (ExportType): Export type.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--export_type",
+                ExportType.OPENVINO,
+                "--compression_type",
+                CompressionType.INT8_ACQ,
+                "--metric",
+                "AUPRO",
+                *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
                 f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
             ],
