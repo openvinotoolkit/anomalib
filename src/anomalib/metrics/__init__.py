@@ -47,6 +47,7 @@ from jsonargparse import Namespace
 from omegaconf import DictConfig, OmegaConf
 
 from anomalib.utils.path import convert_to_snake_case
+from anomalib.models import convert_snake_to_pascal_case
 
 from .anomaly_score_distribution import AnomalyScoreDistribution
 from .aupr import AUPR
@@ -84,34 +85,6 @@ class UnknownMetricError(ModuleNotFoundError):
     pass
 
 logger = logging.getLogger(__name__)
-
-def convert_snake_to_pascal_case(snake_case: str) -> str:
-    """Convert snake_case string to PascalCase.
-
-    This function takes a string in snake_case format (words separated by underscores)
-    and converts it to PascalCase format (each word capitalized and concatenated).
-
-    if only SINGLE word is present after split, then it returns the word capitalized. 
-
-    Args:
-        snake_case (str): Input string in snake_case format (e.g. ``"min_max"``)
-
-    Returns:
-        str: Output string in PascalCase format (e.g. ``"MinMax"``)
-
-    Examples:
-        >>> convert_snake_to_pascal_case("min_max")
-        'MinMax'
-        >>> convert_snake_to_pascal_case("f1_score")
-        'F1Score'
-        >>> convert_snake_to_pascal_case("auroc")
-        'AUROC'
-    """
-    split = snake_case.split("_")
-    if len(split) > 1:
-        return "".join(word.capitalize() for word in snake_case.split("_"))
-    else:
-        return split[0].capitalize()
 
 def get_available_metrics() -> set[str]:
     """Get set of available anomaly detection metrics.
