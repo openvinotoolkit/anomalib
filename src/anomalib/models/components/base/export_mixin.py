@@ -361,12 +361,12 @@ class ExportMixin:
         # if task is not provided, use the task from the datamodule
         task = task or datamodule.task
 
-        # Setting up the fields parameter in Metric.
-        setattr(metric, 'fields', ("anomaly_map", "gt_mask") if task == TaskType.SEGMENTATION else ("pred_score", "gt_label"))
-
         if metric is None:
             msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
             raise ValueError(msg)
+        else:
+            # Setting up the fields parameter in Metric.
+            setattr(metric, 'fields', ("anomaly_map", "gt_mask") if task == TaskType.SEGMENTATION else ("pred_score", "gt_label"))
 
         model_input = model.input(0)
 
