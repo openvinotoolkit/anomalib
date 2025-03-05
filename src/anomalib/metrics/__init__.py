@@ -47,7 +47,6 @@ from jsonargparse import Namespace
 from omegaconf import DictConfig, OmegaConf
 
 from anomalib.utils.path import convert_to_snake_case
-from anomalib.models import convert_snake_to_pascal_case
 
 from .anomaly_score_distribution import AnomalyScoreDistribution
 from .aupr import AUPR
@@ -110,6 +109,8 @@ def get_available_metrics() -> set[str]:
         The returned metric names can be used with :func:`get_metric` to instantiate
         the corresponding metrics class.
     """
+    from anomalib.models import convert_snake_to_pascal_case
+
     return {
         convert_to_snake_case(cls.__name__)
         for cls in AnomalibMetric.__subclasses__()
