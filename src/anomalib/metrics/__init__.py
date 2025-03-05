@@ -109,8 +109,6 @@ def get_available_metrics() -> set[str]:
         The returned metric names can be used with :func:`get_metric` to instantiate
         the corresponding metrics class.
     """
-    from anomalib.models import convert_snake_to_pascal_case
-
     return {
         convert_to_snake_case(cls.__name__)
         for cls in AnomalibMetric.__subclasses__()
@@ -145,6 +143,8 @@ def _get_metric_class_by_name(name: str) -> type[AnomalibMetric]:
         >>> metric_class.__name__
         'MinMax'
     """
+    from anomalib.models import convert_snake_to_pascal_case
+
     logger.info("Loading the metric..")
     metric_class: type[AnomalibMetric] | None = None
 
@@ -214,10 +214,7 @@ def get_metric(metric: DictConfig | str | dict | Namespace, *args, **kwdargs) ->
             metric = OmegaConf.create(metric)
         path_split = metric.class_path.rsplit(".", 1)
         try:
-            if len(path_split) > 1:
-                module = import_module(path_split[0])
-            else:
-                module = import_module("anomalib.metrics")
+            module = import_module(path_split[0]) if len(path_split) > 1 else import_module("anomalib.metrics")
         except ModuleNotFoundError as exception:
             logger.exception(
                 f"Could not find the module {metric.class_path}. Available metrics are {get_available_metrics()}",
