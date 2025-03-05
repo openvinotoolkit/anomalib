@@ -11,6 +11,7 @@ import logging
 from collections.abc import Callable, Sequence
 from functools import partial
 from pathlib import Path
+from re import sub
 from types import MethodType
 from typing import Any
 
@@ -34,6 +35,7 @@ try:
 
     from anomalib.data import AnomalibDataModule
     from anomalib.engine import Engine
+    from anomalib.metrics import AnomalibMetric
     from anomalib.models import AnomalibModule
     from anomalib.utils.config import update_config
 
@@ -253,10 +255,17 @@ class AnomalibCLI:
             type=AnomalibDataModule,
             required=False,
         )
+        parser.add_subclass_arguments(
+            AnomalibMetric,
+            "metric",
+            fail_untyped=False,
+            required=False,
+            instantiate=False,
+        )
         added = parser.add_method_arguments(
             Engine,
             "export",
-            skip={"ov_args", "model", "datamodule"},
+            skip={"ov_args", "model", "datamodule", "metric"},
         )
         self.subcommand_method_arguments["export"] = added
         add_openvino_export_arguments(parser)
@@ -309,8 +318,8 @@ class AnomalibCLI:
             self._configure_optimizers_method_to_model()
             self.instantiate_engine()
         else:
-            self.config_init = self.parser.instantiate_classes(self.config)
             subcommand = self.config["subcommand"]
+            self.config_init = self.parser.instantiate_classes(self.config)
             if subcommand in {"train", "export"}:
                 self.instantiate_engine()
             if "model" in self.config_init[subcommand]:
@@ -461,6 +470,8 @@ class AnomalibCLI:
                 fn_kwargs["dataloaders"] = self.datamodule
             elif isinstance(self.datamodule, Path | str):
                 fn_kwargs["data_path"] = self.datamodule
+        if self.config[subcommand].get('metric'):
+            fn_kwargs["metric"] = self.config[subcommand]['metric']
         return fn_kwargs
 
     def _parser(self, subcommand: str | None) -> ArgumentParser:
