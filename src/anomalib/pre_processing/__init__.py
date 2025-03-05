@@ -22,6 +22,6 @@ workflows.
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .pre_processing import PreProcessor
+from .pre_processor import PreProcessor
 
 __all__ = ["PreProcessor"]
