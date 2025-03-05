@@ -184,7 +184,7 @@ class TestCLI:
         dataset_path: Path,
         project_path: Path,
     ) -> None:
-        """Test the export method of the CLI.
+        """Test the ACQ (Accuracy Control Optimization) export method of the CLI.
 
         Args:
             dataset_path (Path): Root of the synthetic/original dataset.
@@ -205,6 +205,7 @@ class TestCLI:
                 f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
+        torch.cuda.empty_cache()
 
     @staticmethod
     def _get_common_cli_args(dataset_path: Path | None, project_path: Path) -> list[str]:
