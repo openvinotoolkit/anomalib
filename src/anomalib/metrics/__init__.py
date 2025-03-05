@@ -102,9 +102,9 @@ def get_available_metrics() -> set[str]:
         >>> from anomalib.metrics import get_available_metrics
         >>> metrics = get_available_metrics()
         >>> print(sorted(list(metrics)))  # doctest: +NORMALIZE_WHITESPACE
-        ['ai_vad', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm', 'draem',
-         'efficient_ad', 'fastflow', 'fre', 'ganomaly', 'padim', 'patchcore',
-         'reverse_distillation', 'stfpm', 'uflow', 'vlm_ad', 'winclip']
+            ['a_u_p_i_m_o', 'a_u_p_r', 'a_u_p_r_o', 'a_u_r_o_c',
+             'f1_adaptive_threshold', 'f1_max', 'f1_score', 
+             'min_max', 'p_i_m_o', 'p_r_o']
 
     Note:
         The returned metric names can be used with :func:`get_metric` to instantiate
