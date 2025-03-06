@@ -178,7 +178,7 @@ class TestCLI:
                 f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
-        
+
     @pytest.mark.parametrize("compression_type", [CompressionType.FP16, CompressionType.INT8])
     def test_export_compression_type(
         self,
@@ -204,7 +204,7 @@ class TestCLI:
             ],
         )
         torch.cuda.empty_cache()
-    
+
     def test_export_ptq_compression_type(
         self,
         dataset_path: Path,
