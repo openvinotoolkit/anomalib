@@ -80,10 +80,13 @@ __all__ = [
     "AUPIMO",
 ]
 
+
 class UnknownMetricError(ModuleNotFoundError):
     pass
 
+
 logger = logging.getLogger(__name__)
+
 
 def get_available_metrics() -> set[str]:
     """Get set of available anomaly detection metrics.
@@ -102,7 +105,7 @@ def get_available_metrics() -> set[str]:
         >>> metrics = get_available_metrics()
         >>> print(sorted(list(metrics)))  # doctest: +NORMALIZE_WHITESPACE
             ['a_u_p_i_m_o', 'a_u_p_r', 'a_u_p_r_o', 'a_u_r_o_c',
-             'f1_adaptive_threshold', 'f1_max', 'f1_score', 
+             'f1_adaptive_threshold', 'f1_max', 'f1_score',
              'min_max', 'p_i_m_o', 'p_r_o']
 
     Note:
@@ -114,6 +117,7 @@ def get_available_metrics() -> set[str]:
         for cls in AnomalibMetric.__subclasses__()
         if cls.__name__ != "AnomalibMetric"
     }
+
 
 def _get_metric_class_by_name(name: str) -> type[AnomalibMetric]:
     """Retrieve an anomaly metric class based on its name.
@@ -155,8 +159,9 @@ def _get_metric_class_by_name(name: str) -> type[AnomalibMetric]:
     if metric_class is None:
         logger.exception(f"Could not find the metric {name}. Available metric are {get_available_metrics()}")
         raise UnknownMetricError
-        
+
     return metric_class
+
 
 def get_metric(metric: DictConfig | str | dict | Namespace, *args, **kwdargs) -> AnomalibMetric:
     """Get an anomaly detection metric instance.
