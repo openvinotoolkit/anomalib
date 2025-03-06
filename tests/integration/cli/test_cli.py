@@ -184,12 +184,11 @@ class TestCLI:
         dataset_path: Path,
         project_path: Path,
     ) -> None:
-        """Test the export method of the CLI.
+        """Test the PTQ (Post Trining Quantization) export method of the CLI.
 
         Args:
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
-            export_type (ExportType): Export type.
         """
         AnomalibCLI(
             args=[
@@ -210,12 +209,11 @@ class TestCLI:
         dataset_path: Path,
         project_path: Path,
     ) -> None:
-        """Test the ACQ (Accuracy Control Optimization) export method of the CLI.
+        """Test the ACQ (Accuracy Control Quantization) export method of the CLI.
 
         Args:
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
-            export_type (ExportType): Export type.
         """
         AnomalibCLI(
             args=[
