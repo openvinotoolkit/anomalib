@@ -163,7 +163,12 @@ def _get_metric_class_by_name(name: str) -> type[AnomalibMetric]:
     return metric_class
 
 
-def get_metric(metric: DictConfig | str | dict | Namespace, *args, **kwdargs) -> AnomalibMetric:
+def get_metric(
+    metric: DictConfig | str | dict | Namespace,
+    use_placeholder_fields: bool = False,
+    *args,
+    **kwdargs,
+) -> AnomalibMetric:
     """Get an anomaly detection metric instance.
 
     This function instantiates an anomaly detection metric based on the provided
@@ -176,6 +181,10 @@ def get_metric(metric: DictConfig | str | dict | Namespace, *args, **kwdargs) ->
             - A dictionary with ``class_path`` and optional ``init_args``
             - An OmegaConf DictConfig with similar structure as dict
             - A Namespace object with similar structure as dict
+        use_placeholder_fields (bool): If `True` and `fields` is not provided as
+            the first argument in `args` or as a key in `kwargs`,
+            it initializes `fields` with a list containing an empty string as a
+            placeholder.
         *args: Variable length argument list passed to metric initialization.
         **kwdargs: Arbitrary keyword arguments passed to metric initialization.
 
@@ -189,8 +198,8 @@ def get_metric(metric: DictConfig | str | dict | Namespace, *args, **kwdargs) ->
     Examples:
         Get metric by name:
 
-        >>> metric = get_metric("min_max")
-        >>> metric = get_metric("f1_score")
+        >>> metric = get_metric("min_max", use_placeholder_fields=True)
+        >>> metric = get_metric("f1_score", use_placeholder_fields=True)
         >>> metric = get_metric("auroc", fields=("pred_labels", "gt_labels"))
 
         Get metric using dictionary config:
@@ -215,6 +224,9 @@ def get_metric(metric: DictConfig | str | dict | Namespace, *args, **kwdargs) ->
     _metric: AnomalibMetric
     if isinstance(metric, str):
         _metric_class = _get_metric_class_by_name(metric)
+        if use_placeholder_fields and not (len(args) or kwdargs.get("fields", None)):
+            logger.warning("Initializing the metrics with empty fields parameter which may raise exception.")
+            kwdargs["fields"] = [""]
         _metric = _metric_class(*args, **kwdargs)
     elif isinstance(metric, DictConfig | Namespace | dict):
         if isinstance(metric, dict):
@@ -235,6 +247,9 @@ def get_metric(metric: DictConfig | str | dict | Namespace, *args, **kwdargs) ->
                     init_args.update(value, key)
             else:
                 init_args.update(kwdargs)
+            if use_placeholder_fields and not (len(args) or init_args.get("fields", None)):
+                logger.warning("Initializing the metrics with empty fields parameter which may raise exception.")
+                init_args["fields"] = [""]
             _metric = metric_class(*args, **init_args)
         except AttributeError as exception:
             logger.exception(
