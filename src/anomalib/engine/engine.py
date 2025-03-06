@@ -799,8 +799,7 @@ class Engine:
             export_root = Path(self.trainer.default_root_dir)
 
         if metric is not None and not isinstance(metric, AnomalibMetric):
-            fields = ("pred_label", "gt_label")  # Dummy params for initialization.
-            metric = get_metric(metric, fields=fields)
+            metric = get_metric(metric, use_placeholder_fields=True)
 
         exported_model_path: Path | None = None
         if export_type == ExportType.TORCH:
