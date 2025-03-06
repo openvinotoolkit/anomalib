@@ -7,7 +7,7 @@ This example demonstrates how to:
 4. Work with custom transforms and visualization
 """
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import matplotlib.pyplot as plt

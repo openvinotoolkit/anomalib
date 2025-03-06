@@ -44,14 +44,16 @@ class TestType(str, Enum):
     """Type of test set to use.
 
     The MVTec AD 2 dataset provides three different test sets:
-        - PUBLIC: Standard test set with ground truth masks for evaluation
-        - PRIVATE: Unseen test set without ground truth for real-world testing
-        - PRIVATE_MIXED: Unseen test set with mixed anomalies without ground truth
+        - PUBLIC: Test set with ground truth masks for facilitating local testing and initial performance estimation
+        - PRIVATE: Official unseen test set without ground truth for entering the leaderboard
+        - PRIVATE_MIXED: Official unseen test set captured under seen and unseen lighting conditions (mixed randomly)
+
+    Official evaluation server: https://benchmark.mvtec.com/
     """
 
-    PUBLIC = "public"  # Test set with ground truth
-    PRIVATE = "private"  # Private test set without ground truth
-    PRIVATE_MIXED = "private_mixed"  # Private test set with mixed anomalies
+    PUBLIC = "public"  # Test set with ground truth for local evaluation
+    PRIVATE = "private"  # Official private test set without ground truth
+    PRIVATE_MIXED = "private_mixed"  # Official private test set with mixed lighting conditions
 
 
 IMG_EXTENSIONS = (".png", ".PNG")
@@ -79,11 +81,10 @@ class MVTecAD2Dataset(AnomalibDataset):
             Defaults to ``None``.
         split (str | Split | None): Dataset split - usually ``Split.TRAIN``, ``Split.VAL``,
             or ``Split.TEST``. Defaults to ``None``.
-        test_type (str | TestType): Type of test set to use - ``"public"``, ``"private"``,
-            or ``"private_mixed"``. Only used when split is ``Split.TEST``.
-            - ``"public"``: Standard test set with ground truth masks
-            - ``"private"``: Unseen test set without ground truth
-            - ``"private_mixed"``: Unseen test set with mixed anomalies
+        test_type (str | TestType): Type of test set to use - only used when split is ``Split.TEST``:
+            - ``"public"``: Test set with ground truth for local evaluation and initial performance estimation
+            - ``"private"``: Official test set without ground truth for leaderboard submission
+            - ``"private_mixed"``: Official test set with mixed lighting conditions (seen and unseen lighting)
             Defaults to ``TestType.PUBLIC``.
 
     Example:
@@ -181,13 +182,14 @@ def make_mvtec2_dataset(
             └── good/
 
     Args:
-        root (Path | str): Path to dataset root directory
-        split (str | Split | None, optional): Dataset split (train, validation or test)
-            Defaults to ``None``.
-        test_type (TestType): Type of test set to use - public, private, or private_mixed.
-            Only used when split is test. Defaults to ``TestType.PUBLIC``.
-        extensions (Sequence[str] | None, optional): Valid file extensions
-            Defaults to ``None``.
+        root (str | Path): Path to the dataset root directory
+        split (str | Split | None, optional): Dataset split (train, val, test). Defaults to None.
+        test_type (TestType, optional): Type of test set to use for testing:
+            - PUBLIC: Test set with ground truth (for local evaluation)
+            - PRIVATE: Official test set without ground truth (for leaderboard)
+            - PRIVATE_MIXED: Official test set with mixed lighting conditions (for leaderboard)
+            Defaults to TestType.PUBLIC.
+        extensions (Sequence[str] | None, optional): Image extensions to include. Defaults to None.
 
     Returns:
         DataFrame: Dataset samples with columns:

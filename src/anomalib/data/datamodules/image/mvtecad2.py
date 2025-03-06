@@ -6,12 +6,15 @@ training and evaluation.
 
 The dataset provides three different test sets:
     - Public test set (test_public/): Contains both normal and anomalous samples with ground truth masks
-    - Private test set (test_private/): Contains unseen test samples without ground truth
-    - Private mixed test set (test_private_mixed/): Contains unseen test samples
-        with mixed anomalies without ground truth
+      for facilitating local testing and initial performance estimation
+    - Private test set (test_private/): Official unseen test set without ground truth
+      for entering the leaderboard
+    - Private mixed test set (test_private_mixed/): Contains unseen test samples captured
+      under seen and unseen lighting conditions (mixed randomly) without ground truth
 
-The public test set is used for standard evaluation, while the private test sets
-are used for real-world evaluation scenarios where ground truth is not available.
+The public test set is meant for local evaluation, while the private test sets
+are the official test sets for entering the leaderboard on the evaluation server
+(https://benchmark.mvtec.com/).
 
 License:
     MVTec AD 2 dataset is released under the Creative Commons
@@ -61,9 +64,13 @@ class MVTecAD2(AnomalibDataModule):
             Defaults to ``None``.
         augmentations (Transform | None): General augmentations to apply if stage-specific
             augmentations are not provided.
-        test_type (str | TestType): Type of test set to use - ``"public"``, ``"private"``,
-            or ``"private_mixed"``. This determines which test set is returned by
-            test_dataloader(). Defaults to ``TestType.PUBLIC``.
+        test_type (str | TestType): Type of test set to use:
+            - ``"public"``: Test set with ground truth for local evaluation and initial
+              performance estimation
+            - ``"private"``: Official test set without ground truth for leaderboard submission
+            - ``"private_mixed"``: Official test set with mixed lighting conditions (seen and
+              unseen, randomly mixed) for leaderboard submission
+            Defaults to ``TestType.PUBLIC``.
         seed (int | None, optional): Random seed for reproducibility.
             Defaults to ``None``.
 
@@ -182,7 +189,10 @@ class MVTecAD2(AnomalibDataModule):
         """Get test dataloader for the specified test type.
 
         Args:
-            test_type (str | TestType | None, optional): Type of test set to use.
+            test_type (str | TestType | None, optional): Type of test set to use:
+                - ``"public"``: Test set with ground truth for local evaluation
+                - ``"private"``: Official test set without ground truth for leaderboard
+                - ``"private_mixed"``: Official test set with mixed lighting conditions
                 If None, uses the test_type specified in __init__.
                 Defaults to None.
 
