@@ -11,7 +11,6 @@ import logging
 from collections.abc import Callable, Sequence
 from functools import partial
 from pathlib import Path
-from re import sub
 from types import MethodType
 from typing import Any
 
@@ -470,8 +469,8 @@ class AnomalibCLI:
                 fn_kwargs["dataloaders"] = self.datamodule
             elif isinstance(self.datamodule, Path | str):
                 fn_kwargs["data_path"] = self.datamodule
-        if self.config[subcommand].get('metric'):
-            fn_kwargs["metric"] = self.config[subcommand]['metric']
+        if self.config[subcommand].get("metric"):
+            fn_kwargs["metric"] = self.config[subcommand]["metric"]
         return fn_kwargs
 
     def _parser(self, subcommand: str | None) -> ArgumentParser:
