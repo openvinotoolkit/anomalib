@@ -178,6 +178,32 @@ class TestCLI:
                 f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
+        
+    def test_export_ptq_compression_type(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+    ) -> None:
+        """Test the export method of the CLI.
+
+        Args:
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+            export_type (ExportType): Export type.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--export_type",
+                ExportType.OPENVINO,
+                "--compression_type",
+                CompressionType.INT8_PTQ,
+                *self._get_common_cli_args(dataset_path, project_path),
+                "--ckpt_path",
+                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
 
     def test_export_acq_compression_type(
         self,
