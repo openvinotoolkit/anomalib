@@ -25,7 +25,7 @@ See Also:
     - :class:`WinClipModel`: PyTorch implementation of the WinCLIP model
 """
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
