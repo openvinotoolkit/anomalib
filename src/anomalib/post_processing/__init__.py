@@ -2,8 +2,7 @@
 
 This module provides post-processing functionality for anomaly detection outputs:
 
-- Base :class:`PostProcessor` class defining the post-processing interface
-- :class:`OneClassPostProcessor` for one-class anomaly detection results
+- :class:`PostProcessor` for one-class anomaly detection results
 
 The post-processors handle:
     - Normalizing anomaly scores
@@ -12,15 +11,14 @@ The post-processors handle:
     - Result aggregation and formatting
 
 Example:
-    >>> from anomalib.post_processing import OneClassPostProcessor
-    >>> post_processor = OneClassPostProcessor(threshold=0.5)
+    >>> from anomalib.post_processing import PostProcessor
+    >>> post_processor = PostProcessor(threshold=0.5)
     >>> predictions = post_processor(anomaly_maps=anomaly_maps)
 """
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .base import PostProcessor
-from .one_class import OneClassPostProcessor
+from .post_processor import PostProcessor
 
-__all__ = ["OneClassPostProcessor", "PostProcessor"]
+__all__ = ["PostProcessor"]

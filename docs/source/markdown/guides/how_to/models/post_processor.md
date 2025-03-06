@@ -21,11 +21,9 @@ To achieve this, the `PostProcessor` class implements the following components:
 1. A PyTorch Module for processing model outputs that gets exported with the model
 2. A Lightning Callback for managing thresholds during training
 
-The `PostProcessor` is an abstract base class that can be implemented to suit different post-processing workflows. In addition, Anomalib also provides a default `OneClassPostProcessor` implementation, which suits most one-class learning algorithms. Other learning types, such as zero-shot learning or VLM-based models may require different post-processing steps.
+## PostProcessor
 
-## OneClassPostProcessor
-
-The `OneClassPostProcessor` is Anomalib's default post-processor class which covers the most common anomaly detection workflow. It is responsible for adaptively computing the optimal threshold value for the dataset, applying this threshold during testing/inference, and normalizing the predicted anomaly scores to the [0, 1] range for interpretability. Thresholding and normalization is applied separately for both image- and pixel-level predictions. The following descriptions focus on the image-level predictions, but the same principles apply for the pixel-level predictions.
+The `PostProcessor` is Anomalib's default post-processor class which covers the most common anomaly detection workflow. It is responsible for adaptively computing the optimal threshold value for the dataset, applying this threshold during testing/inference, and normalizing the predicted anomaly scores to the [0, 1] range for interpretability. Thresholding and normalization is applied separately for both image- and pixel-level predictions. The following descriptions focus on the image-level predictions, but the same principles apply for the pixel-level predictions.
 
 **Thresholding**
 
@@ -85,20 +83,20 @@ Normalization and thresholding only works when your datamodule contains a valida
 
 ## Basic Usage
 
-To use the `OneClassPostProcessor`, simply add it to any Anomalib model when creating the model:
+To use the `PostProcessor`, simply add it to any Anomalib model when creating the model:
 
 ```python
 from anomalib.models import Padim
-from anomalib.post_processing import OneClassPostProcessor
+from anomalib.post_processing import PostProcessor
 
-post_processor = OneClassPostProcessor()
+post_processor = PostProcessor()
 model = Padim(post_processor=post_processor)
 ```
 
-The post-processor can be configured using its constructor arguments. In the case of the `OneClassPostProcessor`, the only configuration parameters are the sensitivity for the thresholding operation on the image- and pixel-level:
+The post-processor can be configured using its constructor arguments. In the case of the `PostProcessor`, the only configuration parameters are the sensitivity for the thresholding operation on the image- and pixel-level:
 
 ```python
-post_processor = OneClassPostProcessor(
+post_processor = PostProcessor(
     image_sensitivity=0.4,
     pixel_sensitivity=0.4,
 )
@@ -110,7 +108,7 @@ When a post-processor instance is not passed explicitly to the model, the model 
 ```python
 model = Padim()
 print(model.post_processor)
-# OneClassPostProcessor(
+# PostProcessor(
 #   (_image_threshold): F1AdaptiveThreshold() (value=0.50)
 #   (_pixel_threshold): F1AdaptiveThreshold() (value=0.50)
 #   (_image_normalization_stats): MinMax()
@@ -145,13 +143,13 @@ One key advantage of Anomalib's post-processor design is that it becomes part of
 
 ```python
 from anomalib.models import Patchcore
-from anomalib.post_processing import OneClassPostProcessor
+from anomalib.post_processing import PostProcessor
 from openvino.runtime import Core
 import numpy as np
 
 # Training: Post-processor is part of the model
 model = Patchcore(
-    post_processor=OneClassPostProcessor(
+    post_processor=PostProcessor(
         image_sensitivity=0.5,
         pixel_sensitivity=0.5
     )
@@ -184,7 +182,7 @@ pred_masks = results[..., 3]       # Already thresholded masks (if applicable)
 
 ## Creating Custom Post-processors
 
-Advanced users may want to define their own post-processing pipeline. This can be useful when the default post-processing behaviour of the `OneClassPostProcessor` is not suitable for the model and its predictions. To create a custom post-processor, inherit from the abstract base class `PostProcessor`:
+Advanced users may want to define their own post-processing pipeline. This can be useful when the default post-processing behaviour of the `PostProcessor` is not suitable for the model and its predictions. To create a custom post-processor, inherit from `nn.Module` and `Callback`, and implement your post-processing logic using lightning hooks. Don't forget to also include the post-processing steps in the `forward` method of your class to ensure that the post-processing is included when exporting your model:
 
 ```python
 from anomalib.post_processing import PostProcessor

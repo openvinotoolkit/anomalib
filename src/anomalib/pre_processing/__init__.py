@@ -19,9 +19,9 @@ The pre-processor is implemented as both a :class:`torch.nn.Module` and
 workflows.
 """
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .pre_processing import PreProcessor
+from .pre_processor import PreProcessor
 
 __all__ = ["PreProcessor"]
