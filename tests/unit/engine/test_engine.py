@@ -76,7 +76,7 @@ class TestEngine:
                 pre_trained: true
                 n_features: null
         data:
-            class_path: anomalib.data.MVTec
+            class_path: anomalib.data.MVTecAD
             init_args:
                 root: datasets/MVTecAD
                 category: bottle

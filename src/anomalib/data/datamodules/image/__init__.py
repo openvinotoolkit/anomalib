@@ -67,8 +67,8 @@ __all__ = [
     "Datumaro",
     "Folder",
     "Kolektor",
+    "MVTec",  # Include both for backward compatibility
     "MVTecAD",
     "MVTecAD2",
     "Visa",
-    "MVTec",
 ]

@@ -1,6 +1,6 @@
 """Fixtures for the entire test suite."""
 
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import shutil
@@ -95,7 +95,7 @@ def ckpt_path(project_path: Path, dataset_path: Path) -> Callable[[str], Path]:
                 max_epochs=1,
                 devices=1,
             )
-            dataset = MVTecAD(root=dataset_path / "MVTecAD", category="dummy")
+            dataset = MVTecAD(root=dataset_path / "mvtecad", category="dummy")
             engine.fit(model=model, datamodule=dataset)
 
         return _ckpt_path

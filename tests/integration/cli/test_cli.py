@@ -3,7 +3,7 @@
 This just checks if one of the model works end-to-end. The rest of the models are checked using the API.
 """
 
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
@@ -191,7 +191,7 @@ class TestCLI:
         # We need to set the predict dataloader as MVTec AD and UCSDped do not
         # have predict_dataloader attribute defined.
         if dataset_path:
-            data_root = f"{dataset_path}/MVTecAD"
+            data_root = f"{dataset_path}/mvtecad"
             dataclass = "MVTecAD"
             data_args = [
                 "--data",
