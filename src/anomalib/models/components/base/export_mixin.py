@@ -52,7 +52,6 @@ from torchmetrics import Metric
 from anomalib import TaskType
 from anomalib.data import AnomalibDataModule
 from anomalib.deploy.export import CompressionType, ExportType
-from anomalib.data import Batch
 
 if TYPE_CHECKING:
     from importlib.util import find_spec
@@ -364,9 +363,8 @@ class ExportMixin:
         if metric is None:
             msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
             raise ValueError(msg)
-        else:
-            # Setting up the fields parameter in Metric.
-            setattr(metric, 'fields', ("anomaly_map", "gt_mask") if task == TaskType.SEGMENTATION else ("pred_score", "gt_label"))
+        # Setting up the fields parameter in Metric.
+        metric.fields = ("anomaly_map", "gt_mask") if task == TaskType.SEGMENTATION else ("pred_score", "gt_label")
 
         model_input = model.input(0)
 
@@ -391,7 +389,7 @@ class ExportMixin:
                     name = key.get_any_name()
                     setattr(batch, name, torch.from_numpy(pred))
                 if batch.gt_mask is not None:
-                    setattr(batch, 'gt_mask', batch.gt_mask.unsqueeze(dim=1))
+                    batch.gt_mask = batch.gt_mask.unsqueeze(dim=1)
                 metric.update(batch)
             return metric.compute()
 
