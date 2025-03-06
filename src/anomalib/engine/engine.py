@@ -788,6 +788,13 @@ class Engine:
                 anomalib export --model Padim --export_type openvino --ckpt_path <PATH_TO_CHECKPOINT> \
                 --input_size "[256,256]" --compression_type INT8_PTQ --data MVTec
                 ```
+            5. You can also quantize OpenVINO model with ACQ technique using the following command.
+                ```python
+                anomalib export --model Padim --export_type openvino --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256]" --compression_type INT8_PTQ --data MVTec --metric min_max
+                If the metric fields need to be manually defined by the user, then the user can add the
+                following command-line argument, `--metric.fields "['pred_scores', 'gt_labels']"`
+                ```
         """
         export_type = ExportType(export_type)
         self._setup_trainer(model)
