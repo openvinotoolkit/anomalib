@@ -12,7 +12,7 @@ benchmark:
     class_path:
       grid_search: [Padim, Patchcore]
   data:
-    class_path: MVTec
+    class_path: MVTecAD
     init_args:
       category:
         grid:

@@ -5,11 +5,11 @@ anomaly detection.
 
 Example:
     >>> from anomalib.models.image import Padim, Patchcore
-    >>> from anomalib.data import MVTec  # doctest: +SKIP
+    >>> from anomalib.data import MVTecAD  # doctest: +SKIP
     >>> from anomalib.engine import Engine  # doctest: +SKIP
 
     >>> # Initialize model and data
-    >>> datamodule = MVTec()  # doctest: +SKIP
+    >>> datamodule = MVTecAD()  # doctest: +SKIP
     >>> model = Padim()  # doctest: +SKIP
     >>> # Train using the Engine
 

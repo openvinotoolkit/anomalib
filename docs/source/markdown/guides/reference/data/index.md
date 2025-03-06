@@ -23,7 +23,7 @@ Core data structures that define how data is represented and validated throughou
 :link-type: doc
 :class-card: custom-card
 
-Ready-to-use PyTorch Dataset implementations of standard benchmark datasets (MVTec, BTech) and support for custom datasets across multiple modalities (Image, Video, Depth).
+Ready-to-use PyTorch Dataset implementations of standard benchmark datasets (MVTecAD, BTech) and support for custom datasets across multiple modalities (Image, Video, Depth).
 
 +++
 [Learn more »](./datasets/index)

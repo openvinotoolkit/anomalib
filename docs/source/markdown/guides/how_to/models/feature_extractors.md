@@ -54,12 +54,12 @@ When using API, we need to specify `backbone` and `layers` when instantiating th
 :lineno-start: 1
 :emphasize-lines: 9
 # Import the required modules
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from anomalib.models import Padim
 from anomalib.engine import Engine
 
 # Initialize the datamodule, model, and engine
-datamodule = MVTec(num_workers=0)
+datamodule = MVTecAD(num_workers=0)
 # Specify backbone and layers
 model = Padim(backbone="resnet18", layers=["layer1", "layer2"])
 engine = Engine(image_metrics=["AUROC"], pixel_metrics=["AUROC"])

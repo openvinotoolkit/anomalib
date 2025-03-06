@@ -10,7 +10,7 @@ Example:
     >>> args = {
     ...     "seed": 42,
     ...     "model": {"class_path": "Padim"},
-    ...     "data": {"class_path": "MVTec", "init_args": {"category": "bottle"}}
+    ...     "data": {"class_path": "MVTecAD", "init_args": {"category": "bottle"}}
     ... }
     >>> jobs = list(generator.generate_jobs(args, None))
 
@@ -51,7 +51,7 @@ class BenchmarkJobGenerator(JobGenerator):
         >>> args = {
         ...     "seed": 42,
         ...     "model": {"class_path": "Padim"},
-        ...     "data": {"class_path": "MVTec", "init_args": {"category": "bottle"}}
+        ...     "data": {"class_path": "MVTecAD", "init_args": {"category": "bottle"}}
         ... }
         >>> jobs = list(generator.generate_jobs(args, None))
     """
@@ -91,7 +91,7 @@ class BenchmarkJobGenerator(JobGenerator):
             >>> args = {
             ...     "seed": 42,
             ...     "model": {"class_path": "Padim"},
-            ...     "data": {"class_path": "MVTec"}
+            ...     "data": {"class_path": "MVTecAD"}
             ... }
             >>> jobs = list(generator.generate_jobs(args, None))
         """

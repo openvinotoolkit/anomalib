@@ -12,8 +12,8 @@ of:
 Example:
     >>> from anomalib.models.image import Uflow
     >>> from anomalib.engine import Engine
-    >>> from anomalib.data import MVTec
-    >>> datamodule = MVTec()
+    >>> from anomalib.data import MVTecAD
+    >>> datamodule = MVTecAD()
     >>> model = Uflow()
     >>> engine = Engine(model=model, datamodule=datamodule)
     >>> engine.fit()  # doctest: +SKIP
@@ -89,8 +89,8 @@ class Uflow(AnomalibModule):
     Example:
         >>> from anomalib.models.image import Uflow
         >>> from anomalib.engine import Engine
-        >>> from anomalib.data import MVTec
-        >>> datamodule = MVTec()
+        >>> from anomalib.data import MVTecAD
+        >>> datamodule = MVTecAD()
         >>> model = Uflow(backbone="resnet18")
         >>> engine = Engine(model=model, datamodule=datamodule)
         >>> engine.fit()  # doctest: +SKIP

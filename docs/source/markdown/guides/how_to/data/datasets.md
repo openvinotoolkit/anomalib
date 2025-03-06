@@ -46,11 +46,11 @@ Anomalib supports different types of datasets based on modality:
 The most common type, supporting RGB images:
 
 ```python
-from anomalib.data.datasets import MVTecDataset
+from anomalib.data.datasets import MVTecADDataset
 
-# Create MVTec dataset
-dataset = MVTecDataset(
-    root="./datasets/MVTec",
+# Create MVTecAD dataset
+dataset = MVTecADDataset(
+    root="./datasets/MVTecAD",
     category="bottle",
     split="train"
 )
