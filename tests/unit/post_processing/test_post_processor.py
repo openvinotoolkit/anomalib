@@ -7,7 +7,7 @@ import pytest
 import torch
 
 from anomalib.data import ImageBatch
-from anomalib.post_processing import OneClassPostProcessor
+from anomalib.post_processing import PostProcessor
 
 
 class TestPostProcessor:
@@ -37,7 +37,7 @@ class TestPostProcessor:
         target: torch.Tensor,
     ) -> None:
         """Test the normalize method."""
-        pre_processor = OneClassPostProcessor()
+        pre_processor = PostProcessor()
         normalized = pre_processor._normalize(  # noqa: SLF001
             preds,
             torch.tensor(min_val),
@@ -59,7 +59,7 @@ class TestPostProcessor:
     )
     def test_apply_threshold(preds: torch.Tensor, thresh: float, target: torch.Tensor) -> None:
         """Test the apply_threshold method."""
-        pre_processor = OneClassPostProcessor()
+        pre_processor = PostProcessor()
         binary_preds = pre_processor._apply_threshold(preds, torch.tensor(thresh))  # noqa: SLF001
         assert torch.allclose(binary_preds, target)
 
@@ -73,7 +73,7 @@ class TestPostProcessor:
             pred_score=torch.tensor([20, 40, 60, 80]),
             gt_label=torch.tensor([0, 0, 1, 1]),
         )
-        pre_processor = OneClassPostProcessor()
+        pre_processor = PostProcessor()
         pre_processor.on_validation_batch_end(None, None, batch)
         pre_processor.on_validation_epoch_end(None, None)
         assert pre_processor.image_threshold == 60
@@ -88,7 +88,7 @@ class TestPostProcessor:
             pred_score=torch.tensor([20, 40, 60, 80]),
             gt_label=torch.tensor([0, 0, 1, 1]),
         )
-        pre_processor = OneClassPostProcessor(enable_threshold_matching=True)
+        pre_processor = PostProcessor(enable_threshold_matching=True)
         pre_processor.on_validation_batch_end(None, None, batch)
         pre_processor.on_validation_epoch_end(None, None)
         assert pre_processor.image_threshold == pre_processor.pixel_threshold
@@ -102,7 +102,7 @@ class TestPostProcessor:
             gt_mask=torch.tensor([[0, 0, 0], [0, 0, 0], [0, 1, 1]]),
             pred_score=torch.tensor([20, 40, 60, 80]),
         )
-        pre_processor = OneClassPostProcessor(enable_threshold_matching=True)
+        pre_processor = PostProcessor(enable_threshold_matching=True)
         pre_processor.on_validation_batch_end(None, None, batch)
         pre_processor.on_validation_epoch_end(None, None)
         assert pre_processor.image_threshold == pre_processor.pixel_threshold
