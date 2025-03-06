@@ -30,24 +30,23 @@ Example:
 
 import logging
 from collections.abc import Iterable
-from importlib import import_module
 from pathlib import Path
 from typing import Any
-from jsonargparse import Namespace
 
+from jsonargparse import Namespace
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
 
-from anomalib import LearningType, TaskType
+from anomalib import LearningType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
-from anomalib.models import AnomalibModule
 from anomalib.metrics import AnomalibMetric, get_metric
+from anomalib.models import AnomalibModule
 from anomalib.utils.path import create_versioned_dir
 
 logger = logging.getLogger(__name__)
@@ -800,7 +799,7 @@ class Engine:
             export_root = Path(self.trainer.default_root_dir)
 
         if metric is not None and not isinstance(metric, AnomalibMetric):
-            fields = ("pred_label", "gt_label") # Dummy params for initialization.
+            fields = ("pred_label", "gt_label")  # Dummy params for initialization.
             metric = get_metric(metric, fields=fields)
 
         exported_model_path: Path | None = None
