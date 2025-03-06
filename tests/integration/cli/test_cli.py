@@ -179,6 +179,32 @@ class TestCLI:
             ],
         )
         
+    @pytest.mark.parametrize("compression_type", [CompressionType.FP16, CompressionType.INT8])
+    def test_export_compression_type(
+        self,
+        project_path: Path,
+        compression_type: CompressionType,
+    ) -> None:
+        """Test the FP16 and INT8 export methods of the CLI.
+
+        Args:
+            project_path (Path): Path to temporary project folder.
+            compression_type (CompressionType): Compression type.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--export_type",
+                ExportType.OPENVINO,
+                "--compression_type",
+                compression_type,
+                *self._get_common_cli_args(None, project_path),
+                "--ckpt_path",
+                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
+    
     def test_export_ptq_compression_type(
         self,
         dataset_path: Path,
