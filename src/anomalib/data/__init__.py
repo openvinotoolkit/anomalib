@@ -49,7 +49,7 @@ from .dataclasses import (
 # Datamodules
 from .datamodules.base import AnomalibDataModule
 from .datamodules.depth import DepthDataFormat, Folder3D, MVTec3D
-from .datamodules.image import BTech, Datumaro, Folder, ImageDataFormat, Kolektor, MVTecAD, Visa
+from .datamodules.image import BTech, Datumaro, Folder, ImageDataFormat, Kolektor, MVTec, MVTecAD, MVTecAD2, Visa
 from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 # Datasets
@@ -160,8 +160,10 @@ __all__ = [
     "ImageDataFormat",
     "Kolektor",
     "KolektorDataset",
+    "MVTec",  # Deprecated, use MVTecAD instead
     "MVTecAD",
     "MVTecADDataset",
+    "MVTecAD2",
     "Visa",
     "VisaDataset",
     # Video
