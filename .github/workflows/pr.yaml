@@ -61,7 +61,7 @@ jobs:
     with:
       test-type: "unit"
       runner: "ubuntu-latest"
-      timeout: 30
+      timeout: 15
       enable-cache: "true"
     secrets:
       codecov-token: ${{ secrets.CODECOV_TOKEN }}
