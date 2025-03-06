@@ -16,7 +16,7 @@ from anomalib.data import AnomalibDataModule, Batch, Folder, ImageDataFormat
 from anomalib.engine import Engine
 from anomalib.metrics import AnomalibMetric, Evaluator
 from anomalib.models import AnomalibModule
-from anomalib.post_processing import OneClassPostProcessor
+from anomalib.post_processing import PostProcessor
 from anomalib.visualization import ImageVisualizer
 from tests.helpers.data import DummyImageDatasetGenerator
 
@@ -225,25 +225,25 @@ class TestPostProcessing:
     @staticmethod
     def test_cls_model_cls_dataset(engine: Engine, classification_datamodule: AnomalibDataModule) -> None:
         """Test classification model with classification dataset."""
-        model = DummyClassificationModel(post_processor=OneClassPostProcessor())
+        model = DummyClassificationModel(post_processor=PostProcessor())
         engine.train(model, datamodule=classification_datamodule)
 
     @staticmethod
     def test_cls_model_seg_dataset(engine: Engine, segmentation_datamodule: AnomalibDataModule) -> None:
         """Test classification model with segmentation dataset."""
-        model = DummyClassificationModel(post_processor=OneClassPostProcessor())
+        model = DummyClassificationModel(post_processor=PostProcessor())
         engine.train(model, datamodule=segmentation_datamodule)
 
     @staticmethod
     def test_seg_model_cls_dataset(engine: Engine, classification_datamodule: AnomalibDataModule) -> None:
         """Test segmentation model with classification dataset."""
-        model = DummySegmentationModel(post_processor=OneClassPostProcessor())
+        model = DummySegmentationModel(post_processor=PostProcessor())
         engine.train(model, datamodule=classification_datamodule)
 
     @staticmethod
     def test_seg_model_seg_dataset(engine: Engine, segmentation_datamodule: AnomalibDataModule) -> None:
         """Test segmentation model with segmentation dataset."""
-        model = DummySegmentationModel(post_processor=OneClassPostProcessor())
+        model = DummySegmentationModel(post_processor=PostProcessor())
         engine.train(model, datamodule=segmentation_datamodule)
 
 

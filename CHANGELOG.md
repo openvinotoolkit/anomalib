@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- 🚀 Made OpenVINOInferencer and TorchInferencer predict accept all the following types: str, Path, np.ndarray, PIL.Image.Image, torch.Tensor by @adrianboguszewski in https://github.com/openvinotoolkit/anomalib/pull/2565
+
 ### Deprecated
 
 ### Fixed

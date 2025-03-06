@@ -45,13 +45,13 @@ import logging
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torch import nn
 
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule, MemoryBankMixin
-from anomalib.post_processing import OneClassPostProcessor, PostProcessor
-from anomalib.pre_processing import PreProcessor
+from anomalib.post_processing import PostProcessor
 from anomalib.visualization import Visualizer
 
 from .torch_model import PadimModel
@@ -112,8 +112,8 @@ class Padim(MemoryBankMixin, AnomalibModule):
         layers: list[str] = ["layer1", "layer2", "layer3"],  # noqa: B006
         pre_trained: bool = True,
         n_features: int | None = None,
-        pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | bool = True,
+        pre_processor: nn.Module | bool = True,
+        post_processor: nn.Module | bool = True,
         evaluator: Evaluator | bool = True,
         visualizer: Visualizer | bool = True,
     ) -> None:
@@ -211,10 +211,10 @@ class Padim(MemoryBankMixin, AnomalibModule):
         return LearningType.ONE_CLASS
 
     @staticmethod
-    def configure_post_processor() -> OneClassPostProcessor:
+    def configure_post_processor() -> PostProcessor:
         """Return the default post-processor for PADIM.
 
         Returns:
-            OneClassPostProcessor: Default post-processor
+            PostProcessor: Default post-processor
         """
-        return OneClassPostProcessor()
+        return PostProcessor()
