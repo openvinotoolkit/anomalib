@@ -26,17 +26,17 @@ This implementation supports both unsupervised and supervised setting, but Anoma
 
 ## Usage
 
-`anomalib train --model SuperSimpleNet --data MVTec --data.category <category>`
+`anomalib train --model SuperSimpleNet --data MVTecAD --data.category <category>`
 
 > It is recommended to train the model for 300 epochs with batch size of 32 to achieve stable training with random anomaly generation. Training with lower parameter values will still work, but might not yield the optimal results.
 >
 > For supervised learning, refer to the [official code](https://github.com/blaz-r/SuperSimpleNet).
 
-## MVTec AD results
+## MVTecAD AD results
 
 The following results were obtained using this Anomalib implementation trained for 300 epochs with seed 0, default params, and batch size 32.
 | | **Image AUROC** | **Pixel AUPRO** |
-| ----------- | :-------------: | :-------------: |
+| ---------- | :-------------: | :-------------: |
 | Bottle | 1.000 | 0.903 |
 | Cable | 0.981 | 0.901 |
 | Capsule | 0.989 | 0.931 |

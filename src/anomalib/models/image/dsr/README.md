@@ -14,7 +14,7 @@ DSR is a quantized-feature based algorithm that consists of an autoencoder with 
 
 ## Usage
 
-`anomalib train --model Dsr --data MVTec --data.category <category>`
+`anomalib train --model Dsr --data MVTecAD --data.category <category>`
 
 ## Benchmark
 

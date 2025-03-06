@@ -3,7 +3,7 @@
 This just checks if one of the model works end-to-end. The rest of the models are checked using the API.
 """
 
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
@@ -45,7 +45,7 @@ class TestCLI:
                 "test",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -62,7 +62,7 @@ class TestCLI:
                 "train",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -79,7 +79,7 @@ class TestCLI:
                 "validate",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -87,13 +87,13 @@ class TestCLI:
     def test_predict_with_dataloader(self, dataset_path: Path, project_path: Path) -> None:
         """Test the predict method of the CLI.
 
-        This test uses the MVTec dataloader for predict test.
+        This test uses the MVTec AD dataloader for predict test.
 
         Args:
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
         """
-        # Test with MVTec Dataset
+        # Test with MVTec AD Dataset
         AnomalibCLI(
             args=[
                 "predict",
@@ -102,7 +102,7 @@ class TestCLI:
                     project_path,
                 ),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -126,7 +126,7 @@ class TestCLI:
                     project_path,
                 ),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -150,7 +150,7 @@ class TestCLI:
                     project_path,
                 ),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -175,7 +175,7 @@ class TestCLI:
                 export_type,
                 *self._get_common_cli_args(None, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
 
@@ -188,10 +188,11 @@ class TestCLI:
             project_path (Path): Path to the project folder.
             model_name (str): Name of the model. Defaults to None.
         """
-        # We need to set the predict dataloader as MVTec and UCSDped do have have predict_dataloader attribute defined.
+        # We need to set the predict dataloader as MVTec AD and UCSDped do not
+        # have predict_dataloader attribute defined.
         if dataset_path:
-            data_root = f"{dataset_path}/mvtec"
-            dataclass = "MVTec"
+            data_root = f"{dataset_path}/mvtecad"
+            dataclass = "MVTecAD"
             data_args = [
                 "--data",
                 dataclass,

@@ -15,7 +15,7 @@ eval_transform = Compose(
     ],
 )
 
-datamodule = MVTec(train_transform=train_transform, eval_transform=eval_transform)
+datamodule = MVTecAD(train_transform=train_transform, eval_transform=eval_transform)
 datamodule.prepare_data()
 datamodule.setup()
 
