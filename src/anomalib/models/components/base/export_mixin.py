@@ -363,8 +363,11 @@ class ExportMixin:
         if metric is None:
             msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
             raise ValueError(msg)
-        # Setting up the fields parameter in Metric.
-        metric.fields = ("anomaly_map", "gt_mask") if task == TaskType.SEGMENTATION else ("pred_score", "gt_label")
+
+        # Setting up the fields parameter in Metric if Metric is initialized with placeholder.
+        if metric.fields[0] == "":
+            metric.fields = ("anomaly_map", "gt_mask") if task == TaskType.SEGMENTATION else ("pred_score", "gt_label")
+            logger.info(f"The fields of metric are initialized empty. Setting it to model fields {metric.fields}")
 
         model_input = model.input(0)
 
