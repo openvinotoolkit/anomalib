@@ -2,10 +2,10 @@
 anomalib train -h
 
 # Train by using the default values.
-anomalib train --model EfficientAd --data anomalib.data.MVTec --data.train_batch_size 1
+anomalib train --model EfficientAd --data anomalib.data.MVTecAD --data.train_batch_size 1
 
 # Train by overriding arguments.
-anomalib train --model EfficientAd --data anomalib.data.MVTec --data.train_batch_size 1 --data.category transistor
+anomalib train --model EfficientAd --data anomalib.data.MVTecAD --data.train_batch_size 1 --data.category transistor
 
 # Train by using a config file.
 anomalib train --config <path/to/config>

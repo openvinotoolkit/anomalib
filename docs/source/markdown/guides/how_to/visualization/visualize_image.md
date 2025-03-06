@@ -70,8 +70,8 @@ import torch
 from torchvision.io import read_image
 
 # Create sample data
-image_path = "./datasets/MVTec/bottle/test/broken_large/000.png"
-mask_path = "./datasets/MVTec/bottle/ground_truth/broken_large/000_mask.png"
+image_path = "./datasets/MVTecAD/bottle/test/broken_large/000.png"
+mask_path = "./datasets/MVTecAD/bottle/ground_truth/broken_large/000_mask.png"
 image = read_image(image_path)
 mask = read_image(mask_path)
 

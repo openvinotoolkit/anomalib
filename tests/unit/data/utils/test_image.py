@@ -16,14 +16,14 @@ class TestGetImageFilenames:
     @staticmethod
     def test_existing_image_file(dataset_path: Path) -> None:
         """Test ``get_image_filenames`` returns the correct path for an existing image file."""
-        image_path = dataset_path / "mvtec/dummy/train/good/000.png"
+        image_path = dataset_path / "mvtecad/dummy/train/good/000.png"
         image_filenames = get_image_filenames(image_path)
         assert image_filenames == [image_path.resolve()]
 
     @staticmethod
     def test_existing_image_directory(dataset_path: Path) -> None:
         """Test ``get_image_filenames`` returns the correct image filenames from an existing directory."""
-        directory_path = dataset_path / "mvtec/dummy/train/good"
+        directory_path = dataset_path / "mvtecad/dummy/train/good"
         image_filenames = get_image_filenames(directory_path)
         expected_filenames = [(directory_path / f"{i:03d}.png").resolve() for i in range(5)]
         assert set(image_filenames) == set(expected_filenames)

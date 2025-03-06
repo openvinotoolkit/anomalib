@@ -23,6 +23,8 @@
 [![ReadTheDocs](https://readthedocs.org/projects/anomalib/badge/?version=latest)](https://anomalib.readthedocs.io/en/latest/?badge=latest)
 [![Anomalib - Gurubase docs](https://img.shields.io/badge/Gurubase-Ask%20Anomalib%20Guru-006BFF)](https://gurubase.io/g/anomalib)
 
+<a href="https://trendshift.io/repositories/6030" target="_blank"><img src="https://trendshift.io/api/badge/repositories/6030" alt="openvinotoolkit%2Fanomalib | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+
 </div>
 
 ---
@@ -122,12 +124,12 @@ Anomalib supports both API and CLI-based training approaches:
 ## 🔌 Python API
 
 ```python
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from anomalib.models import Patchcore
 from anomalib.engine import Engine
 
 # Initialize components
-datamodule = MVTec()
+datamodule = MVTecAD()
 model = Patchcore()
 engine = Engine()
 
@@ -139,10 +141,10 @@ engine.fit(datamodule=datamodule, model=model)
 
 ```bash
 # Train with default settings
-anomalib train --model Patchcore --data anomalib.data.MVTec
+anomalib train --model Patchcore --data anomalib.data.MVTecAD
 
 # Train with custom category
-anomalib train --model Patchcore --data anomalib.data.MVTec --data.category transistor
+anomalib train --model Patchcore --data anomalib.data.MVTecAD --data.category transistor
 
 # Train with config file
 anomalib train --config path/to/config.yaml
@@ -168,12 +170,12 @@ predictions = engine.predict(
 ```bash
 # Basic prediction
 anomalib predict --model anomalib.models.Patchcore \
-                 --data anomalib.data.MVTec \
+                 --data anomalib.data.MVTecAD \
                  --ckpt_path path/to/model.ckpt
 
 # Prediction with results
 anomalib predict --model anomalib.models.Patchcore \
-                 --data anomalib.data.MVTec \
+                 --data anomalib.data.MVTecAD \
                  --ckpt_path path/to/model.ckpt \
                  --return_predictions
 ```
@@ -191,7 +193,7 @@ Ensure that you have PyTorch with XPU support installed. For more information, p
 ## 🔌 API
 
 ```python
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from anomalib.engine import Engine, SingleXPUStrategy, XPUAccelerator
 from anomalib.models import Stfpm
 
@@ -199,13 +201,13 @@ engine = Engine(
     strategy=SingleXPUStrategy(),
     accelerator=XPUAccelerator(),
 )
-engine.train(Stfpm(), datamodule=MVTec())
+engine.train(Stfpm(), datamodule=MVTecAD())
 ```
 
 ## ⌨️ CLI
 
 ```bash
-anomalib train --model Padim --data MVTec --trainer.accelerator xpu --trainer.strategy xpu_single
+anomalib train --model Padim --data MVTecAD --trainer.accelerator xpu --trainer.strategy xpu_single
 ```
 
 # ⚙️ Hyperparameter Optimization

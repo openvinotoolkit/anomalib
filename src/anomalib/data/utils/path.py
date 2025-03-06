@@ -10,9 +10,9 @@ This module provides utilities for:
 
 Example:
     >>> from anomalib.data.utils.path import validate_path
-    >>> path = validate_path("./datasets/MVTec/bottle/train/good/000.png")
+    >>> path = validate_path("./datasets/MVTecAD/bottle/train/good/000.png")
     >>> print(path)
-    PosixPath('/abs/path/to/anomalib/datasets/MVTec/bottle/train/good/000.png')
+    PosixPath('/abs/path/to/anomalib/datasets/MVTecAD/bottle/train/good/000.png')
 
     >>> from anomalib.data.utils.path import DirType
     >>> print(DirType.NORMAL)

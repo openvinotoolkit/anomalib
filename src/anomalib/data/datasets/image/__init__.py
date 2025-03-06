@@ -7,12 +7,12 @@ datasets:
 - ``DatumaroDataset``: Dataset in Datumaro format (Intel Geti™ export)
 - ``FolderDataset``: Custom dataset from folder structure
 - ``KolektorDataset``: Kolektor surface defect dataset
-- ``MVTecDataset``: MVTec AD dataset with industrial objects
+- ``MVTecADDataset``: MVTec AD dataset with industrial objects
 - ``VisaDataset``: Visual Inspection of Surface Anomalies dataset
 
 Example:
-    >>> from anomalib.data.datasets import MVTecDataset
-    >>> dataset = MVTecDataset(
+    >>> from anomalib.data.datasets import MVTecADDataset
+    >>> dataset = MVTecADDataset(
     ...     root="./datasets/MVTec",
     ...     category="bottle",
     ...     split="train"
@@ -26,7 +26,7 @@ from .btech import BTechDataset
 from .datumaro import DatumaroDataset
 from .folder import FolderDataset
 from .kolektor import KolektorDataset
-from .mvtec import MVTecDataset
+from .mvtecad import MVTecADDataset, MVTecDataset
 from .realiad import RealIADDataset
 from .visa import VisaDataset
 
@@ -37,5 +37,6 @@ __all__ = [
     "KolektorDataset",
     "MVTecDataset",
     "RealIADDataset",
+    "MVTecADDataset",
     "VisaDataset",
 ]

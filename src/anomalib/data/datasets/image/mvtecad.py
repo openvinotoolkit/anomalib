@@ -57,15 +57,15 @@ CATEGORIES = (
 )
 
 
-class MVTecDataset(AnomalibDataset):
-    """MVTec dataset class.
+class MVTecADDataset(AnomalibDataset):
+    """MVTec AD dataset class.
 
     Dataset class for loading and processing MVTec AD dataset images. Supports
     both classification and segmentation tasks.
 
     Args:
         root (Path | str): Path to root directory containing the dataset.
-            Defaults to ``"./datasets/MVTec"``.
+            Defaults to ``"./datasets/MVTecAD"``.
         category (str): Category name, must be one of ``CATEGORIES``.
             Defaults to ``"bottle"``.
         augmentations (Transform, optional): Augmentations that should be applied to the input images.
@@ -75,9 +75,9 @@ class MVTecDataset(AnomalibDataset):
 
     Example:
         >>> from pathlib import Path
-        >>> from anomalib.data.datasets import MVTecDataset
-        >>> dataset = MVTecDataset(
-        ...     root=Path("./datasets/MVTec"),
+        >>> from anomalib.data.datasets import MVTecADDataset
+        >>> dataset = MVTecADDataset(
+        ...     root=Path("./datasets/MVTecAD"),
         ...     category="bottle",
         ...     split="train"
         ... )
@@ -104,7 +104,7 @@ class MVTecDataset(AnomalibDataset):
 
     def __init__(
         self,
-        root: Path | str = "./datasets/MVTec",
+        root: Path | str = "./datasets/MVTecAD",
         category: str = "bottle",
         augmentations: Transform | None = None,
         split: str | Split | None = None,
@@ -114,14 +114,14 @@ class MVTecDataset(AnomalibDataset):
         self.root_category = Path(root) / Path(category)
         self.category = category
         self.split = split
-        self.samples = make_mvtec_dataset(
+        self.samples = make_mvtec_ad_dataset(
             self.root_category,
             split=self.split,
             extensions=IMG_EXTENSIONS,
         )
 
 
-def make_mvtec_dataset(
+def make_mvtec_ad_dataset(
     root: str | Path,
     split: str | Split | None = None,
     extensions: Sequence[str] | None = None,
@@ -149,12 +149,12 @@ def make_mvtec_dataset(
             - label_index: Numeric label (0=normal, 1=abnormal)
 
     Example:
-        >>> root = Path("./datasets/MVTec/bottle")
+        >>> root = Path("./datasets/MVTecAD/bottle")
         >>> samples = make_mvtec_dataset(root, split="train")
         >>> samples.head()
            path                split label image_path           mask_path label_index
-        0  datasets/MVTec/bottle train good  [...]/good/105.png           0
-        1  datasets/MVTec/bottle train good  [...]/good/017.png           0
+        0  datasets/MVTecAD/bottle train good  [...]/good/105.png           0
+        1  datasets/MVTecAD/bottle train good  [...]/good/017.png           0
 
     Raises:
         RuntimeError: If no valid images are found
@@ -220,3 +220,21 @@ def make_mvtec_dataset(
         samples = samples[samples.split == split].reset_index(drop=True)
 
     return samples
+
+
+class MVTecDataset(MVTecADDataset):
+    """MVTec dataset class (Deprecated).
+
+    This class is deprecated and will be removed in a future version.
+    Please use MVTecADDataset instead.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        import warnings
+
+        warnings.warn(
+            "MVTecADDataset is deprecated and will be removed in a future version. Please use MVTecADDataset instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)

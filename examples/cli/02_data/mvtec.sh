@@ -3,13 +3,13 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-# Using MVTec Dataset with Anomalib CLI
+# Using MVTecAD Dataset with Anomalib CLI
 # -----------------------------------
-# This example shows different ways to use the MVTec dataset.
+# This example shows different ways to use the MVTecAD dataset.
 
 # 1. Basic Usage
-# Train on a specific MVTec category
-echo "Training on MVTec bottle category..."
+# Train on a specific MVTecAD category
+echo "Training on MVTecAD bottle category..."
 anomalib train \
     --model efficient_ad \
     --data.category bottle
@@ -28,7 +28,7 @@ anomalib train \
 
 # 3. Training Multiple Categories
 # Train separate models for different categories
-echo -e "\nTraining on multiple MVTec categories..."
+echo -e "\nTraining on multiple MVTecAD categories..."
 for category in "bottle" "cable" "capsule"; do
     echo "Training on category: $category"
     anomalib train \

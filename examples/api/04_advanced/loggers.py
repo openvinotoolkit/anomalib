@@ -9,7 +9,7 @@ WandB, MLflow, Comet) and customize logging behavior.
 
 from pathlib import Path
 
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from anomalib.engine import Engine
 from anomalib.loggers import AnomalibMLFlowLogger, AnomalibTensorBoardLogger, AnomalibWandbLogger
 from anomalib.models import Patchcore
@@ -54,8 +54,8 @@ engine = Engine(
 
 # 5. Complete Training Example with Logging
 model = Patchcore()
-datamodule = MVTec(
-    root=Path("./datasets/MVTec"),
+datamodule = MVTecAD(
+    root=Path("./datasets/MVTecAD"),
     category="bottle",
 )
 

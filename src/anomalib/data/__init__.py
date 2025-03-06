@@ -9,19 +9,12 @@ The module contains:
     - Helper functions for data loading and validation
 
 Example:
-    >>> from anomalib.data import get_datamodule
-    >>> from omegaconf import DictConfig
-    >>> config = DictConfig({
-    ...     "data": {
-    ...         "class_path": "MVTec",
-    ...         "init_args": {
-    ...             "root": "./datasets/MVTec",
-    ...             "category": "bottle",
-    ...             "image_size": (256, 256)
-    ...         }
-    ...     }
-    ... })
-    >>> datamodule = get_datamodule(config)
+    >>> from anomalib.data import MVTecAD
+    >>> datamodule = MVTecAD(
+    ...     root="./datasets/MVTecAD",
+    ...     category="bottle",
+    ...     image_size=(256, 256)
+    ... )
 """
 
 # Copyright (C) 2022-2025 Intel Corporation
@@ -56,13 +49,20 @@ from .dataclasses import (
 # Datamodules
 from .datamodules.base import AnomalibDataModule
 from .datamodules.depth import DepthDataFormat, Folder3D, MVTec3D
-from .datamodules.image import BTech, Datumaro, Folder, ImageDataFormat, Kolektor, MVTec, RealIAD, Visa
+from .datamodules.image import BTech, Datumaro, Folder, ImageDataFormat, Kolektor, MVTec, MVTecAD, RealIAD, Visa
 from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 # Datasets
 from .datasets import AnomalibDataset
 from .datasets.depth import Folder3DDataset, MVTec3DDataset
-from .datasets.image import BTechDataset, DatumaroDataset, FolderDataset, KolektorDataset, MVTecDataset, VisaDataset
+from .datasets.image import (
+    BTechDataset,
+    DatumaroDataset,
+    FolderDataset,
+    KolektorDataset,
+    MVTecADDataset,
+    VisaDataset,
+)
 from .datasets.video import AvenueDataset, ShanghaiTechDataset, UCSDpedDataset
 from .predict import PredictDataset
 
@@ -98,7 +98,7 @@ def get_datamodule(config: DictConfig | ListConfig | dict) -> AnomalibDataModule
         >>> from omegaconf import DictConfig
         >>> config = DictConfig({
         ...     "data": {
-        ...         "class_path": "MVTec",
+        ...         "class_path": "MVTecAD",
         ...         "init_args": {"root": "./datasets/MVTec"}
         ...     }
         ... })
@@ -127,52 +127,59 @@ def get_datamodule(config: DictConfig | ListConfig | dict) -> AnomalibDataModule
 
 
 __all__ = [
-    # Anomalib dataclasses
-    "DatasetItem",
-    "Batch",
-    "InferenceBatch",
-    "ImageItem",
-    "ImageBatch",
-    "VideoItem",
-    "VideoBatch",
-    "DepthItem",
-    "DepthBatch",
-    "NumpyImageItem",
-    "NumpyImageBatch",
-    "NumpyVideoItem",
-    "NumpyVideoBatch",
-    # Anomalib datasets
+    # Base Classes
+    "AnomalibDataModule",
     "AnomalibDataset",
+    # Data Classes
+    "Batch",
+    "DatasetItem",
+    "DepthBatch",
+    "DepthItem",
+    "ImageBatch",
+    "ImageItem",
+    "InferenceBatch",
+    "NumpyImageBatch",
+    "NumpyImageItem",
+    "NumpyVideoBatch",
+    "NumpyVideoItem",
+    "VideoBatch",
+    "VideoItem",
+    # Data Formats
+    "DataFormat",
+    "DepthDataFormat",
+    "ImageDataFormat",
+    "VideoDataFormat",
+    # Depth Data Modules
+    "Folder3D",
+    "MVTec3D",
+    # Image Data Modules
+    "BTech",
+    "Datumaro",
+    "Folder",
+    "Kolektor",
+    "MVTec",
+    "MVTecAD",
+    "RealIAD",
+    "Visa",
+    # Video Data Modules
+    "Avenue",
+    "ShanghaiTech",
+    "UCSDped",
+    # Datasets
     "Folder3DDataset",
     "MVTec3DDataset",
     "BTechDataset",
     "DatumaroDataset",
     "FolderDataset",
     "KolektorDataset",
-    "MVTecDataset",
+    "MVTecADDataset",
     "VisaDataset",
     "AvenueDataset",
     "ShanghaiTechDataset",
     "UCSDpedDataset",
     "PredictDataset",
-    # Anomalib datamodules
-    "AnomalibDataModule",
-    "DepthDataFormat",
-    "ImageDataFormat",
-    "VideoDataFormat",
+    # Functions
     "get_datamodule",
-    "BTech",
-    "Datumaro",
-    "Folder",
-    "Folder3D",
-    "Kolektor",
-    "MVTec",
-    "MVTec3D",
-    "RealIAD",
-    "Avenue",
-    "UCSDped",
-    "ShanghaiTech",
-    "Visa",
-    "LabelName",
-    "PredictDataset",
+    # Exceptions
+    "UnknownDatamoduleError",
 ]
