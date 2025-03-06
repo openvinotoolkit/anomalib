@@ -321,7 +321,7 @@ class ExportMixin:
                 f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
             )
 
-        calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
+        calibration_dataset = nncf.Dataset(dataloader, lambda x: x.image)
         return nncf.quantize(model, calibration_dataset)
 
     @staticmethod
