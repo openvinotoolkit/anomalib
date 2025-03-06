@@ -184,7 +184,7 @@ class TestCLI:
         dataset_path: Path,
         project_path: Path,
     ) -> None:
-        """Test the PTQ (Post Trining Quantization) export method of the CLI.
+        """Test the PTQ (Post Training Quantization) export method of the CLI.
 
         Args:
             dataset_path (Path): Root of the synthetic/original dataset.
