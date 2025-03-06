@@ -1,6 +1,6 @@
 """Test Helpers - Dataset."""
 
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
@@ -277,23 +277,23 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
 
     Examples:
         To create an MVTecAD dataset with 10 training images and 10 testing images per category, use the following code.
-        >>> dataset_generator = DummyImageDatasetGenerator(data_format="MVTecAD", num_train=10, num_test=10)
+        >>> dataset_generator = DummyImageDatasetGenerator(data_format="mvtecad", num_train=10, num_test=10)
         >>> dataset_generator.generate_dataset()
 
         In order to provide a specific directory to save the dataset, use the ``root`` argument.
-        >>> dataset_generator = DummyImageDatasetGenerator(data_format="MVTecAD", root="./datasets/dummy")
+        >>> dataset_generator = DummyImageDatasetGenerator(data_format="mvtecad", root="./datasets/dummy")
         >>> dataset_generator.generate_dataset()
 
         It is also possible to use the generator as a context manager.
-        >>> with DummyImageDatasetGenerator(data_format="MVTecAD", num_train=10, num_test=10) as dataset_path:
+        >>> with DummyImageDatasetGenerator(data_format="mvtecad", num_train=10, num_test=10) as dataset_path:
         >>>     some_function()
 
-        To get the list of available datasets, use the ``DataFormat`` enum.
-        >>> from anomalib.data import DataFormat
-        >>> print(list(DataFormat))
+        To get the list of available image datasets, use the ``ImageDataFormat`` enum.
+        >>> from anomalib.data import ImageDataFormat
+        >>> print(list(ImageDataFormat))
 
-        Then you can use the ``DataFormat`` enum to generate the dataset.
-        >>> dataset_generator = DummyImageDatasetGenerator(data_format="beantech", num_train=10, num_test=10)
+        Then you can use the ``ImageDataFormat`` enum to generate the dataset.
+        >>> dataset_generator = DummyImageDatasetGenerator(data_format="btech", num_train=10, num_test=10)
     """
 
     def __init__(
@@ -369,8 +369,6 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         mask_extension: str = ".png",
     ) -> None:
         """Generates dummy MVTecAD dataset in a temporary directory using the same convention as MVTec AD."""
-        # Replace the default mvtecad dataset path to MVTecAD
-        self.dataset_root = self.dataset_root.with_name("MVTecAD")
         # MVTec has multiple subcategories within the dataset.
         dataset_category = "dummy"
 
