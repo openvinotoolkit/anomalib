@@ -30,6 +30,7 @@ from .datumaro import Datumaro
 from .folder import Folder
 from .kolektor import Kolektor
 from .mvtecad import MVTec, MVTecAD
+from .realiad import RealIAD
 from .visa import Visa
 
 
@@ -45,6 +46,7 @@ class ImageDataFormat(str, Enum):
     - ``KOLEKTOR``: Kolektor Surface-Defect Dataset
     - ``MVTEC_AD``: MVTec AD Dataset
     - ``MVTEC_3D``: MVTec 3D AD Dataset
+    - ``REALIAD``: Real-IAD Dataset
     - ``VISA``: Visual Inspection for Steel Anomaly Dataset
     """
 
@@ -55,6 +57,7 @@ class ImageDataFormat(str, Enum):
     KOLEKTOR = "kolektor"
     MVTEC_AD = "mvtecad"
     MVTEC_3D = "mvtec_3d"
+    REAL_IAD = "realiad"
     VISA = "visa"
 
 
@@ -65,5 +68,6 @@ __all__ = [
     "Kolektor",
     "MVTecAD",
     "MVTec",  # Include both for backward compatibility
+    "RealIAD",
     "Visa",
 ]
