@@ -200,7 +200,7 @@ class TestCLI:
                 compression_type,
                 *self._get_common_cli_args(None, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -225,7 +225,7 @@ class TestCLI:
                 CompressionType.INT8_PTQ,
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -252,7 +252,7 @@ class TestCLI:
                 "AUPRO",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -279,7 +279,7 @@ class TestCLI:
                 "AUPRO",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
@@ -308,7 +308,7 @@ class TestCLI:
                 "['pred_score', 'gt_label']",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
         torch.cuda.empty_cache()
