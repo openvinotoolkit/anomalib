@@ -184,7 +184,12 @@ class RealIAD(AnomalibDataModule):
 
         self.root = Path(root)
         self.category = category
-        self.resolution = str(resolution)
+
+        # Convert resolution to string if it's an integer
+        if isinstance(resolution, int):
+            resolution = str(resolution)
+
+        self.resolution = resolution
         self.json_path = json_path
 
         # Validate inputs
