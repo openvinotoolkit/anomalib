@@ -256,7 +256,63 @@ class TestCLI:
             ],
         )
         torch.cuda.empty_cache()
+        
+    def test_export_acq_compression_type_auto_metric_fields(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+    ) -> None:
+        """Test the ACQ export method thorugh automatic field selection through CLI.
 
+        Args:
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--export_type",
+                ExportType.OPENVINO,
+                "--compression_type",
+                CompressionType.INT8_ACQ,
+                "--metric",
+                "AUPRO",
+                *self._get_common_cli_args(dataset_path, project_path),
+                "--ckpt_path",
+                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
+
+    def test_export_acq_compression_type_manual_metric_fields(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+    ) -> None:
+        """Test the ACQ export method thorugh manual field selection through CLI.
+
+        Args:
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--export_type",
+                ExportType.OPENVINO,
+                "--compression_type",
+                CompressionType.INT8_ACQ,
+                "--metric",
+                "F1Score",
+                "--metric.fields",
+                "['pred_score', 'gt_label']",
+                *self._get_common_cli_args(dataset_path, project_path),
+                "--ckpt_path",
+                f"{project_path}/Padim/MVTec/dummy/v0/weights/lightning/model.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
+        
     @staticmethod
     def _get_common_cli_args(dataset_path: Path | None, project_path: Path) -> list[str]:
         """Return common CLI args for all models.
