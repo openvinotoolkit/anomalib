@@ -470,49 +470,72 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
 
     def _generate_dummy_realiad_dataset(self) -> None:
         """Generate dummy RealIAD dataset in directory using the same convention as RealIAD."""
+        import json
+
         # Create the resolution directory
         resolution_dir = self.dataset_root / "realiad_256"
         resolution_dir.mkdir(parents=True, exist_ok=True)
 
         # Create category directory
-        category_dir = resolution_dir / "audiojack"
+        category = "audiojack"
+        category_dir = resolution_dir / category
         category_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create normal (OK) samples
-        ok_dir = category_dir / "OK"
-        ok_dir.mkdir(parents=True, exist_ok=True)
+        # Create jsons directory structure
+        jsons_dir = self.dataset_root / "realiad_jsons" / "realiad_jsons"
+        jsons_dir.mkdir(parents=True, exist_ok=True)
 
+        # Generate images and create metadata
+        metadata = {"train": [], "test": []}
+        image_generator = DummyImageGenerator(image_shape=self.image_shape, rng=self.rng)
+
+        # Generate normal train images
         for i in range(self.num_train):
-            sample_dir = ok_dir / f"S{i:04d}"
-            sample_dir.mkdir(parents=True, exist_ok=True)
-            label = LabelName.NORMAL
-            image_filename = sample_dir / f"audiojack_{i:04d}_OK_C1_123456.jpg"
-            self.image_generator.generate_image(label=label, image_filename=image_filename)
+            image, _ = image_generator.generate_normal_image()
+            filename = f"{category}_{i:04d}_OK_C0_0000.png"
+            image_path = category_dir / filename
+            image_generator.save_image(image_path, image)
 
-        # Create abnormal (NG) samples
-        ng_dir = category_dir / "NG" / "defect"
-        ng_dir.mkdir(parents=True, exist_ok=True)
+            # Add to metadata - note: these are relative paths from category dir
+            metadata["train"].append({
+                "image_path": filename,
+                "mask_path": "",
+                "anomaly_class": "OK",
+                "camera_view": "C0",
+                "timestamp": "0000",
+            })
 
+        # Generate abnormal test images with masks
         for i in range(self.num_test):
-            sample_dir = ng_dir / f"S{i:04d}"
-            sample_dir.mkdir(parents=True, exist_ok=True)
-            label = LabelName.ABNORMAL
-            image_filename = sample_dir / f"audiojack_{i:04d}_NG_C1_123456.jpg"
-            mask_filename = sample_dir / f"audiojack_{i:04d}_NG_C1_123456_mask.png"
-            self.image_generator.generate_image(label=label, image_filename=image_filename, mask_filename=mask_filename)
+            image, mask = image_generator.generate_abnormal_image()
 
-        # Create JSON metadata
-        json_dir = self.dataset_root / "realiad_jsons" / "realiad_jsons"
-        json_dir.mkdir(parents=True, exist_ok=True)
+            # Save abnormal images
+            filename = f"{category}_{i:04d}_NG_C0_0000.png"
+            mask_filename = f"{category}_{i:04d}_NG_C0_0000_mask.png"
 
-        metadata = {
-            "train": [f"OK/S{i:04d}/audiojack_{i:04d}_OK_C1_123456.jpg" for i in range(self.num_train)],
-            "test": [f"NG/defect/S{i:04d}/audiojack_{i:04d}_NG_C1_123456.jpg" for i in range(self.num_test)],
-        }
+            image_path = category_dir / filename
+            mask_path = category_dir / mask_filename
 
-        json_file = Path(json_dir) / "audiojack.json"
-        with json_file.open("w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=4)
+            image_generator.save_image(image_path, image)
+
+            # Convert mask to uint8 before saving
+            # Ensure mask is in range [0, 255]
+            mask = (mask * 255).astype(np.uint8)
+            image_generator.save_image(mask_path, mask)
+
+            # Add to metadata - note: these are relative paths from category dir
+            metadata["test"].append({
+                "image_path": filename,
+                "mask_path": mask_filename,
+                "anomaly_class": "NG",
+                "camera_view": "C0",
+                "timestamp": "0000",
+            })
+
+        # Save metadata JSON file
+        json_path = jsons_dir / f"{category}.json"
+        with json_path.open("w") as f:
+            json.dump(metadata, f, indent=2)
 
 
 class DummyVideoDatasetGenerator(DummyDatasetGenerator):

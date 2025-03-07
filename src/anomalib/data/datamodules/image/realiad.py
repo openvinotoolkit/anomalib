@@ -83,13 +83,9 @@ class RealIAD(AnomalibDataModule):
         augmentations (Transform | None): General augmentations to apply if stage-specific
             augmentations are not provided.
         test_split_mode (TestSplitMode): Method to create test set.
-            Defaults to ``TestSplitMode.FROM_DIR``.
-        test_split_ratio (float): Fraction of data to use for testing.
-            Defaults to ``0.2``.
+            Defaults to ``TestSplitMode.NONE``.
         val_split_mode (ValSplitMode): Method to create validation set.
             Defaults to ``ValSplitMode.SAME_AS_TEST``.
-        val_split_ratio (float): Fraction of data to use for validation.
-            Defaults to ``0.5``.
         seed (int | None, optional): Seed for reproducibility.
             Defaults to ``None``.
 
@@ -169,10 +165,8 @@ class RealIAD(AnomalibDataModule):
         val_augmentations: Transform | None = None,
         test_augmentations: Transform | None = None,
         augmentations: Transform | None = None,
-        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
-        test_split_ratio: float = 0.2,
+        test_split_mode: TestSplitMode | str = TestSplitMode.NONE,
         val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
-        val_split_ratio: float = 0.5,
         seed: int | None = None,
     ) -> None:
         super().__init__(
@@ -184,9 +178,7 @@ class RealIAD(AnomalibDataModule):
             test_augmentations=test_augmentations,
             augmentations=augmentations,
             test_split_mode=test_split_mode,
-            test_split_ratio=test_split_ratio,
             val_split_mode=val_split_mode,
-            val_split_ratio=val_split_ratio,
             seed=seed,
         )
 

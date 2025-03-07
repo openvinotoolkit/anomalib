@@ -57,7 +57,7 @@ class ImageDataFormat(str, Enum):
     KOLEKTOR = "kolektor"
     MVTEC_AD = "mvtecad"
     MVTEC_3D = "mvtec_3d"
-    REAL_IAD = "real_iad"
+    REAL_IAD = "realiad"
     VISA = "visa"
 
 
