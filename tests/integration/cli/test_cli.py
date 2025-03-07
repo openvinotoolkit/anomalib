@@ -256,7 +256,7 @@ class TestCLI:
             ],
         )
         torch.cuda.empty_cache()
-        
+
     def test_export_acq_compression_type_auto_metric_fields(
         self,
         dataset_path: Path,
@@ -312,7 +312,7 @@ class TestCLI:
             ],
         )
         torch.cuda.empty_cache()
-        
+
     @staticmethod
     def _get_common_cli_args(dataset_path: Path | None, project_path: Path) -> list[str]:
         """Return common CLI args for all models.
