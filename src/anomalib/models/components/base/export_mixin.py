@@ -393,6 +393,7 @@ class ExportMixin:
                     setattr(batch, name, torch.from_numpy(pred))
                 if batch.gt_mask is not None:
                     batch.gt_mask = batch.gt_mask.unsqueeze(dim=1)
+                batch.pred_score = batch.pred_score.squeeze(dim=1)  # Squeezing since it is binary. (B, 1) -> (B)
                 metric.update(batch)
             return metric.compute()
 
