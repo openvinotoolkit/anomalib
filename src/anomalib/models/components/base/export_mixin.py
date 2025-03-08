@@ -321,7 +321,7 @@ class ExportMixin:
                 f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
             )
 
-        calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
+        calibration_dataset = nncf.Dataset(dataloader, lambda x: x.image)
         return nncf.quantize(model, calibration_dataset)
 
     @staticmethod
@@ -364,6 +364,11 @@ class ExportMixin:
             msg = "Metric must be provided for OpenVINO INT8_ACQ compression"
             raise ValueError(msg)
 
+        # Setting up the fields parameter in Metric if Metric is initialized with placeholder.
+        if metric.fields[0] == "":
+            metric.fields = ("anomaly_map", "gt_mask") if task == TaskType.SEGMENTATION else ("pred_score", "gt_label")
+            logger.info(f"The fields of metric are initialized empty. Setting it to model fields {metric.fields}")
+
         model_input = model.input(0)
 
         if model_input.partial_shape[0].is_static:
@@ -376,15 +381,20 @@ class ExportMixin:
                 f">300 images recommended for INT8 quantization, found only {len(dataloader.dataset)} images",
             )
 
-        calibration_dataset = nncf.Dataset(dataloader, lambda x: x["image"])
+        calibration_dataset = nncf.Dataset(dataloader, lambda x: x.image)
         validation_dataset = nncf.Dataset(datamodule.test_dataloader())
 
         # validation function to evaluate the quality loss after quantization
         def val_fn(nncf_model: "CompiledModel", validation_data: Iterable) -> float:
             for batch in validation_data:
-                preds = torch.from_numpy(nncf_model(batch["image"])[0])
-                target = batch["label"] if task == TaskType.CLASSIFICATION else batch["mask"][:, None, :, :]
-                metric.update(preds, target)
+                preds = nncf_model(batch.image)
+                for key, pred in preds.items():
+                    name = key.get_any_name()
+                    setattr(batch, name, torch.from_numpy(pred))
+                if batch.gt_mask is not None:
+                    batch.gt_mask = batch.gt_mask.unsqueeze(dim=1)
+                batch.pred_score = batch.pred_score.squeeze(dim=1)  # Squeezing since it is binary. (B, 1) -> (B)
+                metric.update(batch)
             return metric.compute()
 
         return nncf.quantize_with_accuracy_control(model, calibration_dataset, validation_dataset, val_fn)
