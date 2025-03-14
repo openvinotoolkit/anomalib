@@ -17,8 +17,8 @@ Image Datasets:
     - ``FolderDataset``: Custom dataset from folder structure
     - ``KolektorDataset``: Kolektor surface defect dataset
     - ``MVTecDataset``: MVTec AD dataset with industrial objects
-    - ``VisaDataset``: Visual Inspection of Surface Anomalies dataset
     - ``VAD``: Valeo Anomaly Detection Dataset
+    - ``VisaDataset``: Visual Inspection of Surface Anomalies dataset
 
 Video Datasets:
     - ``AvenueDataset``: CUHK Avenue dataset for abnormal event detection
