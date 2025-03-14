@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - 🚀 Add XPU accelerator and strategy by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2530
+- 🚀 Add VAD dataset by @abc-125 in https://github.com/openvinotoolkit/anomalib/pull/2603
 
 ### Removed
 

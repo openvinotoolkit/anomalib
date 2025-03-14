@@ -468,6 +468,34 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         self.dataset_root = self.dataset_root.parent / "visa_pytorch"
         self._generate_dummy_mvtec_dataset(normal_dir="good", abnormal_dir="bad", image_extension=".jpg")
 
+    def _generate_dummy_vad_dataset(
+        self,
+        normal_dir: str = "good",
+        abnormal_dir: str = "bad",
+        image_extension: str = ".png",
+    ) -> None:
+        """Generates dummy VAD dataset in a temporary directory."""
+        # VAD has a single subcategory within the dataset.
+        dataset_category = "vad"
+
+        # Create normal images.
+        for split in ("train", "test"):
+            path = self.dataset_root / dataset_category / split / normal_dir
+            num_images = self.num_train if split == "train" else self.num_test
+            for i in range(num_images):
+                label = LabelName.NORMAL
+                image_filename = path / f"{i:03}{image_extension}"
+                self.image_generator.generate_image(label=label, image_filename=image_filename)
+
+        # Create abnormal test images and masks.
+        abnormal_dir = abnormal_dir or self.abnormal_category
+        path = self.dataset_root / dataset_category / "test" / abnormal_dir
+
+        for i in range(self.num_test):
+            label = LabelName.ABNORMAL
+            image_filename = path / f"{i:03}{image_extension}"
+            self.image_generator.generate_image(label, image_filename)
+
 
 class DummyVideoDatasetGenerator(DummyDatasetGenerator):
     """Dummy video dataset generator.

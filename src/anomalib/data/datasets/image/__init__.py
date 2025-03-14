@@ -9,6 +9,7 @@ datasets:
 - ``KolektorDataset``: Kolektor surface defect dataset
 - ``MVTecDataset``: MVTec AD dataset with industrial objects
 - ``VisaDataset``: Visual Inspection of Surface Anomalies dataset
+- ``VAD``: Valeo Anomaly Detection Dataset
 
 Example:
     >>> from anomalib.data.datasets import MVTecDataset
@@ -27,6 +28,7 @@ from .datumaro import DatumaroDataset
 from .folder import FolderDataset
 from .kolektor import KolektorDataset
 from .mvtec import MVTecDataset
+from .vad import VADDataset
 from .visa import VisaDataset
 
 __all__ = [
@@ -36,4 +38,5 @@ __all__ = [
     "KolektorDataset",
     "MVTecDataset",
     "VisaDataset",
+    "VADDataset",
 ]

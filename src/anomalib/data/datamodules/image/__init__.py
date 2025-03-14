@@ -9,6 +9,7 @@ anomaly detection. The following data modules are available:
 - ``Kolektor``: Kolektor Surface-Defect Dataset
 - ``MVTec``: MVTec Anomaly Detection Dataset
 - ``Visa``: Visual Inspection for Steel Anomaly Dataset
+- ``VAD``: Valeo Anomaly Detection Dataset
 
 Example:
     Load the MVTec dataset::
@@ -20,7 +21,7 @@ Example:
         ... )
 """
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from enum import Enum
@@ -30,6 +31,7 @@ from .datumaro import Datumaro
 from .folder import Folder
 from .kolektor import Kolektor
 from .mvtec import MVTec
+from .vad import VAD
 from .visa import Visa
 
 
@@ -46,6 +48,7 @@ class ImageDataFormat(str, Enum):
     - ``MVTEC``: MVTec AD Dataset
     - ``MVTEC_3D``: MVTec 3D AD Dataset
     - ``VISA``: Visual Inspection for Steel Anomaly Dataset
+    - ``VAD``: Valeo Anomaly Detection Dataset
     """
 
     BTECH = "btech"
@@ -56,6 +59,7 @@ class ImageDataFormat(str, Enum):
     MVTEC = "mvtec"
     MVTEC_3D = "mvtec_3d"
     VISA = "visa"
+    VAD = "vad"
 
 
-__all__ = ["BTech", "Datumaro", "Folder", "Kolektor", "MVTec", "Visa"]
+__all__ = ["BTech", "Datumaro", "Folder", "Kolektor", "MVTec", "Visa", "VAD"]
