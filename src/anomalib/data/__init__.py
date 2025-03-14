@@ -180,8 +180,8 @@ __all__ = [
     "Avenue",
     "UCSDped",
     "ShanghaiTech",
-    "Visa",
     "VAD",
+    "Visa",
     "LabelName",
     "PredictDataset",
 ]

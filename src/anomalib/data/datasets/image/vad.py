@@ -1,4 +1,4 @@
-"""VAD AD Dataset.
+"""VAD Dataset.
 
 This module provides PyTorch Dataset implementation for the VAD dataset. The
 dataset will be downloaded and extracted automatically if not found locally.
@@ -13,8 +13,8 @@ License:
     https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 Reference:
-    Aimira Baitieva, David Hurych, Victor Besnier, Olivier Bernard: 
-    Supervised Anomaly Detection for Complex Industrial Images; in: 
+    Aimira Baitieva, David Hurych, Victor Besnier, Olivier Bernard:
+    Supervised Anomaly Detection for Complex Industrial Images; in:
     The IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2024,
     pp. 17754-17762, DOI: 10.1109/CVPR52733.2024.01681.
 """
@@ -29,13 +29,10 @@ from pandas import DataFrame
 from torchvision.transforms.v2 import Transform
 
 from anomalib.data.datasets.base import AnomalibDataset
-from anomalib.data.errors import MisMatchError
 from anomalib.data.utils import LabelName, Split, validate_path
 
 IMG_EXTENSIONS = (".png", ".PNG")
-CATEGORIES = (
-    "vad",
-)
+CATEGORIES = ("vad",)
 
 
 class VADDataset(AnomalibDataset):
@@ -88,14 +85,14 @@ class VADDataset(AnomalibDataset):
         self.root_category = Path(root) / Path(category)
         self.category = category
         self.split = split
-        self.samples = make_VAD_dataset(
+        self.samples = make_vad_dataset(
             self.root_category,
             split=self.split,
             extensions=IMG_EXTENSIONS,
         )
 
 
-def make_VAD_dataset(
+def make_vad_dataset(
     root: str | Path,
     split: str | Split | None = None,
     extensions: Sequence[str] | None = None,
@@ -123,7 +120,7 @@ def make_VAD_dataset(
 
     Example:
         >>> root = Path("./datasets/VAD/vad")
-        >>> samples = make_VAD_dataset(root, split="train")
+        >>> samples = make_vad_dataset(root, split="train")
         >>> samples.head()
            path                split label image_path           mask_path label_index
         0  datasets/VAD/vad train good  [...]/good/2041.png                         0

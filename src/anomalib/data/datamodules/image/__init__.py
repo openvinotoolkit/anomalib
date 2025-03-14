@@ -8,8 +8,8 @@ anomaly detection. The following data modules are available:
 - ``Folder``: Custom folder structure with normal/abnormal images
 - ``Kolektor``: Kolektor Surface-Defect Dataset
 - ``MVTec``: MVTec Anomaly Detection Dataset
-- ``Visa``: Visual Inspection for Steel Anomaly Dataset
 - ``VAD``: Valeo Anomaly Detection Dataset
+- ``Visa``: Visual Inspection for Steel Anomaly Dataset
 
 Example:
     Load the MVTec dataset::
@@ -47,8 +47,8 @@ class ImageDataFormat(str, Enum):
     - ``KOLEKTOR``: Kolektor Surface-Defect Dataset
     - ``MVTEC``: MVTec AD Dataset
     - ``MVTEC_3D``: MVTec 3D AD Dataset
-    - ``VISA``: Visual Inspection for Steel Anomaly Dataset
     - ``VAD``: Valeo Anomaly Detection Dataset
+    - ``VISA``: Visual Inspection for Steel Anomaly Dataset
     """
 
     BTECH = "btech"
@@ -58,8 +58,8 @@ class ImageDataFormat(str, Enum):
     KOLEKTOR = "kolektor"
     MVTEC = "mvtec"
     MVTEC_3D = "mvtec_3d"
-    VISA = "visa"
     VAD = "vad"
+    VISA = "visa"
 
 
-__all__ = ["BTech", "Datumaro", "Folder", "Kolektor", "MVTec", "Visa", "VAD"]
+__all__ = ["BTech", "Datumaro", "Folder", "Kolektor", "MVTec", "VAD", "Visa"]

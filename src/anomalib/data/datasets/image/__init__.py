@@ -8,8 +8,8 @@ datasets:
 - ``FolderDataset``: Custom dataset from folder structure
 - ``KolektorDataset``: Kolektor surface defect dataset
 - ``MVTecDataset``: MVTec AD dataset with industrial objects
-- ``VisaDataset``: Visual Inspection of Surface Anomalies dataset
 - ``VAD``: Valeo Anomaly Detection Dataset
+- ``VisaDataset``: Visual Inspection of Surface Anomalies dataset
 
 Example:
     >>> from anomalib.data.datasets import MVTecDataset
@@ -37,6 +37,6 @@ __all__ = [
     "FolderDataset",
     "KolektorDataset",
     "MVTecDataset",
-    "VisaDataset",
     "VADDataset",
+    "VisaDataset",
 ]

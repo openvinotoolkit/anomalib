@@ -28,8 +28,8 @@ License:
     https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 Reference:
-    Aimira Baitieva, David Hurych, Victor Besnier, Olivier Bernard: 
-    Supervised Anomaly Detection for Complex Industrial Images; in: 
+    Aimira Baitieva, David Hurych, Victor Besnier, Olivier Bernard:
+    Supervised Anomaly Detection for Complex Industrial Images; in:
     The IEEE/CVF Conference on Computer Vision and Pattern Recognition, 2024,
     pp. 17754-17762, DOI: 10.1109/CVPR52733.2024.01681.
 """

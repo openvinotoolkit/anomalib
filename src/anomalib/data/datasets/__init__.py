@@ -56,8 +56,8 @@ __all__ = [
     "FolderDataset",
     "KolektorDataset",
     "MVTecDataset",
-    "VisaDataset",
     "VADDataset",
+    "VisaDataset",
     # Video
     "AvenueDataset",
     "ShanghaiTechDataset",
