@@ -46,7 +46,7 @@ Industrial anomaly detection benchmark.
 :link: anomalib.data.datamodules.image.Visa
 :link-type: doc
 
-Visual inspection of surface anomalies.
+Visual Anomaly dataset.
 :::
 ```
 
