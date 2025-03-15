@@ -1,4 +1,4 @@
-"""Unit Tests - MVTec Datamodule."""
+"""Unit Tests - MVTecAD Datamodule."""
 
 # Copyright (C) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -8,19 +8,19 @@ from pathlib import Path
 import pytest
 from torchvision.transforms.v2 import Resize
 
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from tests.unit.data.datamodule.base.image import _TestAnomalibImageDatamodule
 
 
-class TestMVTec(_TestAnomalibImageDatamodule):
+class TestMVTecAD(_TestAnomalibImageDatamodule):
     """MVTec Datamodule Unit Tests."""
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> MVTec:
+    def datamodule(dataset_path: Path) -> MVTecAD:
         """Create and return a MVTec datamodule."""
-        _datamodule = MVTec(
-            root=dataset_path / "mvtec",
+        _datamodule = MVTecAD(
+            root=dataset_path / "mvtecad",
             category="dummy",
             train_batch_size=4,
             eval_batch_size=4,

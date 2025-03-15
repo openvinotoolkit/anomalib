@@ -127,10 +127,10 @@ The `Resize` transform will get added to the exported model graph, and applied t
 
 Data augmentation refers to the practice of applying transforms to input images to increase the variability in the dataset. By transforming the images, we effectively increase the sample size which helps improve a model's generalization and robustness to variations in real-world scenarios. Augmentations are often randomized to maximize variability between training runs and/or epochs. Some common augmentations include flipping, rotating, or scaling images, adjusting brightness or contrast, adding noise, and cropping.
 
-In Anomalib, data augmentations are configured from the `DataModule` and applied by the `Dataset`. Augmentations can be configured separately for each of the subsets (train, val, test) to suit different use-cases such as training set enrichment or test-time augmentations (TTA). All datamodules in Anomalib have the `train_augmentations`, `val_augmentations` and `test_augmentations` arguments, to which the user can pass a set of augmentation transforms. The following example shows how to add some random augmentations to the training set of an MVTec dataset:
+In Anomalib, data augmentations are configured from the `DataModule` and applied by the `Dataset`. Augmentations can be configured separately for each of the subsets (train, val, test) to suit different use-cases such as training set enrichment or test-time augmentations (TTA). All datamodules in Anomalib have the `train_augmentations`, `val_augmentations` and `test_augmentations` arguments, to which the user can pass a set of augmentation transforms. The following example shows how to add some random augmentations to the training set of an MVTecAD dataset:
 
 ```python
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from torchvision.transforms import v2
 
 augmentations = v2.Compose([
@@ -142,7 +142,7 @@ augmentations = v2.Compose([
     v2.RandomGrayscale(p=0.1),        # Convert images to grayscale with 10% probability
 ])
 
-datamodule = MVTec(
+datamodule = MVTecAD(
     category="transistor",
     train_augmentations=augmentations,
     val_augmentations=None,
@@ -175,7 +175,7 @@ augmentations = Compose(
     RandomHorizontalFlip(p=0.5),
     Normalize(mean=[0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711]),
 )
-datamodule = MVTec(train_augmentations=augmentations)
+datamodule = MVTecAD(train_augmentations=augmentations)
 model = Padim()
 engine = Engine()
 engine.fit(model, datamodule=datamodule)
@@ -183,7 +183,7 @@ engine.fit(model, datamodule=datamodule)
 # Correct: pass the random flip as an augmentation to the datamodule, and pass the updated
 # Normalize transform to a new PreProcessor instance.
 augmentations = RandomHorizontalFlip(p=0.5)
-datamodule = MVTec(train_augmentations=augmentations)
+datamodule = MVTecAD(train_augmentations=augmentations)
 
 transform = Compose(
     Resize(size=(256, 256)),
@@ -206,7 +206,7 @@ augmentations = Compose(
     RandomHorizontalFlip(p=0.5),
     Resize(size=(224, 224)),  # overruled by resize in default model-specific transform
 )
-datamodule = MVTec(augmentations=augmentations)
+datamodule = MVTecAD(augmentations=augmentations)
 
 model = Padim()
 
@@ -217,7 +217,7 @@ engine.fit(model, datamodule=datamodule)
 # updated pre-processor instance with the new image shape to the model. The final
 # image size will be 224x224.
 augmentations = RandomHorizontalFlip(p=0.5)
-datamodule = MVTec(augmentations=augmentations)
+datamodule = MVTecAD(augmentations=augmentations)
 
 pre_processor = Padim.configure_pre_processor(image_size=(224, 224))
 model = Padim(pre_processor=pre_processor)
@@ -240,14 +240,14 @@ transform = Compose(
 pre_processor = PreProcessor(transform=transform)
 model = Padim(pre_processor=pre_processor)
 
-datamodule = MVTec()
+datamodule = MVTecAD()
 
 engine = Engine()
 engine.fit(model, datamodule=datamodule)
 
 # Correct: Pass the transform to the datamodule as `train_augmentation`.
 augmentations = RandomHorizontalFlip(p=0.5)
-datamodule = MVTec(train_augmentation=augmentations)
+datamodule = MVTecAD(train_augmentation=augmentations)
 
 model = Padim()
 

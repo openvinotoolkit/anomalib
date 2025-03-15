@@ -12,14 +12,14 @@ echo "=== Anomalib Inference Examples ==="
 echo -e "\n1. Basic Inference with Checkpoint Path"
 echo "# Predict using a model checkpoint"
 anomalib predict \
-    --ckpt_path "./results/efficient_ad/mvtec/bottle/weights/model.ckpt" \
+    --ckpt_path "./results/efficient_ad/mvtecad/bottle/weights/model.ckpt" \
     --data_path path/to/image.jpg
 
 echo -e "\n2. Inference with Directory Path"
 echo "# Predict on all images in a directory"
 anomalib predict \
-    --ckpt_path "./results/efficient_ad/mvtec/bottle/weights/model.ckpt" \
-    --data_path "./datasets/mvtec/bottle/test"
+    --ckpt_path "./results/efficient_ad/mvtecad/bottle/weights/model.ckpt" \
+    --data_path "./datasets/mvtecad/bottle/test"
 
 echo -e "\n3. Inference with Datamodule"
 echo "# Use a datamodule for inference"
@@ -34,7 +34,7 @@ anomalib predict \
 echo -e "\n4. Inference with Return Predictions"
 echo "# Return predictions instead of saving to disk"
 anomalib predict \
-    --ckpt_path "./results/efficient_ad/mvtec/bottle/weights/model.ckpt" \
+    --ckpt_path "./results/efficient_ad/mvtecad/bottle/weights/model.ckpt" \
     --data_path path/to/image.jpg \
     --return_predictions
 

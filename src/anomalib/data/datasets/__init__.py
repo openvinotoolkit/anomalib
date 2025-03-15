@@ -16,7 +16,7 @@ Image Datasets:
     - ``DatumaroDataset``: Dataset in Datumaro format (Intel Geti™ export)
     - ``FolderDataset``: Custom dataset from folder structure
     - ``KolektorDataset``: Kolektor surface defect dataset
-    - ``MVTecDataset``: MVTec AD dataset with industrial objects
+    - ``MVTecADDataset``: MVTec AD dataset with industrial objects
     - ``VAD``: Valeo Anomaly Detection Dataset
     - ``VisaDataset``: Visual Inspection of Surface Anomalies dataset
 
@@ -26,8 +26,8 @@ Video Datasets:
     - ``UCSDpedDataset``: UCSD Pedestrian dataset for anomaly detection
 
 Example:
-    >>> from anomalib.data.datasets import MVTecDataset
-    >>> dataset = MVTecDataset(
+    >>> from anomalib.data.datasets import MVTecADDataset
+    >>> dataset = MVTecADDataset(
     ...     root="./datasets/MVTec",
     ...     category="bottle",
     ...     split="train"
@@ -39,7 +39,7 @@ Example:
 
 from .base import AnomalibDataset, AnomalibDepthDataset, AnomalibVideoDataset
 from .depth import Folder3DDataset, MVTec3DDataset
-from .image import BTechDataset, DatumaroDataset, FolderDataset, KolektorDataset, MVTecDataset, VADDataset, VisaDataset
+from .image import BTechDataset, DatumaroDataset, FolderDataset, KolektorDataset, MVTecADDataset, VADDataset, VisaDataset
 from .video import AvenueDataset, ShanghaiTechDataset, UCSDpedDataset
 
 __all__ = [
@@ -55,7 +55,7 @@ __all__ = [
     "DatumaroDataset",
     "FolderDataset",
     "KolektorDataset",
-    "MVTecDataset",
+    "MVTecADDataset",
     "VADDataset",
     "VisaDataset",
     # Video

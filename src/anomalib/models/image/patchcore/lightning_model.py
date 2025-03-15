@@ -10,12 +10,12 @@ memory bank and computes anomaly scores based on these distances. It achieves hi
 performance while maintaining interpretability through localization maps.
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models import Patchcore
     >>> from anomalib.engine import Engine
 
     >>> # Initialize model and data
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Patchcore(
     ...     backbone="wide_resnet50_2",
     ...     layers=["layer2", "layer3"],
@@ -47,13 +47,14 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torch import nn
 from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule, MemoryBankMixin
-from anomalib.post_processing import OneClassPostProcessor, PostProcessor
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 from anomalib.visualization import Visualizer
 
@@ -96,12 +97,12 @@ class Patchcore(MemoryBankMixin, AnomalibModule):
             Defaults to ``True``.
 
     Example:
-        >>> from anomalib.data import MVTec
+        >>> from anomalib.data import MVTecAD
         >>> from anomalib.models import Patchcore
         >>> from anomalib.engine import Engine
 
         >>> # Initialize model and data
-        >>> datamodule = MVTec()
+        >>> datamodule = MVTecAD()
         >>> model = Patchcore(
         ...     backbone="wide_resnet50_2",
         ...     layers=["layer2", "layer3"],
@@ -133,8 +134,8 @@ class Patchcore(MemoryBankMixin, AnomalibModule):
         pre_trained: bool = True,
         coreset_sampling_ratio: float = 0.1,
         num_neighbors: int = 9,
-        pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | bool = True,
+        pre_processor: nn.Module | bool = True,
+        post_processor: nn.Module | bool = True,
         evaluator: Evaluator | bool = True,
         visualizer: Visualizer | bool = True,
     ) -> None:
@@ -286,11 +287,11 @@ class Patchcore(MemoryBankMixin, AnomalibModule):
         return LearningType.ONE_CLASS
 
     @staticmethod
-    def configure_post_processor() -> OneClassPostProcessor:
+    def configure_post_processor() -> PostProcessor:
         """Configure the default post-processor.
 
         Returns:
-            OneClassPostProcessor: Post-processor for one-class models that
+            PostProcessor: Post-processor for one-class models that
                 converts raw scores to anomaly predictions
         """
-        return OneClassPostProcessor()
+        return PostProcessor()

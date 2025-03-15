@@ -22,11 +22,11 @@ WinCLIP is a zero-shot model, which means that we can directly evaluate the mode
 
 ### 0-Shot
 
-`anomalib test --model WinClip --data MVTec`
+`anomalib test --model WinClip --data MVTecAD`
 
 ### 1-Shot
 
-`anomalib test --model WinClip --model.k_shot  1 --data MVTec`
+`anomalib test --model WinClip --model.k_shot  1 --data MVTecAD`
 
 ## Parameters
 
@@ -46,30 +46,30 @@ Coming soon...
 
 <!-- ### Image-Level AUC -->
 
-<!-- |                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| 0-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
-| 1-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
-| 2-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
-| 4-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
+|        | Avg | Carpet | Grid | Leather | Tile | Wood | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill | Screw | Toothbrush | Transistor | Zipper |     |
+| ------ | :-: | :----: | :--: | :-----: | :--: | :--: | :----: | :---: | :-----: | :------: | :-------: | :--: | :---: | :--------: | :--------: | :----: | --- |
+| 0-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
+| 1-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
+| 2-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
+| 4-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
 
 ### Pixel-Level AUC
 
-|                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| 0-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
-| 1-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
-| 2-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
-| 4-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
+|        | Avg | Carpet | Grid | Leather | Tile | Wood | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill | Screw | Toothbrush | Transistor | Zipper |     |
+| ------ | :-: | :----: | :--: | :-----: | :--: | :--: | :----: | :---: | :-----: | :------: | :-------: | :--: | :---: | :--------: | :--------: | :----: | --- |
+| 0-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
+| 1-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
+| 2-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
+| 4-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
 
 ### Image F1 Score
 
-|                |  Avg  | Carpet | Grid  | Leather | Tile  | Wood  | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill  | Screw | Toothbrush | Transistor | Zipper |
-| -------------- | :---: | :----: | :---: | :-----: | :---: | :---: | :----: | :---: | :-----: | :------: | :-------: | :---: | :---: | :--------: | :--------: | :----: |
-| 0-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
-| 1-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
-| 2-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        |
-| 4-shot         |       |        |       |         |       |       |        |       |         |          |           |       |       |            |            |        | -->
+|        | Avg | Carpet | Grid | Leather | Tile | Wood | Bottle | Cable | Capsule | Hazelnut | Metal Nut | Pill | Screw | Toothbrush | Transistor | Zipper |     |
+| ------ | :-: | :----: | :--: | :-----: | :--: | :--: | :----: | :---: | :-----: | :------: | :-------: | :--: | :---: | :--------: | :--------: | :----: | --- |
+| 0-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
+| 1-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
+| 2-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
+| 4-shot |     |        |      |         |      |      |        |       |         |          |           |      |       |            |            |        |     |
 
 <!-- ### Sample Results -->
 

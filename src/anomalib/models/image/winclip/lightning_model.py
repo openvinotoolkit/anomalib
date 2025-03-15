@@ -7,11 +7,11 @@ The model can perform both anomaly classification and segmentation tasks by
 comparing image regions with normal reference examples through CLIP embeddings.
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.engine import Engine
     >>> from anomalib.models.image import WinClip
 
-    >>> datamodule = MVTec(root="./datasets/MVTec")  # doctest: +SKIP
+    >>> datamodule = MVTecAD(root="./datasets/MVTecAD")  # doctest: +SKIP
     >>> model = WinClip()  # doctest: +SKIP
 
     >>> Engine.test(model=model, datamodule=datamodule)  # doctest: +SKIP
@@ -25,7 +25,7 @@ See Also:
     - :class:`WinClipModel`: PyTorch implementation of the WinCLIP model
 """
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -34,6 +34,8 @@ from pathlib import Path
 from typing import Any
 
 import torch
+from lightning.pytorch.trainer.states import TrainerFn
+from torch import nn
 from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Resize
 
@@ -42,7 +44,7 @@ from anomalib.data import Batch
 from anomalib.data.predict import PredictDataset
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule
-from anomalib.post_processing import OneClassPostProcessor, PostProcessor
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 from anomalib.visualization import Visualizer
 
@@ -98,7 +100,7 @@ class WinClip(AnomalibModule):
 
     See Also:
         - :class:`WinClipModel`: PyTorch implementation of the core model
-        - :class:`OneClassPostProcessor`: Default post-processor used by WinCLIP
+        - :class:`PostProcessor`: Default post-processor used by WinCLIP
     """
 
     EXCLUDE_FROM_STATE_DICT = frozenset({"model.clip"})
@@ -109,8 +111,8 @@ class WinClip(AnomalibModule):
         k_shot: int = 0,
         scales: tuple = (2, 3),
         few_shot_source: Path | str | None = None,
-        pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | bool = True,
+        pre_processor: nn.Module | bool = True,
+        post_processor: nn.Module | bool = True,
         evaluator: Evaluator | bool = True,
         visualizer: Visualizer | bool = True,
     ) -> None:
@@ -259,10 +261,14 @@ class WinClip(AnomalibModule):
             OrderedDict[str, Any]: State dict with backbone parameters removed
         """
         state_dict = super().state_dict(**kwargs)
-        for pattern in self.EXCLUDE_FROM_STATE_DICT:
-            remove_keys = [key for key in state_dict if key.startswith(pattern)]
-            for key in remove_keys:
-                state_dict.pop(key)
+        if self._trainer is not None and self.trainer.state.fn in {
+            TrainerFn.FITTING,
+            TrainerFn.VALIDATING,
+        }:  # Keep backbone weights if exporting the model
+            for pattern in self.EXCLUDE_FROM_STATE_DICT:
+                remove_keys = [key for key in state_dict if key.startswith(pattern)]
+                for key in remove_keys:
+                    state_dict.pop(key)
         return state_dict
 
     def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:  # noqa: ANN401
@@ -307,10 +313,10 @@ class WinClip(AnomalibModule):
         return PreProcessor(transform=transform)
 
     @staticmethod
-    def configure_post_processor() -> OneClassPostProcessor:
+    def configure_post_processor() -> PostProcessor:
         """Configure the default post-processor for WinCLIP.
 
         Returns:
-            OneClassPostProcessor: Default post-processor instance
+            PostProcessor: Default post-processor instance
         """
-        return OneClassPostProcessor()
+        return PostProcessor()

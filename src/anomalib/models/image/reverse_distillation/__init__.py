@@ -12,11 +12,11 @@ The model consists of:
 
 Example:
     >>> from anomalib.models import ReverseDistillation
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.engine import Engine
 
     >>> # Initialize model and data
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = ReverseDistillation()
 
     >>> # Train using the Engine

@@ -128,7 +128,7 @@ def to_yaml(config: Namespace | ListConfig | DictConfig) -> str:
 
     Examples:
         >>> from omegaconf import DictConfig
-        >>> config = DictConfig({"model": "padim", "dataset": {"name": "mvtec"}})
+        >>> config = DictConfig({"model": "padim", "dataset": {"name": "mvtecad"}})
         >>> yaml_str = to_yaml(config)
         >>> print(yaml_str)
         model: padim

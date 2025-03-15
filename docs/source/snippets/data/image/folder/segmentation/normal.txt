@@ -5,7 +5,7 @@ from anomalib.data.utils import TestSplitMode, ValSplitMode
 # Create the datamodule
 datamodule = Folder(
     name="hazelnut_toy",
-    root="datasets/MVTec/transistor",
+    root="datasets/MVTecAD/transistor",
     normal_dir="train/good",
     val_split_mode=ValSplitMode.NONE,
     test_split_mode=TestSplitMode.NONE,

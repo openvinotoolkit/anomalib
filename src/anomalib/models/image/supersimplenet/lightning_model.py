@@ -9,11 +9,11 @@ and an anomaly score using the classification head.
 It delivers strong performance while maintaining fast inference.
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models import Supersimplenet
     >>> from anomalib.engine import Engine
 
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = Supersimplenet()
     >>> engine = Engine()
 

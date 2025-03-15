@@ -38,8 +38,11 @@ Example:
 
 from pathlib import Path
 
+import numpy as np
 import torch
+from PIL.Image import Image as PILImage
 from torch import nn
+from torchvision.transforms.v2.functional import to_dtype, to_image
 
 from anomalib.data import ImageBatch
 from anomalib.data.utils import read_image
@@ -157,11 +160,11 @@ class TorchInferencer:
         model.eval()
         return model.to(self.device)
 
-    def predict(self, image: str | Path | torch.Tensor) -> ImageBatch:
+    def predict(self, image: str | Path | np.ndarray | PILImage | torch.Tensor) -> ImageBatch:
         """Predict anomalies for an input image.
 
         Args:
-            image (str | Path | torch.Tensor): Input image to predict.
+            image (str | Path | np.ndarray | PILImage | torch.Tensor): Input image to predict.
                 Can be a file path or PyTorch tensor.
 
         Returns:
@@ -175,6 +178,8 @@ class TorchInferencer:
         """
         if isinstance(image, str | Path):
             image = read_image(image, as_tensor=True)
+        elif isinstance(image, np.ndarray | PILImage):
+            image = to_dtype(to_image(image), torch.float32, scale=True)
 
         image = self.pre_process(image)
         predictions = self.model(image)

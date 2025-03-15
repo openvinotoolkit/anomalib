@@ -14,7 +14,7 @@ CFLOW model is based on a conditional normalizing flow framework adopted for ano
 
 ## Usage
 
-`anomalib train --model Cflow --data MVTec --data.category <category>`
+`anomalib train --model Cflow --data MVTecAD --data.category <category>`
 
 ## Benchmark
 

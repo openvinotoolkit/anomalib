@@ -1,25 +1,25 @@
 # Copyright (C) 2024 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-"""Example showing how to use the MVTec dataset with Anomalib.
+"""Example showing how to use the MVTecAD dataset with Anomalib.
 
-MVTec is a widely-used dataset for anomaly detection, containing multiple
+MVTecAD is a widely-used dataset for anomaly detection, containing multiple
 categories of industrial objects with various types of defects.
 """
 
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 
 # 1. Basic Usage
 # Load a specific category with default settings
-datamodule = MVTec(
-    root="./datasets/MVTec",
+datamodule = MVTecAD(
+    root="./datasets/MVTecAD",
     category="bottle",
 )
 
 # 2. Advanced Configuration
 # Customize data loading and preprocessing
-datamodule = MVTec(
-    root="./datasets/MVTec",
+datamodule = MVTecAD(
+    root="./datasets/MVTecAD",
     category="bottle",
     train_batch_size=32,
     eval_batch_size=32,
@@ -31,8 +31,8 @@ datamodule = MVTec(
 # 3. Using Multiple Categories
 # Train on multiple categories (if supported by the model)
 for category in ["bottle", "cable", "capsule"]:
-    category_data = MVTec(
-        root="./datasets/MVTec",
+    category_data = MVTecAD(
+        root="./datasets/MVTecAD",
         category=category,
     )
     # Use category_data with your model...

@@ -58,7 +58,7 @@ from anomalib import LearningType
 from anomalib.data import Batch, InferenceBatch
 from anomalib.metrics import AUROC, F1Score
 from anomalib.metrics.evaluator import Evaluator
-from anomalib.post_processing import OneClassPostProcessor, PostProcessor
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 from anomalib.visualization import ImageVisualizer, Visualizer
 
@@ -122,8 +122,8 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
 
     def __init__(
         self,
-        pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | bool = True,
+        pre_processor: nn.Module | bool = True,
+        post_processor: nn.Module | bool = True,
         evaluator: Evaluator | bool = True,
         visualizer: Visualizer | bool = True,
     ) -> None:
@@ -135,8 +135,8 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         self.loss: nn.Module
         self.callbacks: list[Callback]
 
-        self.pre_processor = self._resolve_component(pre_processor, PreProcessor, self.configure_pre_processor)
-        self.post_processor = self._resolve_component(post_processor, PostProcessor, self.configure_post_processor)
+        self.pre_processor = self._resolve_component(pre_processor, nn.Module, self.configure_pre_processor)
+        self.post_processor = self._resolve_component(post_processor, nn.Module, self.configure_post_processor)
         self.evaluator = self._resolve_component(evaluator, Evaluator, self.configure_evaluator)
         self.visualizer = self._resolve_component(visualizer, Visualizer, self.configure_visualizer)
 
@@ -350,7 +350,7 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
             True
         """
         if self.learning_type == LearningType.ONE_CLASS:
-            return OneClassPostProcessor()
+            return PostProcessor()
         msg = (
             f"No default post-processor available for model with learning type "
             f"{self.learning_type}. Please override configure_post_processor."

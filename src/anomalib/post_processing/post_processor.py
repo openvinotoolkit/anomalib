@@ -1,7 +1,7 @@
-"""Post-processing module for one-class anomaly detection results.
+"""Post-processing module for anomaly detection results.
 
 This module provides post-processing functionality for one-class anomaly detection
-outputs through the :class:`OneClassPostProcessor` class.
+outputs through the :class:`PostProcessor` class.
 
 The post-processor handles:
     - Normalizing image and pixel-level anomaly scores
@@ -10,25 +10,25 @@ The post-processor handles:
     - Formatting results for downstream use
 
 Example:
-    >>> from anomalib.post_processing import OneClassPostProcessor
-    >>> post_processor = OneClassPostProcessor(image_sensitivity=0.5)
+    >>> from anomalib.post_processing import PostProcessor
+    >>> post_processor = PostProcessor(image_sensitivity=0.5)
     >>> predictions = post_processor(anomaly_maps=anomaly_maps)
 """
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import torch
 from lightning import LightningModule, Trainer
+from lightning.pytorch import Callback
+from torch import nn
 
 from anomalib.data import Batch, InferenceBatch
 from anomalib.metrics import F1AdaptiveThreshold, MinMax
 
-from .base import PostProcessor
 
-
-class OneClassPostProcessor(PostProcessor):
-    """Post-processor for one-class anomaly detection.
+class PostProcessor(nn.Module, Callback):
+    """Post-processor for anomaly detection.
 
     This class handles post-processing of anomaly detection results by:
         - Normalizing image and pixel-level anomaly scores
@@ -53,8 +53,8 @@ class OneClassPostProcessor(PostProcessor):
         **kwargs: Additional keyword arguments passed to parent class.
 
     Example:
-        >>> from anomalib.post_processing import OneClassPostProcessor
-        >>> post_processor = OneClassPostProcessor(image_sensitivity=0.5)
+        >>> from anomalib.post_processing import PostProcessor
+        >>> post_processor = PostProcessor(image_sensitivity=0.5)
         >>> predictions = post_processor(anomaly_maps=anomaly_maps)
     """
 

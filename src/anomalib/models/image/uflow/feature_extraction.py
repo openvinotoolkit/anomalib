@@ -14,8 +14,8 @@ Example:
 
 See Also:
     - :func:`get_feature_extractor`: Factory function to get feature extractors
-    - :class:`FeatureExtractor`: Main feature extractor implementation
-    - :class:`MCaitFeatureExtractor`: Alternative feature extractor
+    - :class:`LayerNormFeatureExtractor`: Main feature extractor implementation
+    - :class:`CaitFeatureExtractor`: Alternative feature extractor
 """
 
 # Copyright (C) 2023-2024 Intel Corporation
@@ -58,8 +58,8 @@ def get_feature_extractor(backbone: str, input_size: tuple[int, int] = (256, 256
         >>> features = extractor(torch.randn(1, 3, 256, 256))
 
     See Also:
-        - :class:`FeatureExtractor`: Main feature extractor implementation
-        - :class:`MCaitFeatureExtractor`: Alternative feature extractor
+        - :class:`LayerNormFeatureExtractor`: Main feature extractor implementation
+        - :class:`CaitFeatureExtractor`: Alternative feature extractor
     """
     if backbone not in AVAILABLE_EXTRACTORS:
         msg = f"Feature extractor must be one of {AVAILABLE_EXTRACTORS}."
@@ -67,14 +67,18 @@ def get_feature_extractor(backbone: str, input_size: tuple[int, int] = (256, 256
 
     feature_extractor: nn.Module
     if backbone in {"resnet18", "wide_resnet50_2"}:
-        feature_extractor = FeatureExtractor(backbone, input_size, layers=("layer1", "layer2", "layer3")).eval()
+        feature_extractor = LayerNormFeatureExtractor(
+            backbone,
+            input_size,
+            layers=("layer1", "layer2", "layer3"),
+        ).eval()
     if backbone == "mcait":
-        feature_extractor = MCaitFeatureExtractor().eval()
+        feature_extractor = CaitFeatureExtractor().eval()
 
     return feature_extractor
 
 
-class FeatureExtractor(TimmFeatureExtractor):
+class LayerNormFeatureExtractor(TimmFeatureExtractor):
     """Feature extractor based on ResNet (or others) backbones.
 
     This class extends TimmFeatureExtractor to extract and normalize features from
@@ -92,7 +96,7 @@ class FeatureExtractor(TimmFeatureExtractor):
 
     Example:
         >>> import torch
-        >>> extractor = FeatureExtractor(
+        >>> extractor = LayerNormFeatureExtractor(
         ...     backbone="resnet18",
         ...     input_size=(256, 256)
         ... )
@@ -169,7 +173,7 @@ class FeatureExtractor(TimmFeatureExtractor):
         return [self.feature_normalizations[i](feature) for i, feature in enumerate(features)]
 
 
-class MCaitFeatureExtractor(nn.Module):
+class CaitFeatureExtractor(nn.Module):
     """Feature extractor based on MCait backbone.
 
     This class implements the feature extractor proposed in the U-Flow paper. It uses two
@@ -180,8 +184,8 @@ class MCaitFeatureExtractor(nn.Module):
     Each model extracts features at a different scale, and includes normalization layers.
 
     Example:
-        >>> from anomalib.models.image.uflow.feature_extraction import MCaitFeatureExtractor
-        >>> extractor = MCaitFeatureExtractor()
+        >>> from anomalib.models.image.uflow.feature_extraction import CaitFeatureExtractor
+        >>> extractor = CaitFeatureExtractor()
         >>> image = torch.randn(1, 3, 448, 448)
         >>> features = extractor(image)
         >>> [f.shape for f in features]
