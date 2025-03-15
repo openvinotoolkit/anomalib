@@ -1,7 +1,7 @@
 dataset:
   name: mvtec
   format: mvtec
-  path: ./datasets/MVTec
+  path: ./datasets/MVTecAD
   category: bottle
   task: segmentation
   train_batch_size: 72

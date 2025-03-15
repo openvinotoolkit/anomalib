@@ -14,9 +14,10 @@ __all__ = [
     "Datumaro",
     "Folder",
     "Kolektor",
-    "MVTec",
+    "MVTecAD",
     "Visa",
     "Avenue",
     "ShanghaiTech",
     "UCSDped",
+    "MVTec",
 ]

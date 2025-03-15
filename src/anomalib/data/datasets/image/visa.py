@@ -28,7 +28,7 @@ from pathlib import Path
 from torchvision.transforms.v2 import Transform
 
 from anomalib.data.datasets import AnomalibDataset
-from anomalib.data.datasets.image.mvtec import make_mvtec_dataset
+from anomalib.data.datasets.image.mvtecad import make_mvtec_ad_dataset
 from anomalib.data.utils import Split
 
 EXTENSIONS = (".png", ".jpg", ".JPG")
@@ -86,7 +86,7 @@ class VisaDataset(AnomalibDataset):
 
         self.root_category = Path(root) / category
         self.split = split
-        self.samples = make_mvtec_dataset(
+        self.samples = make_mvtec_ad_dataset(
             self.root_category,
             split=self.split,
             extensions=EXTENSIONS,

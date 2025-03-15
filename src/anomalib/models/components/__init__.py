@@ -16,7 +16,6 @@ Components:
 
     Feature Extraction:
         - ``TimmFeatureExtractor``: Feature extractor using timm models
-        - ``TorchFXFeatureExtractor``: Feature extractor using TorchFX
 
     Image Processing:
         - ``GaussianBlur2d``: 2D Gaussian blur filter
@@ -39,7 +38,7 @@ Example:
 
 from .base import AnomalibModule, BufferListMixin, DynamicBufferMixin, MemoryBankMixin
 from .dimensionality_reduction import PCA, SparseRandomProjection
-from .feature_extractors import TimmFeatureExtractor, TorchFXFeatureExtractor
+from .feature_extractors import TimmFeatureExtractor
 from .filters import GaussianBlur2d
 from .sampling import KCenterGreedy
 from .stats import GaussianKDE, MultiVariateGaussian
@@ -56,5 +55,4 @@ __all__ = [
     "PCA",
     "SparseRandomProjection",
     "TimmFeatureExtractor",
-    "TorchFXFeatureExtractor",
 ]

@@ -5,7 +5,6 @@ features from images using various backbone architectures.
 
 Classes:
     TimmFeatureExtractor: Feature extractor using timm models.
-    TorchFXFeatureExtractor: Feature extractor using TorchFX for graph capture.
     BackboneParams: Configuration parameters for backbone models.
 
 Functions:
@@ -28,12 +27,9 @@ Example:
 # SPDX-License-Identifier: Apache-2.0
 
 from .timm import TimmFeatureExtractor
-from .torchfx import BackboneParams, TorchFXFeatureExtractor
 from .utils import dryrun_find_featuremap_dims
 
 __all__ = [
-    "BackboneParams",
     "dryrun_find_featuremap_dims",
     "TimmFeatureExtractor",
-    "TorchFXFeatureExtractor",
 ]

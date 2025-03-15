@@ -103,10 +103,10 @@ The data flow is:
 ### 1. Image DataModule
 
 ```python
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 
-datamodule = MVTec(
-    root="./datasets/MVTec",
+datamodule = MVTecAD(
+    root="./datasets/MVTecAD",
     category="bottle",
     train_batch_size=32,
     eval_batch_size=32,

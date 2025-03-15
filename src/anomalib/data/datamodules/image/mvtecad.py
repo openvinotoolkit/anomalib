@@ -5,11 +5,11 @@ the dataset is not available locally, it will be downloaded and extracted
 automatically.
 
 Example:
-    Create a MVTec datamodule::
+    Create a MVTec AD datamodule::
 
-        >>> from anomalib.data import MVTec
-        >>> datamodule = MVTec(
-        ...     root="./datasets/mvtec",
+        >>> from anomalib.data import MVTecAD
+        >>> datamodule = MVTecAD(
+        ...     root="./datasets/MVTecAD",
         ...     category="bottle"
         ... )
 
@@ -18,7 +18,7 @@ Notes:
     format when first used. The directory structure after preparation will be::
 
         datasets/
-        └── mvtec/
+        └── MVTecAD/
             ├── bottle/
             ├── cable/
             └── ...
@@ -51,27 +51,27 @@ from pathlib import Path
 from torchvision.transforms.v2 import Transform
 
 from anomalib.data.datamodules.base.image import AnomalibDataModule
-from anomalib.data.datasets.image.mvtec import MVTecDataset
+from anomalib.data.datasets.image.mvtecad import MVTecADDataset
 from anomalib.data.utils import DownloadInfo, Split, TestSplitMode, ValSplitMode, download_and_extract
 
 logger = logging.getLogger(__name__)
 
 
 DOWNLOAD_INFO = DownloadInfo(
-    name="mvtec",
+    name="mvtecad",
     url="https://www.mydrive.ch/shares/38536/3830184030e49fe74747669442f0f282/"
     "download/420938113-1629952094/mvtec_anomaly_detection.tar.xz",
     hashsum="cf4313b13603bec67abb49ca959488f7eedce2a9f7795ec54446c649ac98cd3d",
 )
 
 
-class MVTec(AnomalibDataModule):
-    """MVTec Datamodule.
+class MVTecAD(AnomalibDataModule):
+    """MVTec AD Datamodule.
 
     Args:
         root (Path | str): Path to the root of the dataset.
-            Defaults to ``"./datasets/MVTec"``.
-        category (str): Category of the MVTec dataset (e.g. ``"bottle"`` or
+            Defaults to ``"./datasets/MVTecAD"``.
+        category (str): Category of the MVTec AD dataset (e.g. ``"bottle"`` or
             ``"cable"``). Defaults to ``"bottle"``.
         train_batch_size (int, optional): Training batch size.
             Defaults to ``32``.
@@ -99,9 +99,9 @@ class MVTec(AnomalibDataModule):
             Defaults to ``None``.
 
     Example:
-        Create MVTec datamodule with default settings::
+        Create MVTec AD datamodule with default settings::
 
-            >>> datamodule = MVTec()
+            >>> datamodule = MVTecAD()
             >>> datamodule.setup()
             >>> i, data = next(enumerate(datamodule.train_dataloader()))
             >>> data.keys()
@@ -112,18 +112,18 @@ class MVTec(AnomalibDataModule):
 
         Change the category::
 
-            >>> datamodule = MVTec(category="cable")
+            >>> datamodule = MVTecAD(category="cable")
 
         Create validation set from test data::
 
-            >>> datamodule = MVTec(
+            >>> datamodule = MVTecAD(
             ...     val_split_mode=ValSplitMode.FROM_TEST,
             ...     val_split_ratio=0.1
             ... )
 
         Create synthetic validation set::
 
-            >>> datamodule = MVTec(
+            >>> datamodule = MVTecAD(
             ...     val_split_mode=ValSplitMode.SYNTHETIC,
             ...     val_split_ratio=0.2
             ... )
@@ -131,7 +131,7 @@ class MVTec(AnomalibDataModule):
 
     def __init__(
         self,
-        root: Path | str = "./datasets/MVTec",
+        root: Path | str = "./datasets/MVTecAD",
         category: str = "bottle",
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
@@ -177,12 +177,12 @@ class MVTec(AnomalibDataModule):
             is usually extracted from the test set, and the test set must
             therefore be created as early as the `fit` stage.
         """
-        self.train_data = MVTecDataset(
+        self.train_data = MVTecADDataset(
             split=Split.TRAIN,
             root=self.root,
             category=self.category,
         )
-        self.test_data = MVTecDataset(
+        self.test_data = MVTecADDataset(
             split=Split.TEST,
             root=self.root,
             category=self.category,
@@ -198,8 +198,8 @@ class MVTec(AnomalibDataModule):
         Example:
             Assume the dataset is not available on the file system::
 
-                >>> datamodule = MVTec(
-                ...     root="./datasets/MVTec",
+                >>> datamodule = MVTecAD(
+                ...     root="./datasets/MVTecAD",
                 ...     category="bottle"
                 ... )
                 >>> datamodule.prepare_data()
@@ -207,7 +207,7 @@ class MVTec(AnomalibDataModule):
             Directory structure after download::
 
                 datasets/
-                └── MVTec/
+                └── MVTecAD/
                     ├── bottle/
                     ├── cable/
                     └── ...
@@ -216,3 +216,21 @@ class MVTec(AnomalibDataModule):
             logger.info("Found the dataset.")
         else:
             download_and_extract(self.root, DOWNLOAD_INFO)
+
+
+class MVTec(MVTecAD):
+    """MVTec datamodule class (Deprecated).
+
+    This class is deprecated and will be removed in a future version.
+    Please use MVTecAD instead.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        import warnings
+
+        warnings.warn(
+            "MVTec is deprecated and will be removed in a future version. Please use MVTecAD instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)

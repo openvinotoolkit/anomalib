@@ -56,12 +56,12 @@ class AnomalibCLI:
         Run from command line:
 
         >>> import sys
-        >>> sys.argv = ["anomalib", "train", "--model", "Padim", "--data", "MVTec"]
+        >>> sys.argv = ["anomalib", "train", "--model", "Padim", "--data", "MVTecAD"]
 
         Run programmatically:
 
         >>> from anomalib.cli import AnomalibCLI
-        >>> cli = AnomalibCLI(["train", "--model", "Padim", "--data", "MVTec"], run=False)
+        >>> cli = AnomalibCLI(["train", "--model", "Padim", "--data", "MVTecAD"], run=False)
 
     Note:
         The CLI supports both YAML and JSON configuration files. Configuration can be

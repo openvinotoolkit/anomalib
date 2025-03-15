@@ -1,6 +1,6 @@
-class_path: anomalib.data.MVTec
+class_path: anomalib.data.MVTecAD
 init_args:
-  root: ./datasets/MVTec
+  root: ./datasets/MVTecAD
   category: bottle
   train_batch_size: 32
   eval_batch_size: 32

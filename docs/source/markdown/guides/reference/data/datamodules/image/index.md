@@ -35,11 +35,11 @@ Custom folder-based datamodule for organizing your own image dataset.
 Kolektor Surface-Defect dataset datamodule.
 :::
 
-:::{grid-item-card} MVTec
+:::{grid-item-card} MVTecAD
 :link: mvtec
 :link-type: doc
 
-MVTec AD dataset datamodule for unsupervised anomaly detection.
+MVTecAD AD dataset datamodule for unsupervised anomaly detection.
 :::
 
 :::{grid-item-card} Visa

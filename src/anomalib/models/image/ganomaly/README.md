@@ -16,7 +16,7 @@ The key idea here is that, during inference, when an anomalous image is passed t
 
 ## Usage
 
-`anomalib train --model Ganomaly --data MVTec --data.category <category>`
+`anomalib train --model Ganomaly --data MVTecAD --data.category <category>`
 
 ## Benchmark
 

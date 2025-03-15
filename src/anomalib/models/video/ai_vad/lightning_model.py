@@ -35,7 +35,7 @@ Reference:
     (2022). https://arxiv.org/pdf/2212.00789.pdf
 """
 
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -43,11 +43,12 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torch import nn
 
 from anomalib import LearningType
 from anomalib.data import VideoBatch
 from anomalib.models.components import AnomalibModule, MemoryBankMixin
-from anomalib.post_processing.one_class import OneClassPostProcessor, PostProcessor
+from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 
 from .torch_model import AiVadModel
@@ -140,8 +141,8 @@ class AiVad(MemoryBankMixin, AnomalibModule):
         n_components_velocity: int = 2,
         n_neighbors_pose: int = 1,
         n_neighbors_deep: int = 1,
-        pre_processor: PreProcessor | bool = True,
-        post_processor: PostProcessor | bool = True,
+        pre_processor: nn.Module | bool = True,
+        post_processor: nn.Module | bool = True,
         **kwargs,
     ) -> None:
         super().__init__(pre_processor=pre_processor, post_processor=post_processor, **kwargs)
@@ -258,4 +259,4 @@ class AiVad(MemoryBankMixin, AnomalibModule):
         Returns:
             PostProcessor: One-class post-processor instance.
         """
-        return OneClassPostProcessor()
+        return PostProcessor()

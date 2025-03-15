@@ -7,7 +7,7 @@ import pytest
 import torch
 
 from anomalib.data import ImageBatch
-from anomalib.post_processing import OneClassPostProcessor
+from anomalib.post_processing import PostProcessor
 
 
 class TestPostProcessor:
@@ -37,8 +37,13 @@ class TestPostProcessor:
         target: torch.Tensor,
     ) -> None:
         """Test the normalize method."""
-        pre_processor = OneClassPostProcessor()
-        normalized = pre_processor._normalize(preds, min_val, max_val, thresh)  # noqa: SLF001
+        pre_processor = PostProcessor()
+        normalized = pre_processor._normalize(  # noqa: SLF001
+            preds,
+            torch.tensor(min_val),
+            torch.tensor(max_val),
+            torch.tensor(thresh),
+        )
         assert torch.allclose(normalized, target)
 
     @staticmethod
@@ -54,8 +59,8 @@ class TestPostProcessor:
     )
     def test_apply_threshold(preds: torch.Tensor, thresh: float, target: torch.Tensor) -> None:
         """Test the apply_threshold method."""
-        pre_processor = OneClassPostProcessor()
-        binary_preds = pre_processor._apply_threshold(preds, thresh)  # noqa: SLF001
+        pre_processor = PostProcessor()
+        binary_preds = pre_processor._apply_threshold(preds, torch.tensor(thresh))  # noqa: SLF001
         assert torch.allclose(binary_preds, target)
 
     @staticmethod
@@ -68,14 +73,14 @@ class TestPostProcessor:
             pred_score=torch.tensor([20, 40, 60, 80]),
             gt_label=torch.tensor([0, 0, 1, 1]),
         )
-        pre_processor = OneClassPostProcessor()
+        pre_processor = PostProcessor()
         pre_processor.on_validation_batch_end(None, None, batch)
         pre_processor.on_validation_epoch_end(None, None)
         assert pre_processor.image_threshold == 60
         assert pre_processor.pixel_threshold == 80
 
     @staticmethod
-    def test_pixel_threshold_used_as_image_threshold() -> None:
+    def test_pixel_threshold_matching() -> None:
         """Test that pixel_threshold is used as image threshold when no gt masks are available."""
         batch = ImageBatch(
             image=torch.rand(4, 3, 10, 10),
@@ -83,7 +88,21 @@ class TestPostProcessor:
             pred_score=torch.tensor([20, 40, 60, 80]),
             gt_label=torch.tensor([0, 0, 1, 1]),
         )
-        pre_processor = OneClassPostProcessor()
+        pre_processor = PostProcessor(enable_threshold_matching=True)
+        pre_processor.on_validation_batch_end(None, None, batch)
+        pre_processor.on_validation_epoch_end(None, None)
+        assert pre_processor.image_threshold == pre_processor.pixel_threshold
+
+    @staticmethod
+    def test_image_threshold_matching() -> None:
+        """Test that pixel_threshold is used as image threshold when no gt masks are available."""
+        batch = ImageBatch(
+            image=torch.rand(4, 3, 3, 3),
+            anomaly_map=torch.tensor([[10, 20, 30], [40, 50, 60], [70, 80, 90]]),
+            gt_mask=torch.tensor([[0, 0, 0], [0, 0, 0], [0, 1, 1]]),
+            pred_score=torch.tensor([20, 40, 60, 80]),
+        )
+        pre_processor = PostProcessor(enable_threshold_matching=True)
         pre_processor.on_validation_batch_end(None, None, batch)
         pre_processor.on_validation_epoch_end(None, None)
         assert pre_processor.image_threshold == pre_processor.pixel_threshold

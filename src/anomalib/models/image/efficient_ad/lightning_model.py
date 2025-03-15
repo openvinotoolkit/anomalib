@@ -12,11 +12,11 @@ The model consists of:
     - Anomaly detection via feature comparison
 
 Example:
-    >>> from anomalib.data import MVTec
+    >>> from anomalib.data import MVTecAD
     >>> from anomalib.models import EfficientAd
     >>> from anomalib.engine import Engine
 
-    >>> datamodule = MVTec()
+    >>> datamodule = MVTecAD()
     >>> model = EfficientAd()
     >>> engine = Engine()
 

@@ -1,6 +1,6 @@
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 
-datamodule = MVTec()
+datamodule = MVTecAD()
 datamodule.prepare_data()
 datamodule.setup()
 
