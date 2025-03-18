@@ -130,10 +130,10 @@ class MVTecLOCO(AnomalibDataModule):
         val_augmentations: Transform | None = None,
         test_augmentations: Transform | None = None,
         augmentations: Transform | None = None,
-        test_split_mode: TestSplitMode | str = TestSplitMode.FROM_DIR,
-        test_split_ratio: float = 0.2,
-        val_split_mode: ValSplitMode | str = ValSplitMode.SAME_AS_TEST,
-        val_split_ratio: float = 0.5,
+        test_split_mode: TestSplitMode | str | None = None,
+        test_split_ratio: float | None = None,
+        val_split_mode: ValSplitMode | str | None = None,
+        val_split_ratio: float | None = None,
         seed: int | None = None,
     ) -> None:
         super().__init__(
@@ -167,11 +167,22 @@ class MVTecLOCO(AnomalibDataModule):
             is usually extracted from the test set, and the test set must
             therefore be created as early as the `fit` stage.
         """
+        # MVTec LOCO provides a training set that contains only normal images.
         self.train_data = MVTecLOCODataset(
             split=Split.TRAIN,
             root=self.root,
             category=self.category,
         )
+
+        # MVTec LOCO provides a validation set that contains only normal images.
+        self.val_data = MVTecLOCODataset(
+            split=Split.VAL,
+            root=self.root,
+            category=self.category,
+        )
+
+        # MVTec LOCO provides a test set that contains both normal and anomalous images.
+        # Anomalous images are further divided into structural and logical anomalies.
         self.test_data = MVTecLOCODataset(
             split=Split.TEST,
             root=self.root,
