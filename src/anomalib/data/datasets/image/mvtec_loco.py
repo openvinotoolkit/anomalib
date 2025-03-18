@@ -25,9 +25,8 @@ from pathlib import Path
 
 import torch
 from pandas import DataFrame
-from PIL import Image as PILImage
 from torchvision.transforms.v2 import Transform
-from torchvision.transforms.v2.functional import to_dtype_image, to_image
+from torchvision.transforms.v2.functional import to_dtype_image
 from torchvision.tv_tensors import Image, Mask
 
 from anomalib.data.dataclasses.torch import ImageItem
@@ -38,6 +37,7 @@ from anomalib.data.utils import (
     LabelName,
     Split,
     read_image,
+    read_mask,
     validate_path,
 )
 
@@ -131,19 +131,6 @@ class MVTecLOCODataset(AnomalibDataset):
             extensions=IMG_EXTENSIONS,
         )
 
-    @staticmethod
-    def _read_mask(mask_path: str | Path) -> Mask:
-        """Read mask from path and convert to Mask tensor.
-
-        Args:
-            mask_path (str | Path): Path to mask file
-
-        Returns:
-            Mask: Mask tensor of shape [H, W] with dtype torch.bool
-        """
-        image = PILImage.open(mask_path).convert("L")
-        return Mask(to_image(image).squeeze() > 0)
-
     def __getitem__(self, index: int) -> ImageItem:
         """Get a dataset item.
 
@@ -169,7 +156,7 @@ class MVTecLOCODataset(AnomalibDataset):
         semantic_mask = (
             Mask(torch.zeros(image.shape[-2:], dtype=torch.bool))
             if label_index == LabelName.NORMAL
-            else Mask(torch.stack([self._read_mask(path) for path in mask_path]))
+            else Mask(torch.stack([read_mask(path, as_tensor=True) for path in mask_path]))
         )
 
         binary_mask = Mask(semantic_mask.view(-1, *semantic_mask.shape[-2:]).any(dim=0))
