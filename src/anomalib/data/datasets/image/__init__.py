@@ -8,7 +8,7 @@ datasets:
 - ``FolderDataset``: Custom dataset from folder structure
 - ``KolektorDataset``: Kolektor surface defect dataset
 - ``MVTecADDataset``: MVTec AD dataset with industrial objects
-- ``VisaDataset``: Visual Inspection of Surface Anomalies dataset
+- ``VisaDataset``: Visual Anomaly dataset
 
 Example:
     >>> from anomalib.data.datasets import MVTecADDataset
