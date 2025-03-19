@@ -36,6 +36,7 @@ try:
     from .mlflow import AnomalibMLFlowLogger  # noqa: F401
     from .tensorboard import AnomalibTensorBoardLogger  # noqa: F401
     from .wandb import AnomalibWandbLogger  # noqa: F401
+    from .csv_logger import AnomalibCSVLogger
 
     __all__.extend(
         [
@@ -43,6 +44,7 @@ try:
             "AnomalibTensorBoardLogger",
             "AnomalibWandbLogger",
             "AnomalibMLFlowLogger",
+            "AnomalibCSVLogger",
         ],
     )
 except ImportError:
