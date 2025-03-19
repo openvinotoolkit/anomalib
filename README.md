@@ -29,9 +29,9 @@
 
 ---
 
-> 🌟 **Announcing v2.0.0 Beta Release!** 🌟
+> 🌟 **Announcing v2.0.0 Release!** 🌟
 >
-> We're excited to announce the beta release of Anomalib v2.0.0! This version introduces significant improvements and customization options to enhance your anomaly detection workflows. Please be aware that there are several API changes between `v1.2.0` and `v2.0.0`, so please be careful when updating your existing pipelines. We invite you to try it out and share your feedback:
+> We're excited to announce the release of Anomalib v2.0.0! This version introduces significant improvements and customization options to enhance your anomaly detection workflows. Please be aware that there are several API changes between `v1.2.0` and `v2.0.0`, so please be careful when updating your existing pipelines. Key features include:
 >
 > - Multi-GPU support
 > - New [dataclasses](https://anomalib.readthedocs.io/en/latest/markdown/guides/how_to/data/dataclasses.html) for model in- and outputs.
@@ -40,9 +40,7 @@
 > - Customizable model evaluation workflow with new [Metrics API](https://anomalib.readthedocs.io/en/latest/markdown/guides/how_to/evaluation/metrics.html) and [`Evaluator`](https://anomalib.readthedocs.io/en/latest/markdown/guides/how_to/evaluation/evaluator.html) module.
 > - Configurable module for visualization via `Visualizer` (docs guide: coming soon)
 >
-> We value your input! Please test and share feedback via [GitHub Issues](https://github.com/openvinotoolkit/anomalib/issues) or our [Discussions](https://github.com/openvinotoolkit/anomalib/discussions)
->
-> Install beta: `pip install anomalib==2.0.0b2`
+> We value your input! Please share feedback via [GitHub Issues](https://github.com/openvinotoolkit/anomalib/issues) or our [Discussions](https://github.com/openvinotoolkit/anomalib/discussions)
 
 # 👋 Introduction
 
@@ -64,47 +62,17 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 
 Anomalib provides multiple installation options to suit your needs. Choose the one that best fits your requirements:
 
-## 🚀 Quick Install (Stable)
+## 🚀 Install from PyPI
 
 ```bash
-# Basic installation
+# Basic installation from PyPI
 pip install anomalib
 
 # Full installation with all dependencies
 pip install anomalib[full]
 ```
 
-## 🌟 Beta Version (v2.0.0b2)
-
-Try our latest beta release with new features and improvements:
-
-```bash
-# Basic beta installation
-pip install anomalib==2.0.0b2
-
-# Full beta installation with all dependencies
-pip install anomalib[full]==2.0.0b2
-```
-
-### 🛠️ Installation Options
-
-Use the CLI for customized installation:
-
-```bash
-# Get help for installation options
-anomalib install -h
-
-# Full package installation
-anomalib install
-
-# Core package only (for training and evaluation)
-anomalib install --option core
-
-# OpenVINO optimization support
-anomalib install --option openvino
-```
-
-### 🔧 Development Install
+## 🔧 Install from Source
 
 For contributing or customizing the library:
 

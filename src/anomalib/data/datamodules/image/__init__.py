@@ -9,7 +9,7 @@ anomaly detection. The following data modules are available:
 - ``Kolektor``: Kolektor Surface-Defect Dataset
 - ``MVTecAD``: MVTec Anomaly Detection Dataset
 - ``VAD``: Valeo Anomaly Detection Dataset
-- ``Visa``: Visual Inspection for Steel Anomaly Dataset
+- ``Visa``: Visual Anomaly Dataset
 
 Example:
     Load the MVTec AD dataset::
@@ -48,7 +48,7 @@ class ImageDataFormat(str, Enum):
     - ``MVTEC_AD``: MVTec AD Dataset
     - ``MVTEC_3D``: MVTec 3D AD Dataset
     - ``VAD``: Valeo Anomaly Detection Dataset
-    - ``VISA``: Visual Inspection for Steel Anomaly Dataset
+    - ``VISA``: Visual Anomaly Dataset
     """
 
     BTECH = "btech"
