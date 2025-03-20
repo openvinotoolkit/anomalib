@@ -9,7 +9,7 @@ anomaly detection. The following data modules are available:
 - ``Kolektor``: Kolektor Surface-Defect Dataset
 - ``MVTecAD``: MVTec Anomaly Detection Dataset
 - ``MVTecLOCO``: MVTec LOCO Dataset with logical and structural anomalies
-- ``Visa``: Visual Inspection for Steel Anomaly Dataset
+- ``Visa``: Visual Anomaly Dataset
 
 Example:
     Load the MVTec AD dataset::
@@ -38,17 +38,21 @@ from .visa import Visa
 class ImageDataFormat(str, Enum):
     """Supported Image Dataset Types.
 
-    The following dataset formats are supported:
+        The following dataset formats are supported:
 
-    - ``BTECH``: BTech Surface Defect Dataset
-    - ``DATUMARO``: Dataset in Datumaro format
-    - ``FOLDER``: Custom folder structure
-    - ``FOLDER_3D``: Custom folder structure for 3D images
-    - ``KOLEKTOR``: Kolektor Surface-Defect Dataset
-    - ``MVTEC_AD``: MVTec AD Dataset
-    - ``MVTEC_3D``: MVTec 3D AD Dataset
-    - ``MVTEC_LOCO``: MVTec LOCO Dataset
-    - ``VISA``: Visual Inspection for Steel Anomaly Dataset
+        - ``BTECH``: BTech Surface Defect Dataset
+        - ``DATUMARO``: Dataset in Datumaro format
+        - ``FOLDER``: Custom folder structure
+        - ``FOLDER_3D``: Custom folder structure for 3D images
+        - ``KOLEKTOR``: Kolektor Surface-Defect Dataset
+        - ``MVTEC_AD``: MVTec AD Dataset
+        - ``MVTEC_3D``: MVTec 3D AD Dataset
+    <<<<<<< HEAD
+        - ``MVTEC_LOCO``: MVTec LOCO Dataset
+        - ``VISA``: Visual Inspection for Steel Anomaly Dataset
+    =======
+        - ``VISA``: Visual Anomaly Dataset
+    >>>>>>> b5456978dd2e513cfdd1e4c2aedce0286050ba80
     """
 
     BTECH = "btech"

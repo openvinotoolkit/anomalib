@@ -9,7 +9,7 @@ datasets:
 - ``KolektorDataset``: Kolektor surface defect dataset
 - ``MVTecADDataset``: MVTec AD dataset with industrial objects
 - ``MVTecLOCODataset``: MVTec LOCO dataset with logical and structural anomalies
-- ``VisaDataset``: Visual Inspection of Surface Anomalies dataset
+- ``VisaDataset``: Visual Anomaly dataset
 
 Example:
     >>> from anomalib.data.datasets import MVTecADDataset
