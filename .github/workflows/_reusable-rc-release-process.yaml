@@ -234,8 +234,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Record approval
+        env:
+          APPROVER: ${{ github.actor }}
         run: |
           echo "RC Approval Record:"
           echo "- Version: ${{ inputs.version }}"
           echo "- Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          echo "- Approver: ${{ github.actor }}"
+          echo "- Approver: $APPROVER"
