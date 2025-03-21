@@ -8,6 +8,7 @@ datasets:
 - ``FolderDataset``: Custom dataset from folder structure
 - ``KolektorDataset``: Kolektor surface defect dataset
 - ``MVTecADDataset``: MVTec AD dataset with industrial objects
+- ``MVTecLOCODataset``: MVTec LOCO dataset with logical and structural anomalies
 - ``VisaDataset``: Visual Anomaly dataset
 
 Example:
@@ -26,6 +27,7 @@ from .btech import BTechDataset
 from .datumaro import DatumaroDataset
 from .folder import FolderDataset
 from .kolektor import KolektorDataset
+from .mvtec_loco import MVTecLOCODataset
 from .mvtecad import MVTecADDataset, MVTecDataset
 from .visa import VisaDataset
 
@@ -36,5 +38,6 @@ __all__ = [
     "KolektorDataset",
     "MVTecDataset",
     "MVTecADDataset",
+    "MVTecLOCODataset",
     "VisaDataset",
 ]

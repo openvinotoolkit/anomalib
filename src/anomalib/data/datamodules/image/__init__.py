@@ -8,6 +8,7 @@ anomaly detection. The following data modules are available:
 - ``Folder``: Custom folder structure with normal/abnormal images
 - ``Kolektor``: Kolektor Surface-Defect Dataset
 - ``MVTecAD``: MVTec Anomaly Detection Dataset
+- ``MVTecLOCO``: MVTec LOCO Dataset with logical and structural anomalies
 - ``Visa``: Visual Anomaly Dataset
 
 Example:
@@ -29,6 +30,7 @@ from .btech import BTech
 from .datumaro import Datumaro
 from .folder import Folder
 from .kolektor import Kolektor
+from .mvtec_loco import MVTecLOCO
 from .mvtecad import MVTec, MVTecAD
 from .visa import Visa
 
@@ -36,16 +38,21 @@ from .visa import Visa
 class ImageDataFormat(str, Enum):
     """Supported Image Dataset Types.
 
-    The following dataset formats are supported:
+        The following dataset formats are supported:
 
-    - ``BTECH``: BTech Surface Defect Dataset
-    - ``DATUMARO``: Dataset in Datumaro format
-    - ``FOLDER``: Custom folder structure
-    - ``FOLDER_3D``: Custom folder structure for 3D images
-    - ``KOLEKTOR``: Kolektor Surface-Defect Dataset
-    - ``MVTEC_AD``: MVTec AD Dataset
-    - ``MVTEC_3D``: MVTec 3D AD Dataset
-    - ``VISA``: Visual Anomaly Dataset
+        - ``BTECH``: BTech Surface Defect Dataset
+        - ``DATUMARO``: Dataset in Datumaro format
+        - ``FOLDER``: Custom folder structure
+        - ``FOLDER_3D``: Custom folder structure for 3D images
+        - ``KOLEKTOR``: Kolektor Surface-Defect Dataset
+        - ``MVTEC_AD``: MVTec AD Dataset
+        - ``MVTEC_3D``: MVTec 3D AD Dataset
+    <<<<<<< HEAD
+        - ``MVTEC_LOCO``: MVTec LOCO Dataset
+        - ``VISA``: Visual Inspection for Steel Anomaly Dataset
+    =======
+        - ``VISA``: Visual Anomaly Dataset
+    >>>>>>> b5456978dd2e513cfdd1e4c2aedce0286050ba80
     """
 
     BTECH = "btech"
@@ -55,6 +62,7 @@ class ImageDataFormat(str, Enum):
     KOLEKTOR = "kolektor"
     MVTEC_AD = "mvtecad"
     MVTEC_3D = "mvtec_3d"
+    MVTEC_LOCO = "mvtec_loco"
     VISA = "visa"
 
 
@@ -65,5 +73,6 @@ __all__ = [
     "Kolektor",
     "MVTecAD",
     "MVTec",  # Include both for backward compatibility
+    "MVTecLOCO",
     "Visa",
 ]
