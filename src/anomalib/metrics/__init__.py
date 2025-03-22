@@ -91,8 +91,8 @@ logger = logging.getLogger(__name__)
 def get_available_metrics() -> set[str]:
     """Get set of available anomaly detection metrics.
 
-    Returns a set of metric names in snake_case format that are available in the
-    anomalib library.
+    Returns a set of metric names in snake_case format from the Anomalib library.
+    However, fully uppercase metric names, such as ``'AUPRO'``, are returned in lowercase.
 
     Returns:
         set[str]: Set of available metric names in snake_case format (e.g.
@@ -104,16 +104,16 @@ def get_available_metrics() -> set[str]:
         >>> from anomalib.metrics import get_available_metrics
         >>> metrics = get_available_metrics()
         >>> print(sorted(list(metrics)))  # doctest: +NORMALIZE_WHITESPACE
-            ['a_u_p_i_m_o', 'a_u_p_r', 'a_u_p_r_o', 'a_u_r_o_c',
+            ['aupimo', 'aupr', 'aupro', 'auroc',
              'f1_adaptive_threshold', 'f1_max', 'f1_score',
-             'min_max', 'p_i_m_o', 'p_r_o']
+             'min_max', 'pimo', 'pro']
 
     Note:
         The returned metric names can be used with :func:`get_metric` to instantiate
         the corresponding metrics class.
     """
     return {
-        convert_to_snake_case(cls.__name__)
+        cls.__name__.lower() if cls.__name__.isupper() else convert_to_snake_case(cls.__name__)
         for cls in AnomalibMetric.__subclasses__()
         if cls.__name__ != "AnomalibMetric"
     }
@@ -152,7 +152,7 @@ def _get_metric_class_by_name(name: str) -> type[AnomalibMetric]:
     logger.info("Loading the metric..")
     metric_class: type[AnomalibMetric] | None = None
 
-    name = convert_snake_to_pascal_case(name).lower()
+    name = convert_snake_to_pascal_case(name).lower() if "_" in name else name.lower()
     for metric in AnomalibMetric.__subclasses__():
         if name == metric.__name__.lower():
             metric_class = metric
