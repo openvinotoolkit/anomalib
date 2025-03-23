@@ -8,13 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- 🚀 Add XPU accelerator and strategy by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2530
-
 ### Removed
 
 ### Changed
-
-- 🚀 Made OpenVINOInferencer and TorchInferencer predict accept all the following types: str, Path, np.ndarray, PIL.Image.Image, torch.Tensor by @adrianboguszewski in https://github.com/openvinotoolkit/anomalib/pull/2565
 
 ### Deprecated
 
@@ -34,9 +30,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 🚀 Add Multi-GPU Training Support by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2435
 - 🔨 Refactor: Add missing auxiliary attributes to `AnomalibModule` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2460
 - 🔨 Rename `AnomalyModule` to `AnomalibModule` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2423
-
 - 🚀 Add `AUPIMO` metric by [jpcbertoldo](https://github.com/jpcbertoldo) in https://github.com/openvinotoolkit/anomalib/pull/1726 and refactored by [ashwinvaidya17](https://github.com/ashwinvaidya17) in https://github.com/openvinotoolkit/anomalib/pull/2329
 - 📚 Add `AUPIMO` tutorials notebooks in https://github.com/openvinotoolkit/anomalib/pull/2330 and https://github.com/openvinotoolkit/anomalib/pull/2336
+- 🚀 Add XPU accelerator by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2530
+- Add beta release support by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2493
+- Add merge group to main branch by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2520
+- Add non-strict mode to AnomalibMetric by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2508
+- Add DCO merge group workflow configuration by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2528
+- Add configuration options to PostProcessor by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2547
+- Add MVTec backward compatibility by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2602
+- Add unit tests for MinMax metric by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2516
 
 ### Removed
 
@@ -58,10 +61,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 🔨 Linting: Enable `PLR6301`, # could be a function, class method or static method by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2288
 - 🔨 Restructure unit tests and fix ruff issues by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2306pdate Ruff Config - Add Missing Copyright Headers by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/2281
 - 🔨 optimization/quantization added into 500 series by @paularamo in https://github.com/openvinotoolkit/anomalib/pull/2197
+- 🚀 Made OpenVINOInferencer and TorchInferencer predict accept all the following types: str, Path, np.ndarray, PIL.Image.Image, torch.Tensor by @adrianboguszewski in https://github.com/openvinotoolkit/anomalib/pull/2565
 
 ### Fixed
 
 - 🐞Replace package_available with module_available by @harimkang in https://github.com/openvinotoolkit/anomalib/pull/2407
+- Fix multi-GPU support for post-processor by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2499
+- fix minmax by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/2512
+- 🛠️ Fix pre-commit issues by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2517
+- Minor fixes by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2522
+- 🐞Fix ollama by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2519
+- fix synthetic anomaly datasets by @alexriedel1 in https://github.com/openvinotoolkit/anomalib/pull/2497
+- Fix compatibility issue with cPython<=3.11.3 by @Kogia-sima in https://github.com/openvinotoolkit/anomalib/pull/2416
+- Fix onnx input parameter name by @terrarier2111 in https://github.com/openvinotoolkit/anomalib/pull/2525
+- Fix latest torch and torchvision compatibility by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2548
+- Fix post-processing visualization issues by @djdameln in https://github.com/openvinotoolkit/anomalib/pull/2534
+- Keep weights in state dict when exporting by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2582
+
+### New Contributors
+
+- @Kogia-sima made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/2416
+- @terrarier2111 made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/2525
 
 ## [v1.2.0]
 
@@ -434,7 +454,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - OV API1.0 by @paularamo in https://github.com/openvinotoolkit/anomalib/pull/1098
 
-###  Fixed
+### Fixed
 
 - Fix Fastflow ONNX export. by @jasonvanzelm in https://github.com/openvinotoolkit/anomalib/pull/1108
 - Fix tile import typo by @xbkaishui in https://github.com/openvinotoolkit/anomalib/pull/1106
@@ -506,7 +526,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Remove config dependency from `OpenVINOInferencer` by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/939
 - Remove config from torch inferencer by @samet-akcay in https://github.com/openvinotoolkit/anomalib/pull/1001
 
-###  Fixed
+### Fixed
 
 - Bugfix code logic to allow for passing of `nn.Module` to `TorchFXFeatureExtractor` by @ORippler in https://github.com/openvinotoolkit/anomalib/pull/935
 - fix broken links to tutorials (ex guides) by @sergiev in https://github.com/openvinotoolkit/anomalib/pull/957
