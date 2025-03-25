@@ -49,7 +49,7 @@ class ImageDataFormat(str, Enum):
     - ``KOLEKTOR``: Kolektor Surface-Defect Dataset
     - ``MVTEC_AD``: MVTec AD Dataset
     - ``MVTEC_3D``: MVTec 3D AD Dataset
-    - ``MVTEC_LOCO``: MVTec LOCO Dataset    
+    - ``MVTEC_LOCO``: MVTec LOCO Dataset
     - ``VAD``: Valeo Anomaly Detection Dataset
     - ``VISA``: Visual Anomaly Dataset
     """
@@ -61,9 +61,10 @@ class ImageDataFormat(str, Enum):
     KOLEKTOR = "kolektor"
     MVTEC_AD = "mvtecad"
     MVTEC_3D = "mvtec_3d"
-    MVTEC_LOCO = "mvtec_loco"    
+    MVTEC_LOCO = "mvtec_loco"
     VAD = "vad"
     VISA = "visa"
+
 
 __all__ = [
     "BTech",
@@ -72,7 +73,7 @@ __all__ = [
     "Kolektor",
     "MVTecAD",
     "MVTec",  # Include both for backward compatibility
-    "MVTecLOCO",  
+    "MVTecLOCO",
     "VAD",
     "Visa",
 ]
