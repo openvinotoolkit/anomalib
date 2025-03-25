@@ -40,6 +40,7 @@ __all__ = [
     "KolektorDataset",
     "MVTecADDataset",
     "MVTecLOCODataset",
-    "VADDataset",  
+    "VADDataset",
     "VisaDataset",
+    "MVTecDataset",
 ]
