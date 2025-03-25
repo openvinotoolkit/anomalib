@@ -27,7 +27,7 @@ Available Models:
     - :class:`AiVad`: AI-based Video Anomaly Detection
 """
 
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .ai_vad import AiVad
