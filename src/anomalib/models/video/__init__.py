@@ -31,6 +31,6 @@ Available Models:
 # SPDX-License-Identifier: Apache-2.0
 
 from .ai_vad import AiVad
-from .fuvas import fuvas
+from .fuvas import Fuvas
 
-__all__ = ["AiVad","fuvas"]
+__all__ = ["AiVad", "Fuvas"]

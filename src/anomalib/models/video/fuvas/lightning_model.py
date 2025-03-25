@@ -1,31 +1,31 @@
-"""Deep Feature Modeling (DFM) for anomaly detection.
+"""FUVAS: Few-shot Unsupervised Video Anomaly Segmentation via Low-Rank Factorization of Spatio-Temporal Features.
 
-This module provides a PyTorch Lightning implementation of the DFM model for
-anomaly detection. The model extracts deep features from images using a
-pre-trained CNN backbone and fits a Gaussian model on these features to detect
-anomalies.
+This module provides a PyTorch Lightning implementation of the FUVAS model for
+video anomaly detection and segmentation. The model extracts deep features from video clips
+using a pre-trained 3D CNN/transformer backbone and fits a PCA-based reconstruction model
+to detect anomalies.
 
-Paper: https://arxiv.org/abs/1909.11786
+Paper: https://ieeexplore.ieee.org/abstract/document/10887597
 
 Example:
     >>> from anomalib.models.video import fuvas
     >>> model = fuvas(
-    ...     backbone="resnet50",
-    ...     layer="layer3",
+    ...     backbone="x3d_s",
+    ...     layer="blocks.4",
     ...     pre_trained=True
     ... )
 
 Notes:
     The model uses a pre-trained backbone to extract features and fits a PCA
-    transformation during training. No gradient
-    updates are performed on the backbone.
+    transformation during training. No gradient updates are performed on the backbone.
+    Anomaly detection is based on feature reconstruction error.
 
 See Also:
-    :class:`anomalib.models.image.dfm.torch_model.DFMModel`:
-        PyTorch implementation of the DFM model.
+    :class:`anomalib.models.video.fuvas.torch_model.FUVASModel`:
+        PyTorch implementation of the FUVAS model.
 """
 
-# Copyright (C) 2022-2025 Intel Corporation
+# Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
@@ -47,25 +47,26 @@ from .torch_model import FUVASModel
 logger = logging.getLogger(__name__)
 
 
-class fuvas(MemoryBankMixin, AnomalibModule):
+class Fuvas(MemoryBankMixin, AnomalibModule):
     """FUVAS Lightning Module.
 
     Args:
-        backbone (str): Name of the backbone CNN network.
-            Defaults to ``"resnet50"``.
+        backbone (str): Name of the backbone 3D CNN/transformer network.
+            Defaults to ``"x3d_s"``.
         layer (str): Name of the layer to extract features from the backbone.
-            Defaults to ``"layer3"``.
+            Defaults to ``"blocks.4"``.
         pre_trained (bool, optional): Whether to use a pre-trained backbone.
             Defaults to ``True``.
+        spatial_pool (bool, optional): Whether to use spatial pooling on features.
+            Defaults to ``True``.
         pooling_kernel_size (int, optional): Kernel size for pooling features.
-            Defaults to ``4``.
+            Defaults to ``1``.
         pca_level (float, optional): Ratio of variance to preserve in PCA.
             Must be between 0 and 1.
-            Defaults to ``0.97``.
-        score_type (str, optional): Type of anomaly score to compute.
-            Options are ``"fre"`` (feature reconstruction error) or
-            ``"nll"`` (negative log-likelihood).
-            Defaults to ``"fre"``.
+            Defaults to ``0.98``.
+        do_seg (bool, optional): Whether to perform anomaly segmentation.
+            If False, only detection scores are computed.
+            Defaults to ``True``.
         pre_processor (PreProcessor | bool, optional): Pre-processor to use.
             If ``True``, uses the default pre-processor.
             If ``False``, no pre-processing is performed.
@@ -92,7 +93,6 @@ class fuvas(MemoryBankMixin, AnomalibModule):
         spatial_pool: bool = True,
         pooling_kernel_size: int = 1,
         pca_level: float = 0.98,
-        # score_type: str = "fre",
         do_seg: bool = True,
         pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | bool = True,
@@ -113,25 +113,24 @@ class fuvas(MemoryBankMixin, AnomalibModule):
             pooling_kernel_size=pooling_kernel_size,
             n_comps=pca_level,
             do_seg=do_seg,
-            spatial_pool = spatial_pool
+            spatial_pool=spatial_pool,
         )
         self.embeddings: list[torch.Tensor] = []
-        # self.score_type = score_type
 
     @staticmethod
     def configure_optimizers() -> None:  # pylint: disable=arguments-differ
         """Configure optimizers for training.
 
         Returns:
-            None: DFM doesn't require optimization.
+            None: FUVAS doesn't require optimization.
         """
         return
 
-    def training_step(self, batch: Batch, *args, **kwargs) -> None:
+    def training_step(self, batch: Batch, *args, **kwargs) -> torch.Tensor:
         """Extract features from the input batch during training.
 
         Args:
-            batch (Batch): Input batch containing images.
+            batch (Batch): Input batch containing video clips.
             *args: Additional positional arguments (unused).
             **kwargs: Additional keyword arguments (unused).
 
@@ -140,6 +139,11 @@ class fuvas(MemoryBankMixin, AnomalibModule):
         """
         del args, kwargs  # These variables are not used.
 
+        # Ensure batch.image is a tensor
+        if batch.image is None or not isinstance(batch.image, torch.Tensor):
+            msg = "Expected batch.image to be a tensor, but got None or non-tensor type"
+            raise ValueError(msg)
+
         embedding = self.model.get_features(batch.image)[0].squeeze()
         self.embeddings.append(embedding)
 
@@ -147,9 +151,10 @@ class fuvas(MemoryBankMixin, AnomalibModule):
         return torch.tensor(0.0, requires_grad=True, device=self.device)
 
     def fit(self) -> None:
-        """Fit the PCA transformation and Gaussian model to the embeddings.
+        """Fit the PCA transformation to the embeddings.
 
-        The method aggregates embeddings collected during training the PCA transformation used for scoring.
+        The method aggregates embeddings collected during training and fits
+        the PCA transformation used for anomaly scoring.
         """
         logger.info("Aggregating the embedding extracted from the training set.")
         embeddings = torch.vstack(self.embeddings)
@@ -161,7 +166,7 @@ class fuvas(MemoryBankMixin, AnomalibModule):
         """Compute predictions for the input batch during validation.
 
         Args:
-            batch (Batch): Input batch containing images.
+            batch (Batch): Input batch containing video clips.
             *args: Additional positional arguments (unused).
             **kwargs: Additional keyword arguments (unused).
 
@@ -171,11 +176,11 @@ class fuvas(MemoryBankMixin, AnomalibModule):
         del args, kwargs  # These variables are not used.
 
         predictions = self.model(batch.image)
-        return batch.update(pred_score=predictions.pred_score,anomaly_map=predictions.anomaly_map)
+        return batch.update(pred_score=predictions.pred_score, anomaly_map=predictions.anomaly_map)
 
     @property
     def trainer_arguments(self) -> dict[str, Any]:
-        """Get DFM-specific trainer arguments.
+        """Get FUVAS-specific trainer arguments.
 
         Returns:
             dict[str, Any]: Dictionary of trainer arguments:

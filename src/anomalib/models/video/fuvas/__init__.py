@@ -23,6 +23,6 @@ See Also:
 # Copyright (C) 2022-2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-from .lightning_model import fuvas
+from .lightning_model import Fuvas
 
-__all__ = ["fuvas"]
+__all__ = ["Fuvas"]
