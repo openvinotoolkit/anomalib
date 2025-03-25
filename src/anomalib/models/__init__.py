@@ -75,7 +75,7 @@ from .image import (
     VlmAd,
     WinClip,
 )
-from .video import AiVad
+from .video import (AiVad, fuvas)
 
 
 class UnknownModelError(ModuleNotFoundError):
@@ -103,6 +103,7 @@ __all__ = [
     "VlmAd",
     "WinClip",
     "AiVad",
+    "fuvas",
 ]
 
 logger = logging.getLogger(__name__)
