@@ -39,7 +39,15 @@ Example:
 
 from .base import AnomalibDataset, AnomalibDepthDataset, AnomalibVideoDataset
 from .depth import Folder3DDataset, MVTec3DDataset
-from .image import BTechDataset, DatumaroDataset, FolderDataset, KolektorDataset, MVTecADDataset, VADDataset, VisaDataset
+from .image import (
+    BTechDataset,
+    DatumaroDataset,
+    FolderDataset,
+    KolektorDataset,
+    MVTecADDataset,
+    VADDataset,
+    VisaDataset,
+)
 from .video import AvenueDataset, ShanghaiTechDataset, UCSDpedDataset
 
 __all__ = [
