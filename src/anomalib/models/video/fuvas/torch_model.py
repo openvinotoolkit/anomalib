@@ -31,10 +31,11 @@ from sklearn.decomposition import PCA
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 from torchvision.models.video import Swin3D_B_Weights, swin3d_b
+from torchvision.models.feature_extraction import create_feature_extractor
 
 from anomalib.data import InferenceBatch
 
-from .feature_extractor import FeatureExtractor
+# from .feature_extractor import FeatureExtractor
 
 
 class FUVASModel(nn.Module):
@@ -109,7 +110,7 @@ class FUVASModel(nn.Module):
             raise ValueError(msg)
 
         net.eval()
-        self.feature_extractor = FeatureExtractor(net, layer_name=layer)
+        self.feature_extractor = create_feature_extractor(net, return_nodes=[layer])
 
         self.peak = 0
 

@@ -1,5 +1,5 @@
 from anomalib.data import UCSDped, ShanghaiTech
-from anomalib.models import fuvas,AiVad
+from anomalib.models import Fuvas,AiVad
 from anomalib.engine import Engine
 from torchvision.transforms.v2 import Resize, Compose,Normalize
 from anomalib.metrics import AUROC, F1Score, Evaluator
@@ -28,7 +28,7 @@ transform = Compose([Resize((448, 512)), Normalize(mean=[0.485, 0.456, 0.406], s
 pre_processor = PreProcessor(transform=transform)
 # Create evaluator with metrics
 evaluator = Evaluator(test_metrics=metrics)
-model = fuvas(backbone='x3d_s',layer='blocks.4',spatial_pool=True, pooling_kernel_size=1, do_seg=True,pre_processor=pre_processor,visualizer=False,evaluator=evaluator)
+model = Fuvas(backbone='x3d_s',layer='blocks.4',spatial_pool=True, pooling_kernel_size=1, do_seg=True,pre_processor=pre_processor,visualizer=False,evaluator=evaluator)
 # model2 = AiVad(pre_processor=pre_processor,visualizer=False,evaluator=evaluator)
 engine = Engine()
 
