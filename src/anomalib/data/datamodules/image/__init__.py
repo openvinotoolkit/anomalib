@@ -9,6 +9,7 @@ anomaly detection. The following data modules are available:
 - ``Kolektor``: Kolektor Surface-Defect Dataset
 - ``MVTecAD``: MVTec Anomaly Detection Dataset
 - ``MVTecLOCO``: MVTec LOCO Dataset with logical and structural anomalies
+- ``VAD``: Valeo Anomaly Detection Dataset
 - ``Visa``: Visual Anomaly Dataset
 
 Example:
@@ -21,7 +22,7 @@ Example:
         ... )
 """
 
-# Copyright (C) 2024-2025 Intel Corporation
+# Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from enum import Enum
@@ -32,6 +33,7 @@ from .folder import Folder
 from .kolektor import Kolektor
 from .mvtec_loco import MVTecLOCO
 from .mvtecad import MVTec, MVTecAD
+from .vad import VAD
 from .visa import Visa
 
 
@@ -40,19 +42,16 @@ class ImageDataFormat(str, Enum):
 
         The following dataset formats are supported:
 
-        - ``BTECH``: BTech Surface Defect Dataset
-        - ``DATUMARO``: Dataset in Datumaro format
-        - ``FOLDER``: Custom folder structure
-        - ``FOLDER_3D``: Custom folder structure for 3D images
-        - ``KOLEKTOR``: Kolektor Surface-Defect Dataset
-        - ``MVTEC_AD``: MVTec AD Dataset
-        - ``MVTEC_3D``: MVTec 3D AD Dataset
-    <<<<<<< HEAD
-        - ``MVTEC_LOCO``: MVTec LOCO Dataset
-        - ``VISA``: Visual Inspection for Steel Anomaly Dataset
-    =======
-        - ``VISA``: Visual Anomaly Dataset
-    >>>>>>> b5456978dd2e513cfdd1e4c2aedce0286050ba80
+    - ``BTECH``: BTech Surface Defect Dataset
+    - ``DATUMARO``: Dataset in Datumaro format
+    - ``FOLDER``: Custom folder structure
+    - ``FOLDER_3D``: Custom folder structure for 3D images
+    - ``KOLEKTOR``: Kolektor Surface-Defect Dataset
+    - ``MVTEC_AD``: MVTec AD Dataset
+    - ``MVTEC_3D``: MVTec 3D AD Dataset
+    - ``MVTEC_LOCO``: MVTec LOCO Dataset
+    - ``VAD``: Valeo Anomaly Detection Dataset
+    - ``VISA``: Visual Anomaly Dataset
     """
 
     BTECH = "btech"
@@ -63,6 +62,7 @@ class ImageDataFormat(str, Enum):
     MVTEC_AD = "mvtecad"
     MVTEC_3D = "mvtec_3d"
     MVTEC_LOCO = "mvtec_loco"
+    VAD = "vad"
     VISA = "visa"
 
 
@@ -74,5 +74,6 @@ __all__ = [
     "MVTecAD",
     "MVTec",  # Include both for backward compatibility
     "MVTecLOCO",
+    "VAD",
     "Visa",
 ]
