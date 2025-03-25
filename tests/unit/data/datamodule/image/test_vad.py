@@ -20,7 +20,7 @@ class TestVAD(_TestAnomalibImageDatamodule):
     def datamodule(dataset_path: Path) -> VAD:
         """Create and return a VAD datamodule."""
         _datamodule = VAD(
-            root=dataset_path / "VAD",
+            root=dataset_path / "vad",
             category="vad",
             train_batch_size=4,
             eval_batch_size=4,
