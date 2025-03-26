@@ -17,6 +17,7 @@ Image Datasets:
     - ``FolderDataset``: Custom dataset from folder structure
     - ``KolektorDataset``: Kolektor surface defect dataset
     - ``MVTecADDataset``: MVTec AD dataset with industrial objects
+    - ``VAD``: Valeo Anomaly Detection Dataset
     - ``VisaDataset``: Visual Anomaly dataset
 
 Video Datasets:
@@ -33,12 +34,20 @@ Example:
     ... )
 """
 
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from .base import AnomalibDataset, AnomalibDepthDataset, AnomalibVideoDataset
 from .depth import Folder3DDataset, MVTec3DDataset
-from .image import BTechDataset, DatumaroDataset, FolderDataset, KolektorDataset, MVTecADDataset, VisaDataset
+from .image import (
+    BTechDataset,
+    DatumaroDataset,
+    FolderDataset,
+    KolektorDataset,
+    MVTecADDataset,
+    VADDataset,
+    VisaDataset,
+)
 from .video import AvenueDataset, ShanghaiTechDataset, UCSDpedDataset
 
 __all__ = [
@@ -55,6 +64,7 @@ __all__ = [
     "FolderDataset",
     "KolektorDataset",
     "MVTecADDataset",
+    "VADDataset",
     "VisaDataset",
     # Video
     "AvenueDataset",
