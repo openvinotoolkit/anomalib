@@ -1,0 +1,14 @@
+class_path: anomalib.data.RealIAD
+init_args:
+  root: ./datasets/Real-IAD
+  category: audiojack
+  resolution: 256
+  train_batch_size: 32
+  eval_batch_size: 32
+  num_workers: 8
+  test_split_mode: none
+  val_split_mode: same_as_test
+  train_augmentations: null
+  val_augmentations: null
+  test_augmentations: null
+  augmentations: null

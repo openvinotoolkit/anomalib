@@ -496,12 +496,74 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
                 mask_filename = self.dataset_root / category / f"Part{i}_label.bmp"
                 self.image_generator.generate_image(label, image_filename, mask_filename)
 
-    def _generate_dummy_visa_dataset(self) -> None:
-        """Generate dummy Visa dataset in directory using the same convention as Visa AD."""
-        # Visa dataset on anomalib follows the same convention as MVTec AD.
-        # The only difference is that the root directory has a subdirectory called "visa_pytorch".
-        self.dataset_root = self.dataset_root.parent / "visa_pytorch"
-        self._generate_dummy_mvtecad_dataset(normal_dir="good", abnormal_dir="bad", image_extension=".jpg")
+    def _generate_dummy_realiad_dataset(self) -> None:
+        """Generate dummy RealIAD dataset in directory using the same convention as RealIAD."""
+        import json
+
+        # Create the resolution directory
+        resolution_dir = self.dataset_root / "realiad_256"
+        resolution_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create category directory
+        category = "audiojack"
+        category_dir = resolution_dir / category
+        category_dir.mkdir(parents=True, exist_ok=True)
+
+        # Create jsons directory structure
+        jsons_dir = self.dataset_root / "realiad_jsons" / "realiad_jsons"
+        jsons_dir.mkdir(parents=True, exist_ok=True)
+
+        # Generate images and create metadata
+        metadata = {"train": [], "test": []}
+        image_generator = DummyImageGenerator(image_shape=self.image_shape, rng=self.rng)
+
+        # Generate normal train images
+        for i in range(self.num_train):
+            image, _ = image_generator.generate_normal_image()
+            filename = f"{category}_{i:04d}_OK_C0_0000.png"
+            image_path = category_dir / filename
+            image_generator.save_image(image_path, image)
+
+            # Add to metadata - note: these are relative paths from category dir
+            metadata["train"].append({
+                "image_path": filename,
+                "mask_path": "",
+                "anomaly_class": "OK",
+                "camera_view": "C0",
+                "timestamp": "0000",
+            })
+
+        # Generate abnormal test images with masks
+        for i in range(self.num_test):
+            image, mask = image_generator.generate_abnormal_image()
+
+            # Save abnormal images
+            filename = f"{category}_{i:04d}_NG_C0_0000.png"
+            mask_filename = f"{category}_{i:04d}_NG_C0_0000_mask.png"
+
+            image_path = category_dir / filename
+            mask_path = category_dir / mask_filename
+
+            image_generator.save_image(image_path, image)
+
+            # Convert mask to uint8 before saving
+            # Ensure mask is in range [0, 255]
+            mask = (mask * 255).astype(np.uint8)
+            image_generator.save_image(mask_path, mask)
+
+            # Add to metadata - note: these are relative paths from category dir
+            metadata["test"].append({
+                "image_path": filename,
+                "mask_path": mask_filename,
+                "anomaly_class": "NG",
+                "camera_view": "C0",
+                "timestamp": "0000",
+            })
+
+        # Save metadata JSON file
+        json_path = jsons_dir / f"{category}.json"
+        with json_path.open("w") as f:
+            json.dump(metadata, f, indent=2)
 
     def _generate_dummy_vad_dataset(
         self,
@@ -530,6 +592,13 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
             label = LabelName.ABNORMAL
             image_filename = path / f"{i:03}{image_extension}"
             self.image_generator.generate_image(label, image_filename)
+
+    def _generate_dummy_visa_dataset(self) -> None:
+        """Generate dummy Visa dataset in directory using the same convention as Visa AD."""
+        # Visa dataset on anomalib follows the same convention as MVTec AD.
+        # The only difference is that the root directory has a subdirectory called "visa_pytorch".
+        self.dataset_root = self.dataset_root.parent / "visa_pytorch"
+        self._generate_dummy_mvtecad_dataset(normal_dir="good", abnormal_dir="bad", image_extension=".jpg")
 
 
 class DummyVideoDatasetGenerator(DummyDatasetGenerator):

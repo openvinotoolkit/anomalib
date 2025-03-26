@@ -33,6 +33,7 @@ from .folder import Folder
 from .kolektor import Kolektor
 from .mvtec_loco import MVTecLOCO
 from .mvtecad import MVTec, MVTecAD
+from .realiad import RealIAD
 from .vad import VAD
 from .visa import Visa
 
@@ -50,6 +51,7 @@ class ImageDataFormat(str, Enum):
     - ``MVTEC_AD``: MVTec AD Dataset
     - ``MVTEC_3D``: MVTec 3D AD Dataset
     - ``MVTEC_LOCO``: MVTec LOCO Dataset
+    - ``REALIAD``: Real-IAD Dataset
     - ``VAD``: Valeo Anomaly Detection Dataset
     - ``VISA``: Visual Anomaly Dataset
     """
@@ -62,6 +64,7 @@ class ImageDataFormat(str, Enum):
     MVTEC_AD = "mvtecad"
     MVTEC_3D = "mvtec_3d"
     MVTEC_LOCO = "mvtec_loco"
+    REAL_IAD = "realiad"
     VAD = "vad"
     VISA = "visa"
 
@@ -71,9 +74,10 @@ __all__ = [
     "Datumaro",
     "Folder",
     "Kolektor",
-    "MVTecAD",
     "MVTec",  # Include both for backward compatibility
+    "MVTecAD",
     "MVTecLOCO",
+    "RealIAD",
     "VAD",
     "Visa",
 ]
