@@ -30,6 +30,7 @@ from .folder import FolderDataset
 from .kolektor import KolektorDataset
 from .mvtec_loco import MVTecLOCODataset
 from .mvtecad import MVTecADDataset, MVTecDataset
+from .mvtecad2 import MVTecAD2Dataset
 from .vad import VADDataset
 from .visa import VisaDataset
 
@@ -38,9 +39,10 @@ __all__ = [
     "DatumaroDataset",
     "FolderDataset",
     "KolektorDataset",
+    "MVTecDataset",
     "MVTecADDataset",
+    "MVTecAD2Dataset",
     "MVTecLOCODataset",
     "VADDataset",
     "VisaDataset",
-    "MVTecDataset",
 ]

@@ -8,6 +8,7 @@ anomaly detection. The following data modules are available:
 - ``Folder``: Custom folder structure with normal/abnormal images
 - ``Kolektor``: Kolektor Surface-Defect Dataset
 - ``MVTecAD``: MVTec Anomaly Detection Dataset
+- ``MVTecAD2``: MVTec Anomaly Detection Dataset 2
 - ``MVTecLOCO``: MVTec LOCO Dataset with logical and structural anomalies
 - ``VAD``: Valeo Anomaly Detection Dataset
 - ``Visa``: Visual Anomaly Dataset
@@ -33,6 +34,7 @@ from .folder import Folder
 from .kolektor import Kolektor
 from .mvtec_loco import MVTecLOCO
 from .mvtecad import MVTec, MVTecAD
+from .mvtecad2 import MVTecAD2
 from .vad import VAD
 from .visa import Visa
 
@@ -48,6 +50,7 @@ class ImageDataFormat(str, Enum):
     - ``FOLDER_3D``: Custom folder structure for 3D images
     - ``KOLEKTOR``: Kolektor Surface-Defect Dataset
     - ``MVTEC_AD``: MVTec AD Dataset
+    - ``MVTEC_AD_2``: MVTec AD 2 Dataset
     - ``MVTEC_3D``: MVTec 3D AD Dataset
     - ``MVTEC_LOCO``: MVTec LOCO Dataset
     - ``VAD``: Valeo Anomaly Detection Dataset
@@ -60,6 +63,7 @@ class ImageDataFormat(str, Enum):
     FOLDER_3D = "folder_3d"
     KOLEKTOR = "kolektor"
     MVTEC_AD = "mvtecad"
+    MVTEC_AD_2 = "mvtecad2"
     MVTEC_3D = "mvtec_3d"
     MVTEC_LOCO = "mvtec_loco"
     VAD = "vad"
@@ -71,8 +75,9 @@ __all__ = [
     "Datumaro",
     "Folder",
     "Kolektor",
+    "MVTec",  # Include MVTec for backward compatibility
     "MVTecAD",
-    "MVTec",  # Include both for backward compatibility
+    "MVTecAD2",
     "MVTecLOCO",
     "VAD",
     "Visa",
