@@ -29,12 +29,9 @@ See Also:
 # SPDX-License-Identifier: Apache-2.0
 
 import logging
-from collections import OrderedDict
 from pathlib import Path
-from typing import Any
 
 import torch
-from lightning.pytorch.trainer.states import TrainerFn
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Resize
@@ -93,8 +90,6 @@ class WinClip(AnomalibModule):
         >>> model = WinClip(class_name="transistor")  # doctest: +SKIP
 
     Notes:
-        - The model automatically excludes CLIP backbone parameters from checkpoints to
-          reduce size
         - Input image size is fixed at 240x240 and cannot be modified
         - Uses a custom normalization transform specific to CLIP
 
@@ -102,8 +97,6 @@ class WinClip(AnomalibModule):
         - :class:`WinClipModel`: PyTorch implementation of the core model
         - :class:`PostProcessor`: Default post-processor used by WinCLIP
     """
-
-    EXCLUDE_FROM_STATE_DICT = frozenset({"model.clip"})
 
     def __init__(
         self,
@@ -248,49 +241,6 @@ class WinClip(AnomalibModule):
                 ``LearningType.ZERO_SHOT``
         """
         return LearningType.FEW_SHOT if self.k_shot else LearningType.ZERO_SHOT
-
-    def state_dict(self, **kwargs) -> OrderedDict[str, Any]:
-        """Get the state dict of the model.
-
-        Removes parameters of the frozen backbone to reduce checkpoint size.
-
-        Args:
-            **kwargs: Additional arguments to pass to parent's state_dict
-
-        Returns:
-            OrderedDict[str, Any]: State dict with backbone parameters removed
-        """
-        state_dict = super().state_dict(**kwargs)
-        if self._trainer is not None and self.trainer.state.fn in {
-            TrainerFn.FITTING,
-            TrainerFn.VALIDATING,
-        }:  # Keep backbone weights if exporting the model
-            for pattern in self.EXCLUDE_FROM_STATE_DICT:
-                remove_keys = [key for key in state_dict if key.startswith(pattern)]
-                for key in remove_keys:
-                    state_dict.pop(key)
-        return state_dict
-
-    def load_state_dict(self, state_dict: OrderedDict[str, Any], strict: bool = True) -> Any:  # noqa: ANN401
-        """Load the state dict of the model.
-
-        Restores backbone parameters before loading to ensure correct model initialization.
-
-        Args:
-            state_dict (OrderedDict[str, Any]): State dict to load
-            strict (bool, optional): Whether to strictly enforce that the keys in
-                ``state_dict`` match the keys returned by this module's
-                ``state_dict()`` function. Defaults to ``True``.
-
-        Returns:
-            Any: Return value from parent's load_state_dict
-        """
-        # restore the parameters of the excluded modules, if any
-        full_dict = super().state_dict()
-        for pattern in self.EXCLUDE_FROM_STATE_DICT:
-            restore_dict = {key: value for key, value in full_dict.items() if key.startswith(pattern)}
-            state_dict.update(restore_dict)
-        return super().load_state_dict(state_dict, strict)
 
     @classmethod
     def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
