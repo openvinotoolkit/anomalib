@@ -29,6 +29,12 @@ Example:
     >>> # Get predictions
     >>> predictions = engine.predict(model=model, datamodule=datamodule)
 
+    >>> # Configure pre-processor to reproduce paper settings
+    >>> pre_processor = Patchcore.configure_pre_processor(
+    ...     image_size=(256, 256),
+    ...     center_crop_size=(224, 224)
+    ... )
+
 Paper: https://arxiv.org/abs/2106.08265
 
 See Also:
@@ -163,20 +169,21 @@ class Patchcore(MemoryBankMixin, AnomalibModule):
     ) -> PreProcessor:
         """Configure the default pre-processor for PatchCore.
 
-        The pre-processor performs the following steps:
-        1. Resize image to specified size
-        2. Center crop to maintain aspect ratio
-        3. Normalize using ImageNet mean and std
+        If valid center_crop_size is provided, the pre-processor will
+        also perform center cropping, according to the paper.
 
         Args:
             image_size (tuple[int, int] | None, optional): Target size for
                 resizing. Defaults to ``(256, 256)``.
             center_crop_size (tuple[int, int] | None, optional): Size for center
-                cropping. If ``None``, scales proportionally to ``image_size``.
-                Defaults to ``None``.
+                cropping. Defaults to ``None``.
 
         Returns:
             PreProcessor: Configured pre-processor instance.
+
+        Raises:
+            ValueError: If at least one dimension of ``center_crop_size`` is larger
+                than correspondent ``image_size`` dimension.
 
         Example:
             >>> pre_processor = Patchcore.configure_pre_processor(
@@ -185,16 +192,22 @@ class Patchcore(MemoryBankMixin, AnomalibModule):
             >>> transformed_image = pre_processor(image)
         """
         image_size = image_size or (256, 256)
-        if center_crop_size is None:
-            # scale center crop size proportional to image size
-            height, width = image_size
-            center_crop_size = (int(height * (224 / 256)), int(width * (224 / 256)))
 
-        transform = Compose([
-            Resize(image_size, antialias=True),
-            CenterCrop(center_crop_size),
-            Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
+        if center_crop_size is not None:
+            if center_crop_size[0] > image_size[0] or center_crop_size[1] > image_size[1]:
+                msg = f"Center crop size {center_crop_size} cannot be larger than image size {image_size}."
+                raise ValueError(msg)
+            transform = Compose([
+                Resize(image_size, antialias=True),
+                CenterCrop(center_crop_size),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
+        else:
+            transform = Compose([
+                Resize(image_size, antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
+
         return PreProcessor(transform=transform)
 
     @staticmethod

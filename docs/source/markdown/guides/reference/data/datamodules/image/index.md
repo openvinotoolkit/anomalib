@@ -46,7 +46,7 @@ MVTecAD AD dataset datamodule for unsupervised anomaly detection.
 :link: visa
 :link-type: doc
 
-Visual Inspection of Surface Anomalies (VisA) dataset datamodule.
+Visual Anomaly (VisA) dataset datamodule.
 :::
 ```
 

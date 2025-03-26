@@ -19,7 +19,7 @@ from typing import Any
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torch import nn
-from torchvision.transforms.v2 import Compose, Resize, Transform
+from torchvision.transforms.v2 import Compose, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch
@@ -217,23 +217,20 @@ class Draem(AnomalibModule):
         """
         return LearningType.ONE_CLASS
 
-    @staticmethod
-    def configure_transforms(image_size: tuple[int, int] | None = None) -> Transform:
-        """Configure default transforms for DRAEM.
+    @classmethod
+    def configure_pre_processor(cls, image_size: tuple[int, int] | None = None) -> PreProcessor:
+        """Configure default pre-processor for DRÆM.
 
         Note:
-            Normalization is not needed as images are scaled to [0, 1] in Dataset.
+            Imagenet normalization is not used in this model.
 
         Args:
-            image_size (tuple[int, int] | None, optional): Target size for image
-                resizing. Defaults to ``(256, 256)``.
+            image_size (tuple[int, int] | None, optional): Target image size.
+                Defaults to ``(256, 256)``.
 
         Returns:
-            Transform: Composed transform including resizing.
+            PreProcessor: Configured pre-processor with resize transform.
         """
         image_size = image_size or (256, 256)
-        return Compose(
-            [
-                Resize(image_size, antialias=True),
-            ],
-        )
+        transform = Compose([Resize(image_size, antialias=True)])
+        return PreProcessor(transform=transform)

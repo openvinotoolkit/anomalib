@@ -6,6 +6,28 @@ Localization.
 Paper: https://arxiv.org/abs/2206.04325
 
 This implementation uses PyTorch Lightning for training and inference.
+
+Example:
+    >>> from anomalib.data import MVTecAD
+    >>> from anomalib.models import Cfa
+    >>> from anomalib.engine import Engine
+
+    >>> # Initialize model and data
+    >>> datamodule = MVTecAD()
+    >>> model = Cfa()
+
+    >>> # Train using the Engine
+    >>> engine = Engine()
+    >>> engine.fit(model=model, datamodule=datamodule)
+
+    >>> # Get predictions
+    >>> predictions = engine.predict(model=model, datamodule=datamodule)
+
+    >>> # Configure pre-processor to reproduce paper settings
+    >>> pre_processor = Cfa.configure_pre_processor(
+    ...     image_size=(256, 256),
+    ...     center_crop_size=(224, 224)
+    ... )
 """
 
 # Copyright (C) 2022-2025 Intel Corporation
@@ -16,6 +38,7 @@ from typing import Any
 
 import torch
 from lightning.pytorch.utilities.types import STEP_OUTPUT
+from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import Batch
@@ -98,6 +121,56 @@ class Cfa(AnomalibModule):
             num_hard_negative_features=num_hard_negative_features,
             radius=radius,
         )
+
+    @classmethod
+    def configure_pre_processor(
+        cls,
+        image_size: tuple[int, int] | None = None,
+        center_crop_size: tuple[int, int] | None = None,
+    ) -> PreProcessor:
+        """Configure the default pre-processor for CFA.
+
+        If valid center_crop_size is provided, the pre-processor will
+        also perform center cropping, according to the official implementation.
+        https://github.com/sungwool/CFA_for_anomaly_localization/blob/07080868be8dbf7fd5573255bd32c7f7785e7c34/trainer_cfa.py#L68C41-L68C72
+
+        Args:
+            image_size (tuple[int, int] | None, optional): Target size for
+                resizing. Defaults to ``(256, 256)``.
+            center_crop_size (tuple[int, int] | None, optional): Size for center
+                cropping. Defaults to ``None``.
+
+        Returns:
+            PreProcessor: Configured pre-processor instance.
+
+        Raises:
+            ValueError: If at least one dimension of ``center_crop_size`` is larger
+                than correspondent ``image_size`` dimension.
+
+        Example:
+            >>> pre_processor = CFA.configure_pre_processor(
+            ...     image_size=(256, 256)
+            ... )
+            >>> transformed_image = pre_processor(image)
+        """
+        image_size = image_size or (256, 256)
+
+        if center_crop_size is not None:
+            if center_crop_size[0] > image_size[0] or center_crop_size[1] > image_size[1]:
+                msg = f"Center crop size {center_crop_size} cannot be larger than image size {image_size}."
+                raise ValueError(msg)
+            transform = Compose([
+                Resize(image_size, antialias=True),
+                CenterCrop(center_crop_size),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
+        else:
+            transform = Compose([
+                Resize(image_size, antialias=True),
+                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ])
+
+        return PreProcessor(transform=transform)
 
     def on_train_start(self) -> None:
         """Initialize the centroid for memory bank computation.
