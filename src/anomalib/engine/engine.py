@@ -33,18 +33,19 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+from jsonargparse import Namespace
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT, _PREDICT_OUTPUT, EVAL_DATALOADERS, TRAIN_DATALOADERS
 from torch.utils.data import DataLoader, Dataset
-from torchmetrics import Metric
 
 from anomalib import LearningType
 from anomalib.callbacks.checkpoint import ModelCheckpoint
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
+from anomalib.metrics import AnomalibMetric, get_metric
 from anomalib.models import AnomalibModule
 from anomalib.utils.path import create_versioned_dir
 
@@ -732,7 +733,7 @@ class Engine:
         input_size: tuple[int, int] | None = None,
         compression_type: CompressionType | None = None,
         datamodule: AnomalibDataModule | None = None,
-        metric: Metric | str | None = None,
+        metric: AnomalibMetric | str | dict | Namespace | None = None,
         ov_args: dict[str, Any] | None = None,
         ckpt_path: str | Path | None = None,
     ) -> Path | None:
@@ -753,7 +754,7 @@ class Engine:
                 Must be provided if ``CompressionType.INT8_PTQ`` or `CompressionType.INT8_ACQ`` is selected
                 (OpenVINO export only).
                 Defaults to ``None``.
-            metric (Metric | str | None, optional): Metric to measure quality loss when quantizing.
+            metric (AnomalibMetric | str | None, optional): Metric to measure quality loss when quantizing.
                 Must be provided if ``CompressionType.INT8_ACQ`` is selected and must return higher value for better
                 performance of the model (OpenVINO export only).
                 Defaults to ``None``.
@@ -787,6 +788,13 @@ class Engine:
                 anomalib export --model Padim --export_type openvino --ckpt_path <PATH_TO_CHECKPOINT> \
                 --input_size "[256,256]" --compression_type INT8_PTQ --data MVTec
                 ```
+            5. You can also quantize OpenVINO model with ACQ technique using the following command.
+                ```python
+                anomalib export --model Padim --export_type openvino --ckpt_path <PATH_TO_CHECKPOINT> \
+                --input_size "[256,256]" --compression_type INT8_PTQ --data MVTec --metric min_max
+                If the metric fields need to be manually defined by the user, then the user can add the
+                following command-line argument, `--metric.fields "['pred_scores', 'gt_labels']"`
+                ```
         """
         export_type = ExportType(export_type)
         self._setup_trainer(model)
@@ -796,6 +804,9 @@ class Engine:
 
         if export_root is None:
             export_root = Path(self.trainer.default_root_dir)
+
+        if metric is not None and not isinstance(metric, AnomalibMetric):
+            metric = get_metric(metric, use_placeholder_fields=True)
 
         exported_model_path: Path | None = None
         if export_type == ExportType.TORCH:

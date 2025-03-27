@@ -12,7 +12,7 @@ import pytest
 import torch
 
 from anomalib.cli import AnomalibCLI
-from anomalib.deploy import ExportType
+from anomalib.deploy import CompressionType, ExportType
 
 
 class TestCLI:
@@ -178,6 +178,140 @@ class TestCLI:
                 f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
             ],
         )
+
+    @pytest.mark.parametrize("compression_type", [CompressionType.FP16, CompressionType.INT8])
+    def test_export_compression_type(
+        self,
+        project_path: Path,
+        compression_type: CompressionType,
+    ) -> None:
+        """Test the FP16 and INT8 export methods of the CLI.
+
+        Args:
+            project_path (Path): Path to temporary project folder.
+            compression_type (CompressionType): Compression type.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--export_type",
+                ExportType.OPENVINO,
+                "--compression_type",
+                compression_type,
+                *self._get_common_cli_args(None, project_path),
+                "--ckpt_path",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
+
+    def test_export_ptq_compression_type(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+    ) -> None:
+        """Test the PTQ (Post Training Quantization) export method of the CLI.
+
+        Args:
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--export_type",
+                ExportType.OPENVINO,
+                "--compression_type",
+                CompressionType.INT8_PTQ,
+                *self._get_common_cli_args(dataset_path, project_path),
+                "--ckpt_path",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
+
+    def test_export_acq_compression_type(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+    ) -> None:
+        """Test the ACQ (Accuracy Control Quantization) export method of the CLI.
+
+        Args:
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--export_type",
+                ExportType.OPENVINO,
+                "--compression_type",
+                CompressionType.INT8_ACQ,
+                "--metric",
+                "AUPRO",
+                *self._get_common_cli_args(dataset_path, project_path),
+                "--ckpt_path",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
+
+    def test_export_acq_compression_type_auto_metric_fields(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+    ) -> None:
+        """Test the ACQ export method thorugh automatic field selection through CLI.
+
+        Args:
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--export_type",
+                ExportType.OPENVINO,
+                "--compression_type",
+                CompressionType.INT8_ACQ,
+                "--metric",
+                "AUPRO",
+                *self._get_common_cli_args(dataset_path, project_path),
+                "--ckpt_path",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
+
+    def test_export_acq_compression_type_manual_metric_fields(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+    ) -> None:
+        """Test the ACQ export method thorugh manual field selection through CLI.
+
+        Args:
+            dataset_path (Path): Root of the synthetic/original dataset.
+            project_path (Path): Path to temporary project folder.
+        """
+        AnomalibCLI(
+            args=[
+                "export",
+                "--export_type",
+                ExportType.OPENVINO,
+                "--compression_type",
+                CompressionType.INT8_ACQ,
+                "--metric",
+                "F1Score",
+                "--metric.fields",
+                "['pred_score', 'gt_label']",
+                *self._get_common_cli_args(dataset_path, project_path),
+                "--ckpt_path",
+                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+            ],
+        )
+        torch.cuda.empty_cache()
 
     @staticmethod
     def _get_common_cli_args(dataset_path: Path | None, project_path: Path) -> list[str]:
