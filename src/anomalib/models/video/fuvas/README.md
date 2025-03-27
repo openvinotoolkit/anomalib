@@ -9,7 +9,7 @@ This folder contains the FUVAS video anomaly detection model which can support b
 The following example shows how to use the FUVAS model to train on the ucsdped dataset.
 
 <details>
-<summary>Training the AiVad model on Avenue video dataset</summary>
+<summary>Training the Fuvas model on UCSDped video dataset</summary>
 
 ```python
 # Import the necessary modules
