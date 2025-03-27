@@ -26,8 +26,6 @@ Notes:
 
 import numpy as np
 import torch
-from skimage.transform import resize
-from sklearn.decomposition import PCA
 from torch import nn
 from torch.nn import functional as F  # noqa: N812
 from torchvision.models.video import Swin3D_B_Weights, swin3d_b
@@ -35,7 +33,7 @@ from torchvision.models.feature_extraction import create_feature_extractor
 
 from anomalib.data import InferenceBatch
 
-# from .feature_extractor import FeatureExtractor
+from anomalib.models.components import PCA
 
 
 class FUVASModel(nn.Module):
@@ -112,7 +110,6 @@ class FUVASModel(nn.Module):
         net.eval()
         self.feature_extractor = create_feature_extractor(net, return_nodes=[layer])
 
-        self.peak = 0
 
     def fit(self, dataset: torch.Tensor) -> None:
         """Fit PCA model to dataset.
@@ -121,10 +118,7 @@ class FUVASModel(nn.Module):
             dataset (torch.Tensor): Input dataset with shape
                 ``(n_samples, n_features)``.
         """
-        self.pca_model.fit(dataset.numpy())
-        oi_j = self.pca_model.transform(dataset.numpy())
-        oi_recon = self.pca_model.inverse_transform(oi_j)
-        self.peak = abs(dataset.numpy() - oi_recon)
+        self.pca_model.fit(dataset)
 
     def score(self, features: torch.Tensor, feature_shapes: tuple) -> torch.Tensor:
         """Compute anomaly scores.
@@ -140,14 +134,12 @@ class FUVASModel(nn.Module):
             tuple[torch.Tensor, Optional[torch.Tensor]]: Tuple containing
                 (scores, anomaly_maps).
         """
-        feats_projected = self.pca_model.transform(features.numpy())
+        feats_projected = self.pca_model.transform(features)
         feats_reconstructed = self.pca_model.inverse_transform(feats_projected)
-        fre_prereshape = np.square(features.numpy() - feats_reconstructed)
-        fre_prereshape_np = fre_prereshape
-        fre = fre_prereshape_np.reshape(feature_shapes)
-        score_map_np = np.sum(fre, axis=(1, 2))  # NxTxCxHxW->NxHxW
-        score_map = torch.from_numpy(score_map_np)
-        score = torch.from_numpy(np.sum(score_map_np, axis=(1, 2)))  # NxHxW->N
+        fre_prereshape = torch.square(features - feats_reconstructed)
+        fre = fre_prereshape.reshape(feature_shapes)
+        score_map = torch.sum(fre, dim=(1, 2))  # NxTxCxHxW->NxHxW
+        score = torch.sum(score_map, axis=(1, 2))  # NxHxW->N
 
         return score if not self.do_seg else (score, score_map)
 
@@ -185,7 +177,7 @@ class FUVASModel(nn.Module):
                 pool_features = F.avg_pool1d(fea_vector, self.pooling_kernel_size)
                 feature_shape[1] = feature_shape[1] // self.pooling_kernel_size
 
-        features = pool_features.cpu().reshape(feature_shape[0], -1)
+        features = pool_features.detach().reshape(feature_shape[0], -1)
         return features, feature_shape
 
     def forward(self, batch: torch.Tensor) -> torch.Tensor | InferenceBatch:
@@ -207,12 +199,9 @@ class FUVASModel(nn.Module):
         else:
             pred_score = self.score(feature_vector, feature_shapes)
         if anomaly_map is not None:
-            anomaly_map_stack = []
-            for map_one in anomaly_map:
-                map_one_np = map_one.numpy()
-                anomaly_map_stack.append(resize(map_one_np, tuple(batch.shape[-2:])))
-            anomaly_map_stack = np.stack(anomaly_map_stack)
-            anomaly_map_stack = torch.from_numpy(anomaly_map_stack)
-            anomaly_map_stack = torch.unsqueeze(anomaly_map_stack, 1).to(batch.device)
+            anomaly_map_with_c = torch.unsqueeze(anomaly_map, 1).to(batch.device)
+            anomaly_map_stack = F.interpolate(anomaly_map_with_c, size=batch.shape[-2:], mode="bilinear", align_corners=False)
+            # anomaly_map_stack = torch.squeeze(anomaly_map_stack,1)
+            anomaly_map_stack = anomaly_map_stack.to(batch.device)
         pred_score = pred_score.to(batch.device)
         return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map_stack)
