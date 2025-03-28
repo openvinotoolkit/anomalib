@@ -41,6 +41,7 @@ from anomalib.models.components import AnomalibModule, MemoryBankMixin
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 from anomalib.visualization import Visualizer
+from anomalib import TaskType
 
 from .torch_model import FUVASModel
 
@@ -64,9 +65,9 @@ class Fuvas(MemoryBankMixin, AnomalibModule):
         pca_level (float, optional): Ratio of variance to preserve in PCA.
             Must be between 0 and 1.
             Defaults to ``0.98``.
-        do_seg (bool, optional): Whether to perform anomaly segmentation.
-            If False, only detection scores are computed.
-            Defaults to ``True``.
+        task (TaskType|str, optional): Whether to perform anomaly segmentation.
+            If segmentation, perform segmentation along with detection
+            Defaults to ``segmentation``.
         pre_processor (PreProcessor | bool, optional): Pre-processor to use.
             If ``True``, uses the default pre-processor.
             If ``False``, no pre-processing is performed.
@@ -93,7 +94,7 @@ class Fuvas(MemoryBankMixin, AnomalibModule):
         spatial_pool: bool = True,
         pooling_kernel_size: int = 1,
         pca_level: float = 0.98,
-        do_seg: bool = True,
+        task: TaskType|str = 'segmentation',
         pre_processor: PreProcessor | bool = True,
         post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
@@ -112,7 +113,7 @@ class Fuvas(MemoryBankMixin, AnomalibModule):
             layer=layer,
             pooling_kernel_size=pooling_kernel_size,
             n_comps=pca_level,
-            do_seg=do_seg,
+            task=task,
             spatial_pool=spatial_pool,
         )
         self.embeddings: list[torch.Tensor] = []

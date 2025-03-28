@@ -8,7 +8,7 @@ This folder contains the FUVAS video anomaly detection model which can support b
 
 The following example shows how to use the FUVAS model to train on the ucsdped dataset.
 
-<details>
+
 <summary>Training the Fuvas model on UCSDped video dataset</summary>
 
 ```python
@@ -17,7 +17,7 @@ from anomalib.data import UCSDped
 from anomalib.models import Fuvas
 from anomalib.engine import Engine
 
-# Load the avenue dataset, model and engine.
+# Load the ucsdped dataset, model and engine.
 datamodule = UCSDped()
 model = Fuvas()
 engine = Engine()
@@ -25,10 +25,15 @@ engine = Engine()
 # Train the model
 engine.train(model, datamodule)
 ```
-</details>
+
 
 ## Example running output
-![DRGSmethod](fuvas_anomalib_results.png)
+| Test metric	| DataLoader 0 |
+| ----------  | ------------ |
+| frame_AUROC	|0.9135797023773193|
+| mean_F1Score	|0.9350237846374512|
+| pixel_AUROC	|0.9756277996063232|
+
 
 
 
