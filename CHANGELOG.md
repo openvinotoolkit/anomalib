@@ -233,12 +233,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 🐞 Fix keys in data configs to fit AnomalibDataModule parameters by @abc-125 in https://github.com/openvinotoolkit/anomalib/pull/2032
 - 🐞 Fix Export docstring in CLI by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2058
 - 🐞 Fix UFlow links by @ashwinvaidya17 in https://github.com/openvinotoolkit/anomalib/pull/2059
+- 🐞 Fix custom callbacks dirpath to be the same as default root dir by @CarlosNacher in https://github.com/openvinotoolkit/anomalib/pull/2194
 
 ### New Contributors
 
 - @seyeon923 made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1966
 - @rglkt made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1956
 - @DoMaLi94 made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/1847
+- @CarlosNacher made their first contribution in https://github.com/openvinotoolkit/anomalib/pull/2194
 
 **Full Changelog**: https://github.com/openvinotoolkit/anomalib/compare/v1.0.1...v1.1.0
 
