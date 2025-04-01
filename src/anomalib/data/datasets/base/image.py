@@ -264,30 +264,44 @@ class AnomalibDataset(Dataset, ABC):
         mask_path = self.samples.iloc[index].mask_path
         label_index = self.samples.iloc[index].label_index
 
+        # Read the image
         image = read_image(image_path, as_tensor=True)
-        item = {"image_path": image_path, "gt_label": label_index}
 
-        if self.task == TaskType.CLASSIFICATION:
-            item["image"] = self.augmentations(image) if self.augmentations else image
-        elif self.task == TaskType.SEGMENTATION:
-            # Create empty mask for:
-            # - Normal samples (label_index = 0)
-            # - Unknown samples (label_index = -1)
-            # Only use mask for anomalous samples (label_index = 1)
-            mask = (
-                Mask(torch.zeros(image.shape[-2:])).to(torch.uint8)
-                if label_index in {LabelName.NORMAL, LabelName.UNKNOWN}
-                else read_mask(mask_path, as_tensor=True)
-            )
-            item["image"], item["gt_mask"] = self.augmentations(image, mask) if self.augmentations else (image, mask)
-        else:
-            msg = f"Unknown task type: {self.task}"
-            raise ValueError(msg)
+        # Initialize mask as None
+        gt_mask = None
 
+        # Process based on task type
+        if self.task == TaskType.SEGMENTATION:
+            if label_index == LabelName.NORMAL:
+                # Create zero mask for normal samples
+                gt_mask = Mask(torch.zeros(image.shape[-2:])).to(torch.uint8)
+            elif label_index == LabelName.ABNORMAL:
+                # Read mask for anomalous samples
+                gt_mask = read_mask(mask_path, as_tensor=True)
+            # For UNKNOWN, gt_mask remains None
+
+        # Apply augmentations if available
+        if self.augmentations:
+            if self.task == TaskType.CLASSIFICATION:
+                image = self.augmentations(image)
+            elif self.task == TaskType.SEGMENTATION:
+                # For augmentations that require both image and mask:
+                # - Use a temporary zero mask for UNKNOWN samples
+                # - But preserve the final gt_mask as None for UNKNOWN
+                temp_mask = gt_mask if gt_mask is not None else Mask(torch.zeros(image.shape[-2:])).to(torch.uint8)
+                image, augmented_mask = self.augmentations(image, temp_mask)
+                # Only update gt_mask if it wasn't None before augmentations
+                if gt_mask is not None:
+                    gt_mask = augmented_mask
+
+        # Create gt_label tensor (None for UNKNOWN)
+        gt_label = None if label_index == LabelName.UNKNOWN else torch.tensor(label_index)
+
+        # Return the dataset item
         return ImageItem(
-            image=item["image"],
-            gt_mask=item.get("gt_mask"),
-            gt_label=torch.tensor(label_index),  # Convert to tensor to match type hints
+            image=image,
+            gt_mask=gt_mask,
+            gt_label=gt_label,
             image_path=image_path,
             mask_path=mask_path,
         )
