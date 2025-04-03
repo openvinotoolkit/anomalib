@@ -56,6 +56,7 @@ core = [
     #   torch.onnx.errors.UnsupportedOperatorError: Exporting the operator
     #   'aten::_native_multi_head_attention' to ONNX opset version 14 is not supported
     "open-clip-torch>=2.23.0,<2.26.1",
+    "fvcore",
 ]
 openvino = ["openvino>=2024.0", "nncf>=2.10.0", "onnx>=1.16.0"]
 vlm = ["ollama>=0.4.0", "openai", "python-dotenv","transformers"]

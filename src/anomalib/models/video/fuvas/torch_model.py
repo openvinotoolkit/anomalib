@@ -53,7 +53,7 @@ class FUVASModel(nn.Module):
         pooling_kernel_size (int, optional): Kernel size to pool features.
             Defaults to ``4``.
         n_comps (float, optional): Ratio for PCA components calculation.
-            Defaults to ``0.97``.
+            Defaults to ``0.98``.
         task (TaskType|str, optional): Whether to do video anomaly segmentation or detection
             Default to ``segmentation``.
 
