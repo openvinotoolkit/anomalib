@@ -30,6 +30,7 @@ Reference:
 # Copyright (C) 2025 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
 from pathlib import Path
 
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS
@@ -39,7 +40,17 @@ from torchvision.transforms.v2 import Transform
 from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image import MVTecAD2Dataset
 from anomalib.data.datasets.image.mvtecad2 import TestType
-from anomalib.data.utils import Split
+from anomalib.data.utils import DownloadInfo, Split, download_and_extract
+
+logger = logging.getLogger(__name__)
+
+# Download information for MVTec AD 2 dataset
+DOWNLOAD_INFO = DownloadInfo(
+    name="mvtecad2",
+    url="https://www.mydrive.ch/shares/121573/7f68fe2c4f7c2ceaa08f463aaeb2f414/download/"
+    "466712769-1743422799/mvtec_ad_2.tar.gz",
+    hashsum="c0ded99ef32bfc8e352d52beb44515e5b292b8598cb963aadfa91ca0763505e4",
+)
 
 
 class MVTecAD2(AnomalibDataModule):
@@ -129,11 +140,33 @@ class MVTecAD2(AnomalibDataModule):
         self.test_type = TestType(test_type) if isinstance(test_type, str) else test_type
 
     def prepare_data(self) -> None:
-        """Prepare the dataset.
+        """Download the dataset if not available.
 
-        MVTec AD 2 dataset needs to be downloaded manually from MVTec AD 2 website.
+        This method checks if the specified dataset is available in the file
+        system. If not, it downloads and extracts the dataset into the
+        appropriate directory.
+
+        Example:
+            Assume the dataset is not available on the file system::
+
+                >>> datamodule = MVTecAD2(
+                ...     root="./datasets/MVTecAD2",
+                ...     category="can"
+                ... )
+                >>> datamodule.prepare_data()
+
+            Directory structure after download::
+
+                datasets/
+                └── MVTecAD2/
+                    ├── can/
+                    ├── fabric/
+                    └── ...
         """
-        # NOTE: For now, users need to manually download the dataset.
+        if (self.root / self.category).is_dir():
+            logger.info("Found the dataset.")
+        else:
+            download_and_extract(self.root, DOWNLOAD_INFO)
 
     def _setup(self, _stage: str | None = None) -> None:
         """Set up the datasets and perform train/validation/test split.
