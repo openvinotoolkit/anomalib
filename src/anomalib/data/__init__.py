@@ -49,7 +49,19 @@ from .dataclasses import (
 # Datamodules
 from .datamodules.base import AnomalibDataModule
 from .datamodules.depth import DepthDataFormat, Folder3D, MVTec3D
-from .datamodules.image import VAD, BTech, Datumaro, Folder, ImageDataFormat, Kolektor, MVTec, MVTecAD, MVTecLOCO, Visa
+from .datamodules.image import (
+    VAD,
+    BTech,
+    Datumaro,
+    Folder,
+    ImageDataFormat,
+    Kolektor,
+    MVTec,
+    MVTecAD,
+    MVTecLOCO,
+    RealIAD,
+    Visa,
+)
 from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 # Datasets
@@ -146,40 +158,46 @@ __all__ = [
     "NumpyVideoItem",
     "VideoBatch",
     "VideoItem",
-    # Depth
+    # Data Formats
+    "DataFormat",
     "DepthDataFormat",
-    "Folder3D",
-    "Folder3DDataset",
-    "MVTec3D",
-    "MVTec3DDataset",
-    # Image
-    "BTech",
-    "BTechDataset",
-    "Datumaro",
-    "DatumaroDataset",
-    "Folder",
-    "FolderDataset",
     "ImageDataFormat",
-    "Kolektor",
-    "KolektorDataset",
-    "MVTec",  # Include MVTec for backward compatibility
-    "MVTecAD",
-    "MVTecADDataset",
-    "MVTecLOCO",
-    "MVTecLOCODataset",
-    "VAD",
-    "VADDataset",
-    "Visa",
-    "VisaDataset",
-    # Video
-    "Avenue",
-    "AvenueDataset",
-    "ShanghaiTech",
-    "ShanghaiTechDataset",
-    "UCSDped",
-    "UCSDpedDataset",
     "VideoDataFormat",
-    # Predict
+    # Depth Data Modules
+    "Folder3D",
+    "MVTec3D",
+    # Image Data Modules
+    "BTech",
+    "Datumaro",
+    "Folder",
+    "Kolektor",
+    "MVTec",
+    "MVTecAD",
+    "MVTecLOCO",
+    "RealIAD",
+    "VAD",
+    "Visa",
+    # Video Data Modules
+    "Avenue",
+    "ShanghaiTech",
+    "UCSDped",
+    # Datasets
+    "Folder3DDataset",
+    "MVTec3DDataset",
+    "BTechDataset",
+    "DatumaroDataset",
+    "FolderDataset",
+    "KolektorDataset",
+    "MVTecADDataset",
+    "MVTecLOCODataset",
+    "VADDataset",
+    "VisaDataset",
+    "AvenueDataset",
+    "ShanghaiTechDataset",
+    "UCSDpedDataset",
     "PredictDataset",
+    # Functions
     "get_datamodule",
+    # Exceptions
+    "UnknownDatamoduleError",
 ]
