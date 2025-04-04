@@ -28,7 +28,7 @@ Example:
 
 from .timm import TimmFeatureExtractor
 from .utils import dryrun_find_featuremap_dims
-
+from .network_feature_extractor import NetworkFeatureAggregator
 __all__ = [
     "dryrun_find_featuremap_dims",
     "TimmFeatureExtractor",
