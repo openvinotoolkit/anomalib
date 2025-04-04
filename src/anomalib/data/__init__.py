@@ -60,6 +60,7 @@ from .datamodules.image import (
     MVTecAD,
     MVTecAD2,
     MVTecLOCO,
+    RealIAD,
     Visa,
 )
 from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
@@ -158,41 +159,47 @@ __all__ = [
     "NumpyVideoItem",
     "VideoBatch",
     "VideoItem",
-    # Depth
+    # Data Formats
+    "DataFormat",
     "DepthDataFormat",
-    "Folder3D",
-    "Folder3DDataset",
-    "MVTec3D",
-    "MVTec3DDataset",
-    # Image
-    "BTech",
-    "BTechDataset",
-    "Datumaro",
-    "DatumaroDataset",
-    "Folder",
-    "FolderDataset",
     "ImageDataFormat",
+    "VideoDataFormat",
+    # Depth Data Modules
+    "Folder3D",
+    "MVTec3D",
+    # Image Data Modules
+    "BTech",
+    "Datumaro",
+    "Folder",
     "Kolektor",
-    "KolektorDataset",
     "MVTec",  # Include MVTec for backward compatibility
     "MVTecAD",
+    "MVTecLOCO",
+    "RealIAD",
+    "VAD",
+    "Visa",
+    # Video Data Modules
+    "Avenue",
+    "ShanghaiTech",
+    "UCSDped",
+    # Datasets
+    "Folder3DDataset",
+    "MVTec3DDataset",
+    "BTechDataset",
+    "DatumaroDataset",
+    "FolderDataset",
+    "KolektorDataset",
     "MVTecADDataset",
     "MVTecAD2",
-    "MVTecLOCO",
     "MVTecLOCODataset",
-    "VAD",
     "VADDataset",
-    "Visa",
     "VisaDataset",
-    # Video
-    "Avenue",
     "AvenueDataset",
-    "ShanghaiTech",
     "ShanghaiTechDataset",
-    "UCSDped",
     "UCSDpedDataset",
-    "VideoDataFormat",
-    # Predict
     "PredictDataset",
+    # Functions
     "get_datamodule",
+    # Exceptions
+    "UnknownDatamoduleError",
 ]
