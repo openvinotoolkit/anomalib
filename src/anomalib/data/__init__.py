@@ -174,6 +174,7 @@ __all__ = [
     "Kolektor",
     "MVTec",  # Include MVTec for backward compatibility
     "MVTecAD",
+    "MVTecAD2",
     "MVTecLOCO",
     "RealIAD",
     "VAD",
@@ -190,7 +191,6 @@ __all__ = [
     "FolderDataset",
     "KolektorDataset",
     "MVTecADDataset",
-    "MVTecAD2",
     "MVTecLOCODataset",
     "VADDataset",
     "VisaDataset",
