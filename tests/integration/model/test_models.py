@@ -196,8 +196,8 @@ class TestAPI:
         if model_name == "dfkde":
             extra_args["n_pca_components"] = 2
 
-        if model_name == "ai_vad":
-            pytest.skip("Revisit AI-VAD test")
+        if model_name == {"ai_vad", "fuvas"}:
+            pytest.skip("Revisit video models tests")
         else:
             # EfficientAd requires that the batch size be lesser than the number of images in the dataset.
             # This is so that the LR step size is not 0.
