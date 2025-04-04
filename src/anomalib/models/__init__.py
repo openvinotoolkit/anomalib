@@ -49,6 +49,7 @@ import logging
 from importlib import import_module
 
 from jsonargparse import Namespace
+from lightning_utilities.core.imports import module_available
 from omegaconf import DictConfig, OmegaConf
 
 from anomalib.models.components import AnomalibModule
@@ -72,7 +73,6 @@ from .image import (
     Stfpm,
     Supersimplenet,
     Uflow,
-    VlmAd,
     WinClip,
 )
 from .video import AiVad
@@ -100,10 +100,15 @@ __all__ = [
     "Stfpm",
     "Supersimplenet",
     "Uflow",
-    "VlmAd",
     "WinClip",
     "AiVad",
 ]
+
+if module_available("anomalib.models.image.vlm_ad"):
+    from .image import VlmAd
+
+    __all__.append("VlmAd")
+
 
 logger = logging.getLogger(__name__)
 
