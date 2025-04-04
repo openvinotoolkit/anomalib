@@ -565,6 +565,72 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
         with json_path.open("w") as f:
             json.dump(metadata, f, indent=2)
 
+    def _generate_dummy_mvtecad2_dataset(
+        self,
+        normal_dir: str = "good",
+        abnormal_dir: str = "bad",
+        image_extension: str = ".png",
+        mask_suffix: str = "_mask",
+        mask_extension: str = ".png",
+    ) -> None:
+        """Generate a dummy MVTec AD 2 dataset.
+
+        Args:
+            normal_dir (str, optional): Name of the normal directory. Defaults to "good".
+            abnormal_dir (str, optional): Name of the abnormal directory. Defaults to "bad".
+            image_extension (str, optional): Extension of the image files. Defaults to ".png".
+            mask_suffix (str, optional): Suffix to append to mask filenames. Defaults to "_mask".
+            mask_extension (str, optional): Extension of the mask files. Defaults to ".png".
+        """
+        # MVTec AD 2 has multiple subcategories within the dataset
+        dataset_category = "dummy"
+        category_root = self.dataset_root / dataset_category
+
+        # Create train directory with normal images
+        train_path = category_root / "train" / normal_dir
+        for i in range(self.num_train):
+            image_path = train_path / f"{i:03d}_regular{image_extension}"
+            self.image_generator.generate_image(label=LabelName.NORMAL, image_filename=image_path)
+
+        # Create validation directory with normal images
+        val_path = category_root / "validation" / normal_dir
+        for i in range(self.num_test):
+            image_path = val_path / f"{i:03d}_regular{image_extension}"
+            self.image_generator.generate_image(label=LabelName.NORMAL, image_filename=image_path)
+
+        # Create public test directory with normal and abnormal images
+        test_public_path = category_root / "test_public"
+
+        # Normal test images
+        test_normal_path = test_public_path / normal_dir
+        for i in range(self.num_test):
+            image_path = test_normal_path / f"{i:03d}_regular{image_extension}"
+            self.image_generator.generate_image(label=LabelName.NORMAL, image_filename=image_path)
+
+        # Abnormal test images with masks
+        test_abnormal_path = test_public_path / abnormal_dir
+        test_mask_path = test_public_path / "ground_truth" / abnormal_dir
+        for i in range(self.num_test):
+            image_path = test_abnormal_path / f"{i:03d}_regular{image_extension}"
+            mask_path = test_mask_path / f"{i:03d}_regular{mask_suffix}{mask_extension}"
+            self.image_generator.generate_image(
+                label=LabelName.ABNORMAL,
+                image_filename=image_path,
+                mask_filename=mask_path,
+            )
+
+        # Create private test directory with unknown images
+        test_private_path = category_root / "test_private"
+        for i in range(self.num_test):
+            image_path = test_private_path / f"{i:03d}_regular{image_extension}"
+            self.image_generator.generate_image(label=LabelName.NORMAL, image_filename=image_path)
+
+        # Create private mixed test directory with unknown images
+        test_private_mixed_path = category_root / "test_private_mixed"
+        for i in range(self.num_test):
+            image_path = test_private_mixed_path / f"{i:03d}_regular{image_extension}"
+            self.image_generator.generate_image(label=LabelName.NORMAL, image_filename=image_path)
+
     def _generate_dummy_vad_dataset(
         self,
         normal_dir: str = "good",

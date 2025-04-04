@@ -58,6 +58,7 @@ from .datamodules.image import (
     Kolektor,
     MVTec,
     MVTecAD,
+    MVTecAD2,
     MVTecLOCO,
     RealIAD,
     Visa,
@@ -171,8 +172,9 @@ __all__ = [
     "Datumaro",
     "Folder",
     "Kolektor",
-    "MVTec",
+    "MVTec",  # Include MVTec for backward compatibility
     "MVTecAD",
+    "MVTecAD2",
     "MVTecLOCO",
     "RealIAD",
     "VAD",

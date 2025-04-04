@@ -190,7 +190,7 @@ def make_mvtec_ad_dataset(
     )
 
     # assign mask paths to anomalous test images
-    samples["mask_path"] = ""
+    samples["mask_path"] = None
     samples.loc[
         (samples.split == "test") & (samples.label_index == LabelName.ABNORMAL),
         "mask_path",
