@@ -49,7 +49,20 @@ from .dataclasses import (
 # Datamodules
 from .datamodules.base import AnomalibDataModule
 from .datamodules.depth import DepthDataFormat, Folder3D, MVTec3D
-from .datamodules.image import VAD, BTech, Datumaro, Folder, ImageDataFormat, Kolektor, MVTec, MVTecAD, MVTecLOCO, Visa
+from .datamodules.image import (
+    VAD,
+    BTech,
+    Datumaro,
+    Folder,
+    ImageDataFormat,
+    Kolektor,
+    MVTec,
+    MVTecAD,
+    MVTecAD2,
+    MVTecLOCO,
+    RealIAD,
+    Visa,
+)
 from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
 # Datasets
@@ -146,40 +159,47 @@ __all__ = [
     "NumpyVideoItem",
     "VideoBatch",
     "VideoItem",
-    # Depth
+    # Data Formats
+    "DataFormat",
     "DepthDataFormat",
-    "Folder3D",
-    "Folder3DDataset",
-    "MVTec3D",
-    "MVTec3DDataset",
-    # Image
-    "BTech",
-    "BTechDataset",
-    "Datumaro",
-    "DatumaroDataset",
-    "Folder",
-    "FolderDataset",
     "ImageDataFormat",
+    "VideoDataFormat",
+    # Depth Data Modules
+    "Folder3D",
+    "MVTec3D",
+    # Image Data Modules
+    "BTech",
+    "Datumaro",
+    "Folder",
     "Kolektor",
-    "KolektorDataset",
     "MVTec",  # Include MVTec for backward compatibility
     "MVTecAD",
-    "MVTecADDataset",
+    "MVTecAD2",
     "MVTecLOCO",
-    "MVTecLOCODataset",
+    "RealIAD",
     "VAD",
-    "VADDataset",
     "Visa",
-    "VisaDataset",
-    # Video
+    # Video Data Modules
     "Avenue",
-    "AvenueDataset",
     "ShanghaiTech",
-    "ShanghaiTechDataset",
     "UCSDped",
+    # Datasets
+    "Folder3DDataset",
+    "MVTec3DDataset",
+    "BTechDataset",
+    "DatumaroDataset",
+    "FolderDataset",
+    "KolektorDataset",
+    "MVTecADDataset",
+    "MVTecLOCODataset",
+    "VADDataset",
+    "VisaDataset",
+    "AvenueDataset",
+    "ShanghaiTechDataset",
     "UCSDpedDataset",
-    "VideoDataFormat",
-    # Predict
     "PredictDataset",
+    # Functions
     "get_datamodule",
+    # Exceptions
+    "UnknownDatamoduleError",
 ]

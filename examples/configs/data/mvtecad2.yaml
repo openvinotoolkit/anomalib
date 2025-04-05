@@ -1,0 +1,9 @@
+class_path: anomalib.data.MVTecAD2
+init_args:
+  root: "./datasets/MVTec_AD_2"
+  category: "sheet_metal"
+  train_batch_size: 32
+  eval_batch_size: 32
+  num_workers: 8
+  test_type: "public"
+  seed: null
