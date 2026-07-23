@@ -9,10 +9,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - 📚 **docs**: Add a Python/Sphinx benchmark leaderboard with Plotly history and category drill-down.
+- 🚀 **ci**: Nightly benchmark workflow that runs a curated model/dataset matrix and appends results to the `anomalib/benchmarks` Hugging Face dataset by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3689
 
 ### Removed
 
 ### Changed
+
+- 🔧 **benchmark**: `BenchmarkJob` now records `anomalib_version` in each result row written to `runs/benchmark/**/results.csv` by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3689
 
 ### Deprecated
 
