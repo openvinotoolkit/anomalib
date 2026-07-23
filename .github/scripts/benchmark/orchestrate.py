@@ -12,11 +12,10 @@ Selects the next (model, dataset, categories) subset from a YAML matrix, runs
 from __future__ import annotations
 
 import argparse
-import importlib
 import logging
 import os
 import re
-import subprocess
+import subprocess  # nosec B404 — invoked with a fixed, non-shell argv (see run_benchmark)
 import sys
 import tempfile
 from collections import defaultdict
@@ -28,17 +27,23 @@ from typing import Any
 import pandas as pd
 import yaml
 
+from anomalib.data.datasets.image.mvtecad import CATEGORIES as MVTECAD_CATEGORIES
+from anomalib.data.datasets.image.visa import CATEGORIES as VISA_CATEGORIES
+
 logger = logging.getLogger(__name__)
 
 HF_REPO_ID = "anomalib/benchmarks"
+HF_REVISION = "main"
 RESULTS_DIR = Path("runs") / "benchmark"
 FOLDER_TS_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}-\d{2}_\d{2}_\d{2}$")
 OLDEST_TS = "0000-00-00-00_00_00"
 
-# Dataset class_path → (CATEGORIES module, on-disk root folder name)
-DATASET_META: dict[str, tuple[str, str]] = {
-    "MVTecAD": ("anomalib.data.datasets.image.mvtecad", "MVTecAD"),
-    "Visa": ("anomalib.data.datasets.image.visa", "visa"),
+# Dataset class_path → (default CATEGORIES tuple, on-disk root folder name).
+# CATEGORIES are imported statically to avoid dynamic ``importlib`` usage
+# with runtime-computed module paths (see Semgrep non-literal-import).
+DATASET_META: dict[str, tuple[tuple[str, ...], str]] = {
+    "MVTecAD": (tuple(MVTECAD_CATEGORIES), "MVTecAD"),
+    "Visa": (tuple(VISA_CATEGORIES), "visa"),
 }
 
 MODEL_COL = "model.class_path"
@@ -162,9 +167,8 @@ def resolve_categories(dataset: str, configured: dict[str, Any] | list[str] | No
     if dataset not in DATASET_META:
         msg = f"Unknown dataset {dataset!r}; add it to DATASET_META or list categories explicitly."
         raise KeyError(msg)
-    module_path, _ = DATASET_META[dataset]
-    module = importlib.import_module(module_path)
-    return list(module.CATEGORIES)
+    categories, _ = DATASET_META[dataset]
+    return list(categories)
 
 
 def expand_triples(models: list[ModelSpec], datasets: dict[str, Any]) -> list[Triple]:
@@ -181,6 +185,7 @@ def download_hf_results(repo_id: str, dest: Path, token: str | None) -> pd.DataF
     """Download existing HF results.csv, or return an empty frame if missing."""
     try:
         from huggingface_hub import hf_hub_download
+        from huggingface_hub.errors import EntryNotFoundError, RepositoryNotFoundError
     except ImportError as exc:
         msg = "huggingface_hub is required; install with `uv sync --extra huggingface`"
         raise SystemExit(msg) from exc
@@ -190,10 +195,11 @@ def download_hf_results(repo_id: str, dest: Path, token: str | None) -> pd.DataF
             repo_id=repo_id,
             filename="results.csv",
             repo_type="dataset",
+            revision=HF_REVISION,
             token=token,
         )
-    except Exception as exc:  # noqa: BLE001 — treat missing remote file as empty history
-        logger.warning("Could not download results.csv from %s (%s); starting empty.", repo_id, exc)
+    except (EntryNotFoundError, RepositoryNotFoundError) as exc:
+        logger.warning("No existing results.csv at %s (%s); starting empty.", repo_id, exc)
         return pd.DataFrame()
 
     frame = pd.read_csv(local_path)

@@ -6,11 +6,11 @@ and appends results to the Hugging Face dataset
 
 ## Layout
 
-| File                                 | Role                                                           |
-| ------------------------------------ | -------------------------------------------------------------- |
-| `matrix.yaml`                        | Allowlist of models/datasets and `num_categories`              |
-| `orchestrate.py`                     | Select workload → run `anomalib benchmark` → append/upload CSV |
-| `../workflows/nightly-benchmark.yml` | Cron + `workflow_dispatch` on `[self-hosted, anomalib]`        |
+| File                                    | Role                                                           |
+| --------------------------------------- | -------------------------------------------------------------- |
+| `matrix.yaml`                           | Allowlist of models/datasets and `num_categories`              |
+| `orchestrate.py`                        | Select workload → run `anomalib benchmark` → append/upload CSV |
+| `../../workflows/nightly-benchmark.yml` | Cron + `workflow_dispatch` on `[self-hosted, anomalib]`        |
 
 ## Secrets
 
