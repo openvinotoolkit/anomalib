@@ -1,0 +1,99 @@
+name: Nightly Benchmark
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # Nightly at 3 AM UTC
+  workflow_dispatch:
+    inputs:
+      num_categories:
+        description: "Override number of categories per night (default from matrix.yaml)"
+        required: false
+        type: string
+        default: ""
+      dry_run:
+        description: "Select workload and print config without running or uploading"
+        required: false
+        type: boolean
+        default: false
+      skip_upload:
+        description: "Run benchmark but skip Hugging Face upload"
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: nightly-benchmark
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    name: Nightly benchmark
+    runs-on: [self-hosted, anomalib]
+    timeout-minutes: 360
+    permissions:
+      contents: read
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      ANOMALIB_DATASETS_ROOT: ${{ runner.tool_cache }}/anomalib/datasets
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Verify GPU availability
+        shell: bash
+        run: nvidia-smi
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+
+      - name: Sync dependencies
+        shell: bash
+        run: uv sync --extra cu130 --extra huggingface
+
+      - name: Raise file descriptor limit
+        shell: bash
+        run: |
+          ulimit -n 65536
+          echo "nofile soft=$(ulimit -Sn) hard=$(ulimit -Hn)"
+
+      - name: Run nightly benchmark orchestrator
+        shell: bash
+        env:
+          NUM_CATEGORIES: ${{ inputs.num_categories }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          SKIP_UPLOAD: ${{ inputs.skip_upload }}
+        run: |
+          ulimit -n 65536
+          mkdir -p "$ANOMALIB_DATASETS_ROOT"
+          mkdir -p "${{ runner.temp }}/nightly-benchmark"
+          ARGS=(
+            --matrix .github/scripts/benchmark/matrix.yaml
+            --datasets-root "$ANOMALIB_DATASETS_ROOT"
+            --work-dir "${{ runner.temp }}/nightly-benchmark"
+          )
+          if [ -n "${NUM_CATEGORIES}" ]; then
+            ARGS+=(--num-categories "${NUM_CATEGORIES}")
+          fi
+          if [ "${DRY_RUN}" = "true" ]; then
+            ARGS+=(--dry-run)
+          fi
+          if [ "${SKIP_UPLOAD}" = "true" ]; then
+            ARGS+=(--skip-upload)
+          fi
+          uv run --extra cu130 --extra huggingface \
+            python .github/scripts/benchmark/orchestrate.py "${ARGS[@]}"
+
+      - name: Upload debug artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nightly-benchmark-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/nightly-benchmark/
+            runs/benchmark/
+          if-no-files-found: ignore
+          retention-days: 14

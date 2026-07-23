@@ -43,6 +43,7 @@ from lightning import seed_everything
 from rich.console import Console
 from rich.table import Table
 
+from anomalib import __version__
 from anomalib.data import AnomalibDataModule
 from anomalib.engine import Engine
 from anomalib.models import AnomalibModule
@@ -156,6 +157,7 @@ class BenchmarkJob(Job):
         # https://github.com/open-edge-platform/anomalib/issues/2054
         output = {
             "accelerator": self.accelerator,
+            "anomalib_version": __version__,
             **durations,
             **self.flat_cfg,
             **test_results[0],
