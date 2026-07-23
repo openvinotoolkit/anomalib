@@ -35,7 +35,7 @@ jobs:
     permissions:
       contents: read
     env:
-      ANOMALIB_DATASETS_ROOT: ${{ runner.tool_cache }}/anomalib/datasets
+      ANOMALIB_DATASETS_ROOT: ${{ github.workspace }}/../anomalib-datasets
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -66,7 +66,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
           SKIP_UPLOAD: ${{ inputs.skip_upload }}
           # Only expose the write-scoped HF token to real upload runs.
-          HF_TOKEN: ${{ (inputs.dry_run == true || inputs.skip_upload == true) && '' || secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ (inputs.dry_run || inputs.skip_upload) && '' || secrets.HF_TOKEN }}
         run: |
           ulimit -n 65536
           mkdir -p "$ANOMALIB_DATASETS_ROOT"
