@@ -79,6 +79,8 @@ datasets:
   MVTecAD: {} # all categories
   Visa:
     categories: [candle, cashew] # optional subset
+trainer:
+  max_epochs: 100
 ```
 
 String model entries use defaults. Dict entries may set `init_args` and

@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Benchmark job generator for running model benchmarking experiments.
@@ -104,5 +104,6 @@ class BenchmarkJobGenerator(JobGenerator):
                 seed=_container["seed"],
                 model=get_model(_container["model"]),
                 datamodule=get_datamodule(_container["data"]),
+                trainer_params=_container["trainer"],
                 flat_cfg=flat_cfg,
             )

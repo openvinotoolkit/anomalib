@@ -3,7 +3,6 @@
 num_categories: 5
 seed: 42
 accelerator: cuda
-
 models:
   - Padim
   - Patchcore
@@ -17,3 +16,6 @@ models:
 datasets:
   MVTecAD: {}
   Visa: {}
+
+trainer:
+  max_epochs: 100

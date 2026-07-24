@@ -65,6 +65,7 @@ class BenchmarkJob(Job):
             ``"cpu"``, ``"gpu"``).
         model (AnomalibModule): Anomaly detection model instance to benchmark.
         datamodule (AnomalibDataModule): Data module providing the dataset.
+        trainer_params (dict[str, Any]): Pytorch LightningTrainer parameters.
         seed (int): Random seed for reproducibility.
         flat_cfg (dict): Flattened configuration dictionary with dotted keys.
 
@@ -99,6 +100,7 @@ class BenchmarkJob(Job):
         accelerator: str,
         model: AnomalibModule,
         datamodule: AnomalibDataModule,
+        trainer_params: dict[str, Any],
         seed: int,
         flat_cfg: dict,
     ) -> None:
@@ -106,6 +108,7 @@ class BenchmarkJob(Job):
         self.accelerator = accelerator
         self.model = model
         self.datamodule = datamodule
+        self.trainer_params = trainer_params
         self.seed = seed
         self.flat_cfg = flat_cfg
 
@@ -142,6 +145,7 @@ class BenchmarkJob(Job):
                 accelerator=self.accelerator,
                 devices=devices,
                 default_root_dir=temp_dir,
+                **self.trainer_params,
             )
             fit_start_time = time.time()
             engine.fit(self.model, self.datamodule)

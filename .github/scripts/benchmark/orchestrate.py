@@ -305,6 +305,7 @@ def write_benchmark_config(
         "accelerator": [matrix.get("accelerator", "cuda")],
         "benchmark": {
             "seed": matrix.get("seed", 42),
+            "trainer": matrix.get("trainer", {}),
             "model": model_block,
             "data": {
                 "class_path": selection.dataset,
