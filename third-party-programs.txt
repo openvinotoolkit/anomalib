@@ -82,3 +82,7 @@ terms are listed below.
 17. FoundAD model (anomalib.models.image.foundad)
     Copyright (c) 2026 FoundAD authors, https://github.com/ymxlzgy/FoundAD
     SPDX-License-Identifier: MIT
+
+18. GRD-Net model (anomalib.models.image.grdnet)
+    Copyright (c) 2024-2026 Niccolò Ferrari, https://github.com/NickF93/GRD-Net
+    SPDX-License-Identifier: MIT
