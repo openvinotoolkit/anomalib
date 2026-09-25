@@ -13,6 +13,8 @@ from collections.abc import Sequence
 import torch
 from torch import nn
 
+from anomalib.data import InferenceBatch
+from anomalib.data.utils.tiler import Tiler
 from anomalib.models.image.draem.torch_model import DiscriminativeSubNetwork
 
 
@@ -287,14 +289,16 @@ class GRDNetModel(nn.Module):
     """Container for the three GRD-Net subnetworks.
 
     The segmentator directly composes anomalib's existing DRÆM discriminative
-    subnetwork. Training and inference orchestration are added separately.
+    subnetwork. Inference reconstructs overlapping image tiles and averages their
+    anomaly maps before smoothing and scoring the full image.
 
     Args:
-        input_size: Spatial size of discriminator inputs.
+        input_size: Spatial size of image tiles and discriminator inputs.
         in_channels: Number of image channels.
         base_features: Channel width of the first residual stage.
         stage_blocks: Number of residual blocks in each stage.
         latent_channels: Number of generator latent channels.
+        stride: Vertical and horizontal stride between image tiles.
     """
 
     def __init__(
@@ -304,8 +308,11 @@ class GRDNetModel(nn.Module):
         base_features: int = 64,
         stage_blocks: Sequence[int] = (2, 2, 2, 2),
         latent_channels: int = 32,
+        stride: tuple[int, int] = (64, 64),
     ) -> None:
         super().__init__()
+        self.tile_size = input_size
+        self.stride = stride
         self.generator = GRDNetGenerator(
             in_channels=in_channels,
             base_features=base_features,
@@ -319,3 +326,22 @@ class GRDNetModel(nn.Module):
             stage_blocks=stage_blocks,
         )
         self.segmentator = DiscriminativeSubNetwork(in_channels=in_channels * 2, out_channels=2)
+
+    def forward(self, images: torch.Tensor) -> InferenceBatch:
+        """Predict image-level scores and pixel-level anomaly maps.
+
+        Args:
+            images: Batch of RGB images.
+
+        Returns:
+            Image-level anomaly scores and smoothed anomaly maps.
+        """
+        tiler = Tiler(tile_size=self.tile_size, stride=self.stride)
+        image_tiles = tiler.tile(images)
+        _, reconstruction = self.generator.reconstruct(image_tiles)
+        logits = self.segmentator(torch.cat((image_tiles, reconstruction), dim=1))
+        tile_maps = torch.softmax(logits, dim=1)[:, 1:2]
+        anomaly_map = tiler.untile(tile_maps)
+        anomaly_map = torch.nn.functional.avg_pool2d(anomaly_map, kernel_size=21, stride=1, padding=10)
+        pred_score = anomaly_map.amax(dim=(-2, -1)).squeeze(1)
+        return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)

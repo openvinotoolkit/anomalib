@@ -41,13 +41,17 @@ def test_generator_shapes_range_and_parameter_independence() -> None:
     """The generator should use independent encoders and 32-channel latent maps."""
     generator = GRDNetGenerator().eval()
 
+    inputs = torch.rand((1, 3, 128, 128))
     with torch.no_grad():
-        latent, reconstruction, reconstruction_latent = generator(torch.rand((1, 3, 128, 128)))
+        latent, reconstruction, reconstruction_latent = generator(inputs)
+        reconstruction_latent_input, reconstruction_only = generator.reconstruct(inputs)
 
     assert latent.shape == (1, 32, 8, 8)
     assert reconstruction.shape == (1, 3, 128, 128)
     assert reconstruction_latent.shape == (1, 32, 8, 8)
     assert torch.all((reconstruction >= 0.0) & (reconstruction <= 1.0))
+    assert torch.equal(reconstruction_latent_input, latent)
+    assert torch.equal(reconstruction_only, reconstruction)
     encoder_storage = {parameter.data_ptr() for parameter in generator.encoder.parameters()}
     reconstruction_encoder_storage = {
         parameter.data_ptr() for parameter in generator.reconstruction_encoder.parameters()
