@@ -75,7 +75,7 @@ class GRDNet(AnomalibModule):
             evaluator=evaluator,
             visualizer=visualizer,
         )
-        self.model = self.configure_model()
+        self.model = self.configure_torch_model()
         self.anomaly_generator = self.configure_anomaly_generator(texture_source, perlin_probability)
         self.generator_loss = GRDNetGeneratorLoss(
             adversarial_weight=adversarial_weight,
@@ -89,7 +89,7 @@ class GRDNet(AnomalibModule):
         self.automatic_optimization = False
 
     @staticmethod
-    def configure_model() -> GRDNetModel:
+    def configure_torch_model() -> GRDNetModel:
         """Create the canonical GRD-Net Torch model.
 
         Returns:
@@ -147,7 +147,7 @@ class GRDNet(AnomalibModule):
 
     def configure_optimizers(
         self,
-    ) -> tuple[list[torch.optim.Optimizer], list[dict[str, object]]]:
+    ) -> tuple[list[torch.optim.Optimizer], list[torch.optim.lr_scheduler.ReduceLROnPlateau]]:
         """Configure the discriminator, generator, and segmentator optimizers.
 
         Returns:
@@ -178,7 +178,7 @@ class GRDNet(AnomalibModule):
         )
         return (
             [discriminator_optimizer, generator_optimizer, segmentator_optimizer],
-            [{"scheduler": scheduler, "monitor": "train_contextual_loss"}],
+            [scheduler],
         )
 
     def on_train_start(self) -> None:
@@ -204,8 +204,12 @@ class GRDNet(AnomalibModule):
         del batch_idx
         discriminator_optimizer, generator_optimizer, segmentator_optimizer = self.optimizers()
 
+        images = batch.image
+        if images is None:
+            msg = "GRD-Net training requires an image batch."
+            raise ValueError(msg)
         roi_masks = self._roi_masks(batch)
-        image_tiles, roi_tiles = tile_image_and_roi(batch.image, roi_masks)
+        image_tiles, roi_tiles = tile_image_and_roi(images, roi_masks)
         image_tiles, roi_tiles = rotate_image_and_roi(image_tiles, roi_tiles)
         perturbed_tiles, _, anomaly_masks, _ = self.anomaly_generator(image_tiles)
 
@@ -231,6 +235,7 @@ class GRDNet(AnomalibModule):
             on_epoch=True,
             prog_bar=True,
             logger=True,
+            batch_size=images.shape[0],
         )
         return {
             "discriminator_loss": discriminator_loss.detach(),

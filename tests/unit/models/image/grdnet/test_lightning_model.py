@@ -4,16 +4,22 @@
 """Tests for the GRD-Net Lightning lifecycle."""
 
 from copy import deepcopy
+from pathlib import Path
 from typing import NamedTuple
 from unittest.mock import MagicMock
 
 import pytest
 import torch
 from torch import nn
+from torch.utils.data import DataLoader
+from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib import LearningType
-from anomalib.data import ImageBatch, InferenceBatch
+from anomalib.data import ImageBatch, ImageItem, InferenceBatch
+from anomalib.data.dataclasses.torch.grdnet import GRDNetBatch, GRDNetItem
+from anomalib.engine import Engine
 from anomalib.models.image.grdnet.lightning_model import GRDNet
+from anomalib.pre_processing import PreProcessor
 
 
 class _TinyGenerator(nn.Module):
@@ -84,6 +90,33 @@ class _TinyModel(nn.Module):
         )
 
 
+class _TinyAnomalyGenerator(nn.Module):
+    """Deterministic anomaly generator for lifecycle tests."""
+
+    def forward(  # noqa: PLR6301
+        self,
+        images: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Corrupt a fixed central region of every tile."""
+        textures = torch.zeros_like(images)
+        masks = torch.zeros(
+            images.shape[0],
+            1,
+            *images.shape[-2:],
+            device=images.device,
+            dtype=images.dtype,
+        )
+        masks[..., 32:96, 32:96] = 1
+        beta = torch.full(
+            (images.shape[0], 1, 1, 1),
+            0.75,
+            device=images.device,
+            dtype=images.dtype,
+        )
+        perturbed = images * (1 - masks) + images * masks * (1 - beta)
+        return perturbed, textures, masks, beta
+
+
 class _OptimizerConfig(NamedTuple):
     """Typed optimizer configuration used by tests."""
 
@@ -94,7 +127,18 @@ class _OptimizerConfig(NamedTuple):
 @pytest.fixture
 def model(monkeypatch: pytest.MonkeyPatch) -> GRDNet:
     """Create GRD-Net with small local subnetworks."""
-    monkeypatch.setattr(GRDNet, "configure_model", staticmethod(_TinyModel))
+    monkeypatch.setattr(GRDNet, "configure_torch_model", staticmethod(_TinyModel))
+
+    def configure_anomaly_generator(texture_source: str, probability: float) -> _TinyAnomalyGenerator:
+        """Create the deterministic test anomaly generator."""
+        del texture_source, probability
+        return _TinyAnomalyGenerator()
+
+    monkeypatch.setattr(
+        GRDNet,
+        "configure_anomaly_generator",
+        staticmethod(configure_anomaly_generator),
+    )
     instance = GRDNet(pre_processor=False, post_processor=False, evaluator=False, visualizer=False)
     monkeypatch.setattr(instance, "manual_backward", lambda loss: loss.backward())
 
@@ -114,10 +158,8 @@ def model(monkeypatch: pytest.MonkeyPatch) -> GRDNet:
 @pytest.fixture
 def optimizer_config(model: GRDNet) -> _OptimizerConfig:
     """Return the three optimizers and generator scheduler."""
-    optimizers, scheduler_configs = model.configure_optimizers()
-    scheduler = scheduler_configs[0]["scheduler"]
-    assert isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau)
-    return _OptimizerConfig(optimizers, scheduler)
+    optimizers, schedulers = model.configure_optimizers()
+    return _OptimizerConfig(optimizers, schedulers[0])
 
 
 def _parameter_state(module: nn.Module) -> dict[str, torch.Tensor]:
@@ -128,6 +170,25 @@ def _parameter_state(module: nn.Module) -> dict[str, torch.Tensor]:
 def _state_changed(before: dict[str, torch.Tensor], module: nn.Module) -> bool:
     """Return whether any trainable parameter changed."""
     return any(not torch.equal(before[name], parameter) for name, parameter in module.named_parameters())
+
+
+def _assert_nested_equal(actual: object, expected: object) -> None:
+    """Assert equality for nested checkpoint state containing tensors."""
+    if isinstance(expected, torch.Tensor):
+        assert isinstance(actual, torch.Tensor)
+        assert torch.equal(actual, expected)
+    elif isinstance(expected, dict):
+        assert isinstance(actual, dict)
+        assert actual.keys() == expected.keys()
+        for key in expected:
+            _assert_nested_equal(actual[key], expected[key])
+    elif isinstance(expected, list):
+        assert isinstance(actual, list)
+        assert len(actual) == len(expected)
+        for actual_item, expected_item in zip(actual, expected, strict=True):
+            _assert_nested_equal(actual_item, expected_item)
+    else:
+        assert actual == expected
 
 
 def test_properties(model: GRDNet) -> None:
@@ -255,3 +316,113 @@ def test_validation_step_returns_standard_predictions(model: GRDNet) -> None:
     result = model.validation_step(deepcopy(batch))
     assert result.pred_score.shape == (2,)
     assert result.anomaly_map.shape == (2, 8, 10)
+
+
+def _loader(*, with_roi: bool) -> DataLoader:
+    """Create one deterministic image or ROI-aware batch."""
+    image = torch.linspace(0, 1, 3 * 256 * 256).reshape(3, 256, 256)
+    if with_roi:
+        item = GRDNetItem(image=image, roi_mask=torch.ones(256, 256))
+        return DataLoader([item], batch_size=1, collate_fn=GRDNetBatch.collate)
+    return DataLoader([ImageItem(image=image)], batch_size=1, collate_fn=ImageBatch.collate)
+
+
+def _engine(root: Path, *, max_epochs: int = 1) -> Engine:
+    """Create a minimal CPU Engine for lifecycle tests."""
+    return Engine(
+        accelerator="cpu",
+        devices=1,
+        logger=False,
+        default_root_dir=root,
+        max_epochs=max_epochs,
+        limit_train_batches=1,
+        limit_val_batches=1,
+        enable_model_summary=False,
+    )
+
+
+@pytest.mark.parametrize("with_roi", [False, True])
+def test_engine_fit_with_standard_and_roi_batches(
+    model: GRDNet,
+    tmp_path: Path,
+    with_roi: bool,
+) -> None:
+    """Engine fits and validates one ordinary or ROI-aware batch."""
+    loader = _loader(with_roi=with_roi)
+    engine = _engine(tmp_path / str(with_roi))
+    engine.fit(model=model, train_dataloaders=loader, val_dataloaders=loader)
+    assert engine.trainer.global_step == 3
+
+
+def test_checkpoint_roundtrip_restores_training_state(
+    model: GRDNet,
+    tmp_path: Path,
+) -> None:
+    """Engine checkpoints restore networks, optimizers, scheduler, and predictions."""
+    loader = _loader(with_roi=False)
+    engine = _engine(tmp_path / "fit")
+    engine.fit(model=model, train_dataloaders=loader, val_dataloaders=loader)
+    predictions_before = engine.predict(model=model, dataloaders=loader, return_predictions=True)
+    assert predictions_before is not None
+
+    checkpoint_path = tmp_path / "grdnet.ckpt"
+    engine.trainer.save_checkpoint(checkpoint_path)
+    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    assert len(checkpoint["optimizer_states"]) == 3
+    assert len(checkpoint["lr_schedulers"]) == 1
+
+    loaded = GRDNet.load_from_checkpoint(
+        checkpoint_path,
+        pre_processor=False,
+        post_processor=False,
+        evaluator=False,
+        visualizer=False,
+    )
+    prediction_engine = _engine(tmp_path / "predict")
+    predictions_after = prediction_engine.predict(model=loaded, dataloaders=loader, return_predictions=True)
+    assert predictions_after is not None
+    assert torch.equal(predictions_before[0].pred_score, predictions_after[0].pred_score)
+    assert torch.equal(predictions_before[0].anomaly_map, predictions_after[0].anomaly_map)
+
+    resumed = GRDNet(
+        pre_processor=False,
+        post_processor=False,
+        evaluator=False,
+        visualizer=False,
+    )
+    resume_engine = _engine(tmp_path / "resume")
+    resume_engine.fit(
+        model=resumed,
+        train_dataloaders=loader,
+        val_dataloaders=loader,
+        ckpt_path=checkpoint_path,
+    )
+    _assert_nested_equal(
+        [optimizer.state_dict() for optimizer in resume_engine.trainer.optimizers],
+        checkpoint["optimizer_states"],
+    )
+    _assert_nested_equal(
+        resume_engine.trainer.lr_scheduler_configs[0].scheduler.state_dict(),
+        checkpoint["lr_schedulers"][0],
+    )
+
+
+def test_normalizing_preprocessor_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
+    """GRD-Net rejects preprocessing normalization before training."""
+    monkeypatch.setattr(GRDNet, "configure_torch_model", staticmethod(_TinyModel))
+    preprocessor = PreProcessor(
+        Compose(
+            [
+                Resize((256, 256)),
+                Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+            ],
+        ),
+    )
+    normalized_model = GRDNet(
+        pre_processor=preprocessor,
+        post_processor=False,
+        evaluator=False,
+        visualizer=False,
+    )
+    with pytest.raises(ValueError, match="must not contain Normalize"):
+        normalized_model.on_train_start()
