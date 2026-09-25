@@ -88,9 +88,16 @@ def test_device_transfer_includes_roi_mask() -> None:
 def test_numpy_projection_omits_roi_fields() -> None:
     """NumPy projection remains compatible with standard image consumers."""
     item = _item().to_numpy()
-    batch = GRDNetBatch.collate([_item(0), _item(1)]).to_numpy()
+    grdnet_batch = GRDNetBatch.collate([_item(0), _item(1)])
+    grdnet_batch.update(
+        pred_score=torch.tensor([0.1, 0.2]),
+        anomaly_map=torch.rand(2, 8, 10),
+    )
+    batch = grdnet_batch.to_numpy()
 
     assert isinstance(item, NumpyImageItem)
     assert isinstance(batch, NumpyImageBatch)
+    assert batch.pred_score.shape == (2,)
+    assert batch.anomaly_map.shape == (2, 8, 10)
     assert not hasattr(item, "roi_mask")
     assert not hasattr(batch, "roi_mask")
