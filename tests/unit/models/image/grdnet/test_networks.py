@@ -5,7 +5,13 @@
 
 import torch
 
-from anomalib.models.image.grdnet.torch_model import GRDNetDiscriminator, GRDNetGenerator, ResidualEncoder
+from anomalib.models.image.draem.torch_model import DiscriminativeSubNetwork
+from anomalib.models.image.grdnet.torch_model import (
+    GRDNetDiscriminator,
+    GRDNetGenerator,
+    GRDNetModel,
+    ResidualEncoder,
+)
 
 
 def test_encoder_stage_shapes() -> None:
@@ -85,3 +91,14 @@ def test_discriminator_has_finite_gradients() -> None:
 
     gradients = [parameter.grad for parameter in discriminator.parameters() if parameter.requires_grad]
     assert all(gradient is not None and torch.isfinite(gradient).all() for gradient in gradients)
+
+
+def test_model_composes_draem_segmentator() -> None:
+    """GRD-Net should directly reuse DRÆM's six-channel discriminative network."""
+    model = GRDNetModel(input_size=(32, 32), base_features=4, latent_channels=2).eval()
+
+    with torch.no_grad():
+        logits = model.segmentator(torch.rand((1, 6, 64, 64)))
+
+    assert type(model.segmentator) is DiscriminativeSubNetwork
+    assert logits.shape == (1, 2, 64, 64)

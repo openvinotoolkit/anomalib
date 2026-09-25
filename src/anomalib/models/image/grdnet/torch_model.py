@@ -13,6 +13,8 @@ from collections.abc import Sequence
 import torch
 from torch import nn
 
+from anomalib.models.image.draem.torch_model import DiscriminativeSubNetwork
+
 
 class ResidualBlock(nn.Module):
     """Residual block with an optional projection shortcut.
@@ -279,3 +281,41 @@ class GRDNetDiscriminator(nn.Module):
         """
         features = self.encoder(inputs)
         return features, self.classifier(features)
+
+
+class GRDNetModel(nn.Module):
+    """Container for the three GRD-Net subnetworks.
+
+    The segmentator directly composes anomalib's existing DRÆM discriminative
+    subnetwork. Training and inference orchestration are added separately.
+
+    Args:
+        input_size: Spatial size of discriminator inputs.
+        in_channels: Number of image channels.
+        base_features: Channel width of the first residual stage.
+        stage_blocks: Number of residual blocks in each stage.
+        latent_channels: Number of generator latent channels.
+    """
+
+    def __init__(
+        self,
+        input_size: tuple[int, int] = (128, 128),
+        in_channels: int = 3,
+        base_features: int = 64,
+        stage_blocks: Sequence[int] = (2, 2, 2, 2),
+        latent_channels: int = 32,
+    ) -> None:
+        super().__init__()
+        self.generator = GRDNetGenerator(
+            in_channels=in_channels,
+            base_features=base_features,
+            stage_blocks=stage_blocks,
+            latent_channels=latent_channels,
+        )
+        self.discriminator = GRDNetDiscriminator(
+            input_size=input_size,
+            in_channels=in_channels,
+            base_features=base_features,
+            stage_blocks=stage_blocks,
+        )
+        self.segmentator = DiscriminativeSubNetwork(in_channels=in_channels * 2, out_channels=2)
