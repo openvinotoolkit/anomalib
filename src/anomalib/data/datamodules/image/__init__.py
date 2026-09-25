@@ -11,6 +11,7 @@ anomaly detection. The following data modules are available:
 - ``BTech``: BTech Surface Defect Dataset
 - ``Datumaro``: Dataset in Datumaro format (Intel Geti™ export)
 - ``Folder``: Custom folder structure with normal/abnormal images
+- ``GRDNetFolder``: Custom folder structure with optional GRD-Net ROI masks
 - ``Kaputt``: Kaputt Dataset for Visual Defect Detection in Logistics
 - ``Kolektor``: Kolektor Surface-Defect Dataset
 - ``MPDD``: Metal Parts Defect Detection Dataset
@@ -38,6 +39,7 @@ from .bmad import BMAD
 from .btech import BTech
 from .datumaro import Datumaro
 from .folder import Folder
+from .grdnet import GRDNetFolder
 from .kaputt import Kaputt
 from .kolektor import Kolektor
 from .mpdd import MPDD
@@ -101,6 +103,7 @@ __all__ = [
     "BTech",
     "Datumaro",
     "Folder",
+    "GRDNetFolder",
     "Kaputt",
     "Kolektor",
     "MPDD",

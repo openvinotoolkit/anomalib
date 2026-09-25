@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Torch-based dataclasses for Anomalib.
@@ -19,6 +19,7 @@ Note:
 
 from .base import Batch, DatasetItem, InferenceBatch, ToNumpyMixin
 from .depth import DepthBatch, DepthItem
+from .grdnet import GRDNetBatch, GRDNetItem
 from .image import ImageBatch, ImageItem
 from .video import VideoBatch, VideoItem
 
@@ -34,6 +35,9 @@ __all__ = [
     # Image
     "ImageItem",
     "ImageBatch",
+    # GRD-Net
+    "GRDNetItem",
+    "GRDNetBatch",
     # Video
     "VideoItem",
     "VideoBatch",

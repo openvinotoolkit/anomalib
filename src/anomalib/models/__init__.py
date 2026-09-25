@@ -37,6 +37,7 @@ Image Models:
     - FRE (:class:`anomalib.models.image.Fre`)
     - GANomaly (:class:`anomalib.models.image.Ganomaly`)
     - GeneralAD (:class:`anomalib.models.image.GeneralAD`)
+    - GRD-Net (:class:`anomalib.models.image.GRDNet`)
     - L2BT (:class:`anomalib.models.image.L2BT`)
     - MH-PatchCore (:class:`anomalib.models.image.MHPatchcore`)
     - PaDiM (:class:`anomalib.models.image.Padim`)
@@ -87,6 +88,7 @@ from .image import (
     Ganomaly,
     GeneralAD,
     Glass,
+    GRDNet,
     InpFormer,
     MHPatchcore,
     Padim,
@@ -138,6 +140,7 @@ __all__ = [
     "Ganomaly",
     "GeneralAD",
     "Glass",
+    "GRDNet",
     "InpFormer",
     "L2BT",
     "MHPatchcore",
@@ -182,7 +185,7 @@ def list_models(case: str = "snake") -> set[str]:
         >>> print(sorted(list(models)))  # doctest: +NORMALIZE_WHITESPACE
         ['ai_vad', 'anomaly_d_i_n_o', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm',
          'dinomaly', 'draem', 'dsr', 'efficient_ad', 'fastflow', 'found_a_d', 'fre', 'fuvas',
-         'ganomaly', 'general_a_d', 'l2_b_t', 'm_h_patchcore', 'padim', 'patchcore', 'patchflow',
+         'g_r_d_net', 'ganomaly', 'general_a_d', 'l2_b_t', 'm_h_patchcore', 'padim', 'patchcore', 'patchflow',
          'rad', 'reverse_distillation', 'stfpm', 'supersimplenet', 'uflow', 'uni_net',
          'vlm_ad', 'win_clip']
 
@@ -191,7 +194,7 @@ def list_models(case: str = "snake") -> set[str]:
         >>> print(sorted(list(models)))  # doctest: +NORMALIZE_WHITESPACE
         ['AiVad', 'AnomalyDINO', 'Cfa', 'Cflow', 'Csflow', 'Dfkde', 'Dfm',
          'Dinomaly', 'Draem', 'Dsr', 'EfficientAd', 'Fastflow', 'FoundAD', 'Fre', 'Fuvas',
-         'Ganomaly', 'GeneralAD', 'L2BT', 'MHPatchcore', 'Padim', 'Patchcore', 'Patchflow',
+         'GRDNet', 'Ganomaly', 'GeneralAD', 'L2BT', 'MHPatchcore', 'Padim', 'Patchcore', 'Patchflow',
          'Rad', 'ReverseDistillation', 'Stfpm', 'Supersimplenet', 'Uflow', 'UniNet',
          'VlmAd', 'WinClip']
 
@@ -200,7 +203,7 @@ def list_models(case: str = "snake") -> set[str]:
         >>> print(sorted(list(models)))  # doctest: +NORMALIZE_WHITESPACE
         ['Ai Vad', 'Anomaly Dino', 'Cfa', 'Cflow', 'Csflow', 'Dfkde', 'Dfm',
          'Dinomaly', 'Draem', 'Dsr', 'Efficient Ad', 'Fastflow', 'Found Ad', 'Fre', 'Fuvas',
-         'Ganomaly', 'General Ad', 'L2BT', 'Mh Patchcore', 'Padim', 'Patchcore', 'Patchflow',
+         'Ganomaly', 'General Ad', 'Grd Net', 'L2BT', 'Mh Patchcore', 'Padim', 'Patchcore', 'Patchflow',
          'Rad', 'Reverse Distillation', 'Stfpm', 'Supersimplenet', 'Uflow', 'Uni Net',
          'Vlm Ad', 'Win Clip']
 

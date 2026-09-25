@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """PyTorch Dataset implementations for anomaly detection.
@@ -49,6 +49,7 @@ from .image import (
     BTechDataset,
     DatumaroDataset,
     FolderDataset,
+    GRDNetFolderDataset,
     KolektorDataset,
     MPDDDataset,
     MVTecADDataset,
@@ -73,6 +74,7 @@ __all__ = [
     "BTechDataset",
     "DatumaroDataset",
     "FolderDataset",
+    "GRDNetFolderDataset",
     "KolektorDataset",
     "MPDDDataset",
     "MVTecADDataset",
