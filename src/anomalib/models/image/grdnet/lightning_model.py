@@ -282,7 +282,7 @@ class GRDNet(AnomalibModule):
 
             optimizer.zero_grad()
             self.manual_backward(losses.total)
-            self.clip_gradients(optimizer, gradient_clip_val=1.0, gradient_clip_algorithm="norm")
+            torch.nn.utils.clip_grad_norm_(self.model.generator.parameters(), max_norm=1.0)
             optimizer.step()
         finally:
             for parameter, original_requires_grad in zip(

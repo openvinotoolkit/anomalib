@@ -141,17 +141,6 @@ def model(monkeypatch: pytest.MonkeyPatch) -> GRDNet:
     )
     instance = GRDNet(pre_processor=False, post_processor=False, evaluator=False, visualizer=False)
     monkeypatch.setattr(instance, "manual_backward", lambda loss: loss.backward())
-
-    def clip_generator_gradients(
-        optimizer: torch.optim.Optimizer,
-        gradient_clip_val: float,
-        gradient_clip_algorithm: str,
-    ) -> None:
-        """Apply the production clipping operation without a Trainer."""
-        del optimizer, gradient_clip_algorithm
-        torch.nn.utils.clip_grad_norm_(instance.model.generator.parameters(), gradient_clip_val)
-
-    monkeypatch.setattr(instance, "clip_gradients", clip_generator_gradients)
     return instance
 
 
