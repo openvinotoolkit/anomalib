@@ -18,7 +18,9 @@ from anomalib import LearningType
 from anomalib.data import ImageBatch, ImageItem, InferenceBatch
 from anomalib.data.dataclasses.torch.grdnet import GRDNetBatch, GRDNetItem
 from anomalib.engine import Engine
+from anomalib.models.image.grdnet import lightning_model
 from anomalib.models.image.grdnet.lightning_model import GRDNet
+from anomalib.models.image.grdnet.loss import GeneratorLosses
 from anomalib.pre_processing import PreProcessor
 
 
@@ -77,6 +79,8 @@ class _TinyModel(nn.Module):
 
     def __init__(self) -> None:
         super().__init__()
+        self.tile_size = (128, 128)
+        self.stride = (64, 64)
         self.generator = _TinyGenerator()
         self.discriminator = _TinyDiscriminator()
         self.segmentator = _TinySegmentator()
@@ -275,6 +279,42 @@ def test_standard_batch_uses_full_roi() -> None:
     assert roi_masks.shape == (2, 1, 7, 9)
     assert roi_masks.dtype == batch.image.dtype
     assert roi_masks.all()
+
+
+def test_training_uses_low_level_model_geometry(
+    model: GRDNet,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Training tiles images using the geometry selected by the Torch model."""
+    model.model.tile_size = (256, 256)
+    model.model.stride = (256, 256)
+    captured: dict[str, object] = {}
+    tile_image_and_roi = lightning_model.tile_image_and_roi
+
+    def capture_geometry(
+        images: torch.Tensor,
+        roi_masks: torch.Tensor,
+        tile_size: tuple[int, int],
+        stride: tuple[int, int],
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        captured.update({"tile_size": tile_size, "stride": stride})
+        image_tiles, roi_tiles = tile_image_and_roi(images, roi_masks, tile_size=tile_size, stride=stride)
+        captured["tile_count"] = image_tiles.shape[0]
+        return image_tiles, roi_tiles
+
+    loss = torch.tensor(1.0)
+    generator_losses = GeneratorLosses(loss, loss, loss, loss)
+    monkeypatch.setattr(lightning_model, "tile_image_and_roi", capture_geometry)
+    monkeypatch.setattr(lightning_model, "rotate_image_and_roi", lambda images, roi_masks: (images, roi_masks))
+    monkeypatch.setattr(model, "optimizers", lambda: (MagicMock(), MagicMock(), MagicMock()))
+    monkeypatch.setattr(model, "_update_discriminator", MagicMock(return_value=loss))
+    monkeypatch.setattr(model, "_update_generator", MagicMock(return_value=generator_losses))
+    monkeypatch.setattr(model, "_update_segmentator", MagicMock(return_value=loss))
+    monkeypatch.setattr(model, "log_dict", MagicMock())
+
+    model.training_step(ImageBatch(image=torch.rand(1, 3, 256, 256)), 0)
+
+    assert captured == {"tile_size": (256, 256), "stride": (256, 256), "tile_count": 1}
 
 
 def test_generator_scheduler_uses_contextual_epoch_mean(

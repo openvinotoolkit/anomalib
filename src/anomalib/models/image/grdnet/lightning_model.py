@@ -209,7 +209,12 @@ class GRDNet(AnomalibModule):
             msg = "GRD-Net training requires an image batch."
             raise ValueError(msg)
         roi_masks = self._roi_masks(batch)
-        image_tiles, roi_tiles = tile_image_and_roi(images, roi_masks)
+        image_tiles, roi_tiles = tile_image_and_roi(
+            images,
+            roi_masks,
+            tile_size=self.model.tile_size,
+            stride=self.model.stride,
+        )
         image_tiles, roi_tiles = rotate_image_and_roi(image_tiles, roi_tiles)
         perturbed_tiles, _, anomaly_masks, _ = self.anomaly_generator(image_tiles)
 
