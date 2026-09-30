@@ -31,9 +31,11 @@ class _TinyGenerator(nn.Module):
         super().__init__()
         self.convolution = nn.Conv2d(3, 3, kernel_size=1)
         self.normalization = nn.BatchNorm2d(3)
+        self.last_input: torch.Tensor | None = None
 
     def reconstruct(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Return a compact latent and bounded reconstruction."""
+        self.last_input = images.detach().clone()
         reconstruction = torch.sigmoid(self.normalization(self.convolution(images)))
         return reconstruction.mean(dim=(-2, -1), keepdim=True), reconstruction
 
@@ -67,9 +69,11 @@ class _TinySegmentator(nn.Module):
         super().__init__()
         self.convolution = nn.Conv2d(6, 2, kernel_size=1)
         self.reconstruction_requires_grad: bool | None = None
+        self.image_input: torch.Tensor | None = None
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         """Return two-class logits and record the reconstruction gradient flag."""
+        self.image_input = images[:, :3].detach().clone()
         self.reconstruction_requires_grad = images[:, 3:].requires_grad
         return self.convolution(images)
 
@@ -227,31 +231,46 @@ def test_discriminator_phase_changes_only_discriminator(
 ) -> None:
     """The first phase updates only discriminator parameters."""
     images = torch.rand(2, 3, 8, 8)
+    perturbed = torch.rand_like(images)
     before = {name: _parameter_state(module) for name, module in model.model.named_children()}
 
-    model._update_discriminator(images, optimizer_config.optimizers[0])  # noqa: SLF001
+    model._update_discriminator(images, perturbed, optimizer_config.optimizers[0])  # noqa: SLF001
 
     assert _state_changed(before["discriminator"], model.model.discriminator)
     assert not _state_changed(before["generator"], model.model.generator)
     assert not _state_changed(before["segmentator"], model.model.segmentator)
+    assert torch.equal(model.model.generator.last_input, perturbed)
 
 
 def test_generator_phase_freezes_discriminator(
     model: GRDNet,
     optimizer_config: _OptimizerConfig,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The second phase updates only the generator and freezes discriminator BN state."""
     images = torch.rand(2, 3, 8, 8)
+    perturbed = torch.rand_like(images)
     before = {name: _parameter_state(module) for name, module in model.model.named_children()}
     running_mean = model.model.discriminator.normalization.running_mean.clone()
+    clean_targets: list[torch.Tensor] = []
+    generator_loss = model.generator_loss.forward
 
-    model._update_generator(images, optimizer_config.optimizers[1])  # noqa: SLF001
+    def capture_clean_target(*args: torch.Tensor) -> GeneratorLosses:
+        clean_targets.append(args[0].detach().clone())
+        return generator_loss(*args)
+
+    monkeypatch.setattr(model.generator_loss, "forward", capture_clean_target)
+
+    model._update_generator(images, perturbed, optimizer_config.optimizers[1])  # noqa: SLF001
 
     assert _state_changed(before["generator"], model.model.generator)
     assert not _state_changed(before["discriminator"], model.model.discriminator)
     assert not _state_changed(before["segmentator"], model.model.segmentator)
     assert torch.equal(running_mean, model.model.discriminator.normalization.running_mean)
     assert all(parameter.requires_grad for parameter in model.model.discriminator.parameters())
+    assert torch.equal(model.model.generator.last_input, perturbed)
+    assert len(clean_targets) == 1
+    assert torch.equal(clean_targets[0], images)
 
 
 def test_segmentator_phase_uses_detached_reconstruction(
@@ -264,12 +283,14 @@ def test_segmentator_phase_uses_detached_reconstruction(
     masks = torch.ones(2, 1, 8, 8)
     before = {name: _parameter_state(module) for name, module in model.model.named_children()}
 
-    model._update_segmentator(images, perturbed, masks, masks, optimizer_config.optimizers[2])  # noqa: SLF001
+    model._update_segmentator(perturbed, masks, masks, optimizer_config.optimizers[2])  # noqa: SLF001
 
     assert _state_changed(before["segmentator"], model.model.segmentator)
     assert not _state_changed(before["generator"], model.model.generator)
     assert not _state_changed(before["discriminator"], model.model.discriminator)
     assert model.model.segmentator.reconstruction_requires_grad is False
+    assert torch.equal(model.model.segmentator.image_input, perturbed)
+    assert torch.equal(model.model.generator.last_input, perturbed)
 
 
 def test_standard_batch_uses_full_roi() -> None:

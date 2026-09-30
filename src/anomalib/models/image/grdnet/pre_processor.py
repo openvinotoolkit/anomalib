@@ -3,6 +3,7 @@
 
 """Joint image and ROI preprocessing for GRD-Net."""
 
+import torch
 from lightning import LightningModule, Trainer
 from torchvision.transforms import InterpolationMode
 from torchvision.transforms.v2 import Resize
@@ -32,6 +33,18 @@ class GRDNetPreProcessor(PreProcessor):
             batch.image, batch.gt_mask = self.transform(batch.image, batch.gt_mask)
         else:
             batch.image, batch.gt_mask, batch.roi_mask = self.transform(batch.image, batch.gt_mask, batch.roi_mask)
+        batch.image = batch.image.clamp(0.0, 1.0)
+
+    def forward(self, batch: torch.Tensor) -> torch.Tensor:
+        """Resize and bound an image batch for exported inference.
+
+        Args:
+            batch: Input image batch.
+
+        Returns:
+            Resized image batch with values in ``[0, 1]``.
+        """
+        return super().forward(batch).clamp(0.0, 1.0)
 
     def on_train_batch_start(
         self,

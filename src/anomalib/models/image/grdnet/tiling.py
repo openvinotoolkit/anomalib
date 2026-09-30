@@ -79,7 +79,7 @@ def rotate_image_and_roi(
             rotate(roi_mask, angle=float(angle.item()), interpolation=InterpolationMode.NEAREST, fill=0),
         )
 
-    images = torch.stack(rotated_images)
+    images = torch.stack(rotated_images).clamp(0.0, 1.0)
     rois = torch.stack(rotated_rois)
     return images, (rois > 0.5).to(dtype=image_tiles.dtype)
 

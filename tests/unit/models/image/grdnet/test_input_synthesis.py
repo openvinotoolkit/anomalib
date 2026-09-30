@@ -5,7 +5,9 @@
 
 import pytest
 import torch
+from torchvision.transforms import InterpolationMode
 
+from anomalib.models.image.grdnet import tiling
 from anomalib.models.image.grdnet.anomaly_generator import (
     GRDNetAnomalyGenerator,
     _blend_anomaly,
@@ -70,6 +72,30 @@ def test_rotation_uses_nearest_neighbor_for_roi() -> None:
 
     assert set(rotated_rois.unique().tolist()) <= {0.0, 1.0}
     assert torch.all(rotated_images[:, :1][rotated_rois.bool()] > 0)
+
+
+def test_rotation_clamps_floating_point_interpolation_overshoot(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Bilinear interpolation roundoff should remain inside the image contract."""
+    epsilon = torch.finfo(torch.float32).eps
+
+    def rotate_with_overshoot(
+        inputs: torch.Tensor,
+        angle: float,
+        interpolation: InterpolationMode,
+        fill: int,
+    ) -> torch.Tensor:
+        del angle, fill
+        return inputs + epsilon if interpolation is InterpolationMode.BILINEAR else inputs
+
+    monkeypatch.setattr(tiling, "rotate", rotate_with_overshoot)
+    images = torch.ones((1, 3, 8, 8))
+    roi_masks = torch.ones((1, 1, 8, 8))
+
+    rotated_images, rotated_rois = rotate_image_and_roi(images, roi_masks, angles=torch.tensor([1.0]))
+
+    assert rotated_images.max() == 1.0
+    assert rotated_images.min() >= 0.0
+    assert rotated_rois.all()
 
 
 def test_probability_zero_returns_identity_and_empty_masks() -> None:

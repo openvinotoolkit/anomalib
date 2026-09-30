@@ -218,10 +218,9 @@ class GRDNet(AnomalibModule):
         image_tiles, roi_tiles = rotate_image_and_roi(image_tiles, roi_tiles)
         perturbed_tiles, _, anomaly_masks, _ = self.anomaly_generator(image_tiles)
 
-        discriminator_loss = self._update_discriminator(image_tiles, discriminator_optimizer)
-        generator_losses = self._update_generator(image_tiles, generator_optimizer)
+        discriminator_loss = self._update_discriminator(image_tiles, perturbed_tiles, discriminator_optimizer)
+        generator_losses = self._update_generator(image_tiles, perturbed_tiles, generator_optimizer)
         segmentator_loss = self._update_segmentator(
-            image_tiles,
             perturbed_tiles,
             anomaly_masks,
             roi_tiles,
@@ -249,12 +248,17 @@ class GRDNet(AnomalibModule):
             "loss": reported_total,
         }
 
-    def _update_discriminator(self, images: torch.Tensor, optimizer: torch.optim.Optimizer) -> torch.Tensor:
-        """Update only the adversarial discriminator."""
+    def _update_discriminator(
+        self,
+        images: torch.Tensor,
+        perturbed_images: torch.Tensor,
+        optimizer: torch.optim.Optimizer,
+    ) -> torch.Tensor:
+        """Update the discriminator using clean images and denoised reconstructions."""
         self.model.generator.eval()
         self.model.discriminator.train()
         with torch.no_grad():
-            _, reconstruction = self.model.generator.reconstruct(images)
+            _, reconstruction = self.model.generator.reconstruct(perturbed_images)
         _, real_logits = self.model.discriminator(images)
         _, fake_logits = self.model.discriminator(reconstruction.detach())
         loss = self.discriminator_loss(real_logits, fake_logits)
@@ -264,15 +268,20 @@ class GRDNet(AnomalibModule):
         optimizer.step()
         return loss
 
-    def _update_generator(self, images: torch.Tensor, optimizer: torch.optim.Optimizer) -> GeneratorLosses:
-        """Update only the generator while keeping the discriminator frozen."""
+    def _update_generator(
+        self,
+        images: torch.Tensor,
+        perturbed_images: torch.Tensor,
+        optimizer: torch.optim.Optimizer,
+    ) -> GeneratorLosses:
+        """Train the generator to reconstruct clean images from perturbed inputs."""
         self.model.generator.train()
         self.model.discriminator.eval()
         requires_grad = [parameter.requires_grad for parameter in self.model.discriminator.parameters()]
         for parameter in self.model.discriminator.parameters():
             parameter.requires_grad_(requires_grad=False)
         try:
-            latent, reconstruction, reconstruction_latent = self.model.generator(images)
+            latent, reconstruction, reconstruction_latent = self.model.generator(perturbed_images)
             with torch.no_grad():
                 real_features, _ = self.model.discriminator(images)
             fake_features, _ = self.model.discriminator(reconstruction)
@@ -300,7 +309,6 @@ class GRDNet(AnomalibModule):
 
     def _update_segmentator(
         self,
-        images: torch.Tensor,
         perturbed_images: torch.Tensor,
         anomaly_masks: torch.Tensor,
         roi_masks: torch.Tensor,
@@ -310,7 +318,7 @@ class GRDNet(AnomalibModule):
         self.model.generator.eval()
         self.model.segmentator.train()
         with torch.no_grad():
-            _, reconstruction = self.model.generator.reconstruct(images)
+            _, reconstruction = self.model.generator.reconstruct(perturbed_images)
         logits = self.model.segmentator(torch.cat((perturbed_images, reconstruction.detach()), dim=1))
         loss = self.segmentator_loss(logits, anomaly_masks, roi_masks)
 

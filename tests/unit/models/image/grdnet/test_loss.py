@@ -90,6 +90,22 @@ def test_empty_roi_produces_finite_all_normal_loss() -> None:
 
     assert torch.count_nonzero(target) == 0
     assert torch.isfinite(loss)
+    assert loss > 0
+
+
+def test_segmentator_focal_loss_penalizes_normal_pixel_errors() -> None:
+    """Paper focal loss should train both normal and anomalous classes."""
+    criterion = GRDNetSegmentatorLoss()
+    anomaly_mask = torch.zeros((1, 1, 1, 1))
+    roi_mask = torch.ones_like(anomaly_mask)
+    normal_logits = torch.tensor([[[[4.0]], [[-4.0]]]])
+    anomalous_logits = -normal_logits
+
+    normal_loss = criterion(normal_logits, anomaly_mask, roi_mask)
+    anomalous_loss = criterion(anomalous_logits, anomaly_mask, roi_mask)
+
+    assert normal_loss < anomalous_loss
+    assert anomalous_loss > 0
 
 
 def test_segmentator_uses_target_side_roi_masking() -> None:
@@ -100,7 +116,7 @@ def test_segmentator_uses_target_side_roi_masking() -> None:
     logits = torch.tensor([[[[0.1, 0.2], [0.3, 0.4]], [[0.9, 0.8], [0.7, 0.6]]]])
 
     actual = criterion(logits, anomaly_mask, roi_mask)
-    prediction_masked = FocalLoss(alpha=1.0, gamma=2.0, reduction="mean")(
+    prediction_masked = FocalLoss(alpha=None, gamma=2.0, reduction="mean")(
         logits * roi_mask,
         anomaly_mask.squeeze(1).long(),
     )

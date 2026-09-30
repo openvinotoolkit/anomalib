@@ -53,6 +53,18 @@ def test_standard_image_batch_is_supported() -> None:
     assert batch.gt_mask is None
 
 
+def test_resize_clamps_floating_point_interpolation_overshoot() -> None:
+    """Resize roundoff above one should be bounded before model input."""
+    overshoot = torch.nextafter(torch.tensor(1.0), torch.tensor(float("inf")))
+    batch = ImageBatch(image=torch.full((1, 3, 9, 11), overshoot))
+    pre_processor = GRDNetPreProcessor()
+
+    pre_processor.on_train_batch_start(None, None, batch, 0)
+
+    assert batch.image.max() == 1.0
+    assert batch.image.min() >= 0.0
+
+
 def test_grdnet_classification_batch_is_supported() -> None:
     """ROI-aware classification batches do not require anomaly ground-truth masks."""
     batch = GRDNetBatch(
@@ -76,3 +88,4 @@ def test_export_transform_resizes_image_only() -> None:
     output = pre_processor(torch.rand(1, 3, 9, 11))
 
     assert output.shape == (1, 3, 256, 256)
+    assert torch.all((output >= 0.0) & (output <= 1.0))

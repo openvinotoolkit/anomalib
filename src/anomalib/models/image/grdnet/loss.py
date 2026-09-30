@@ -107,7 +107,7 @@ class GRDNetSegmentatorLoss(nn.Module):
 
     def __init__(self) -> None:
         super().__init__()
-        self.focal_loss = FocalLoss(alpha=1.0, gamma=2.0, reduction="mean")
+        self.focal_loss = FocalLoss(alpha=None, gamma=2.0, reduction="mean")
 
     @staticmethod
     def target(anomaly_mask: torch.Tensor, roi_mask: torch.Tensor) -> torch.Tensor:
