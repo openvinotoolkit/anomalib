@@ -306,7 +306,6 @@ class GRDNet(AnomalibModule):
 
             optimizer.zero_grad()
             self.manual_backward(losses.total)
-            torch.nn.utils.clip_grad_norm_(self.model.generator.parameters(), max_norm=1.0)
             optimizer.step()
         finally:
             for parameter, original_requires_grad in zip(
@@ -336,6 +335,15 @@ class GRDNet(AnomalibModule):
         self.manual_backward(loss)
         optimizer.step()
         return loss
+
+    def on_before_optimizer_step(self, optimizer: torch.optim.Optimizer) -> None:
+        """Clip generator gradients after Lightning's precision plugin unscales them.
+
+        Args:
+            optimizer: Optimizer about to perform its step.
+        """
+        if optimizer is self.optimizers(use_pl_optimizer=False)[1]:
+            torch.nn.utils.clip_grad_norm_(self.model.generator.parameters(), max_norm=1.0)
 
     def on_train_epoch_end(self) -> None:
         """Step the generator scheduler using mean contextual loss."""

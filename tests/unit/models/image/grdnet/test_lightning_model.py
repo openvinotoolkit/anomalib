@@ -273,6 +273,70 @@ def test_generator_phase_freezes_discriminator(
     assert torch.equal(clean_targets[0], images)
 
 
+@pytest.mark.parametrize("optimizer_index", [0, 1, 2])
+def test_gradient_clipping_applies_only_to_generator(
+    model: GRDNet,
+    optimizer_config: _OptimizerConfig,
+    monkeypatch: pytest.MonkeyPatch,
+    optimizer_index: int,
+) -> None:
+    """Only the generator optimizer clips gradients, leaving other phases unchanged."""
+    modules = (model.model.discriminator, model.model.generator, model.model.segmentator)
+    parameters = [next(module.parameters()) for module in modules]
+    for parameter in parameters:
+        parameter.grad = torch.full_like(parameter, 2.0)
+    original_gradients = [parameter.grad.clone() for parameter in parameters]
+    monkeypatch.setattr(model, "optimizers", MagicMock(return_value=optimizer_config.optimizers))
+
+    model.on_before_optimizer_step(optimizer_config.optimizers[optimizer_index])
+
+    for index, parameter in enumerate(parameters):
+        if optimizer_index == 1 and index == 1:
+            assert parameter.grad.norm().item() == pytest.approx(1.0)
+        else:
+            torch.testing.assert_close(parameter.grad, original_gradients[index])
+
+
+@pytest.mark.parametrize("scale", [1.0, 65536.0])
+@pytest.mark.parametrize("gradient_norm", [0.5, 5.0])
+def test_generator_clipping_occurs_after_unscaling(
+    model: GRDNet,
+    optimizer_config: _OptimizerConfig,
+    monkeypatch: pytest.MonkeyPatch,
+    scale: float,
+    gradient_norm: float,
+) -> None:
+    """Generator clipping preserves its norm threshold regardless of loss scaling."""
+    optimizer = optimizer_config.optimizers[1]
+    scaler = torch.amp.GradScaler("cpu", init_scale=scale)
+    parameter = next(model.model.generator.parameters())
+    observed_norms: list[float] = []
+    original_step = optimizer.step
+
+    def controlled_loss(*args: torch.Tensor) -> GeneratorLosses:
+        """Give one generator parameter a known gradient."""
+        del args
+        loss = parameter.flatten()[0] * gradient_norm
+        return GeneratorLosses(loss, loss, loss, loss)
+
+    def optimizer_step() -> None:
+        """Unscale before the pre-step hook, matching Lightning's precision boundary."""
+        scaler.unscale_(optimizer)
+        model.on_before_optimizer_step(optimizer)
+        observed_norms.append(parameter.grad.norm().item())
+        original_step()
+
+    monkeypatch.setattr(model.generator_loss, "forward", controlled_loss)
+    monkeypatch.setattr(model, "manual_backward", lambda loss: scaler.scale(loss).backward())
+    monkeypatch.setattr(model, "optimizers", MagicMock(return_value=optimizer_config.optimizers))
+    monkeypatch.setattr(optimizer, "step", optimizer_step)
+    images = torch.linspace(0.0, 1.0, 2 * 3 * 8 * 8).reshape(2, 3, 8, 8)
+
+    model._update_generator(images, images, optimizer)  # noqa: SLF001
+
+    assert observed_norms == pytest.approx([min(gradient_norm, 1.0)])
+
+
 def test_segmentator_phase_uses_detached_reconstruction(
     model: GRDNet,
     optimizer_config: _OptimizerConfig,
