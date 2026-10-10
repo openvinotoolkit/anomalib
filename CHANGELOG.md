@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- 🚀 **model**: Add GRD-Net with optional training-only ROI supervision and the GRDNetFolder datamodule by @NickF93 in https://github.com/open-edge-platform/anomalib/pull/3812
+
 ### Removed
 
 ### Changed

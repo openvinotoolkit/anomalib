@@ -67,6 +67,23 @@ The module includes several categories of dataclasses:
    :show-inheritance:
 ```
 
+## GRD-Net Image Classes
+
+`GRDNetItem` and `GRDNetBatch` extend the standard image types with training-only
+`roi_mask` and `roi_mask_path` fields. Masks have shape `[H, W]` for items and
+`[B, H, W]` for batches. Conversion to NumPy returns the standard image dataclasses
+without ROI fields. See {doc}`../datamodules/image/grdnet` for the aligned folder pipeline.
+
+```{eval-rst}
+.. autoclass:: GRDNetItem
+   :members: to_numpy
+   :show-inheritance:
+
+.. autoclass:: GRDNetBatch
+   :members: to_numpy
+   :show-inheritance:
+```
+
 ## Video Classes
 
 ### VideoItem

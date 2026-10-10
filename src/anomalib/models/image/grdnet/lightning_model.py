@@ -36,17 +36,27 @@ class GRDNet(AnomalibModule):
     default to the full image when they are absent.
 
     Args:
-        texture_source: Texture used to synthesize anomalies. ``"random"`` samples
-            independent RGB values and ``"image"`` shifts the input tile.
-        perlin_probability: Per-tile probability of applying a synthetic anomaly.
-        adversarial_weight: Weight of the generator feature-matching objective.
-        contextual_weight: Weight of the generator reconstruction objective.
-        encoder_weight: Weight of the generator latent-consistency objective.
-        learning_rate: Initial learning rate shared by all three optimizers.
-        pre_processor: Pre-processor instance or flag to use the default.
-        post_processor: Post-processor instance or flag to use the default.
-        evaluator: Evaluator instance or flag to use the default.
-        visualizer: Visualizer instance or flag to use the default.
+        texture_source (TextureSource): Texture used to synthesize anomalies. ``"random"`` samples
+            independent RGB values and ``"image"`` shifts the input tile. Defaults to ``"random"``.
+        perlin_probability (float): Per-tile probability of a synthetic anomaly. Defaults to ``0.75``.
+        adversarial_weight (float): Generator feature-matching weight. Defaults to ``1.0``.
+        contextual_weight (float): Generator L1 plus one-minus-SSIM weight. Defaults to ``50.0``.
+        encoder_weight (float): Generator latent-consistency weight. Defaults to ``1.0``.
+        learning_rate (float): Initial learning rate of all three optimizers. Defaults to ``1e-4``.
+        pre_processor (PreProcessor | bool): Instance or default flag. Defaults to ``True``.
+        post_processor (PostProcessor | bool): Instance or default flag. Defaults to ``True``.
+        evaluator (Evaluator | bool): Instance or default flag. Defaults to ``True``.
+        visualizer (Visualizer | bool): Instance or default flag. Defaults to ``True``.
+
+    Raises:
+        ValueError: If a texture source is unsupported, a numeric parameter is a boolean or nonfinite,
+            a probability is outside ``[0, 1]``, a weight is negative, or the learning rate is not positive.
+
+    Example:
+        >>> from anomalib.models import GRDNet
+        >>> model = GRDNet(texture_source="image")
+        >>> model.learning_type
+        <LearningType.ONE_CLASS: 'one_class'>
     """
 
     def __init__(
