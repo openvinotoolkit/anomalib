@@ -1,0 +1,19 @@
+MVTec AD result panels: 0.png, 1.png, 2.png
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
+
+Source images and ground-truth annotations: MVTec Software GmbH, MVTec AD.
+https://www.mvtec.com/research-teaching/datasets/mvtec-ad
+
+These panels contain resized dataset images and annotations alongside GRD-Net
+prediction heatmaps. Heatmaps are scaled for display only. The dataset-derived
+panels are distributed under Creative Commons Attribution-NonCommercial-ShareAlike
+4.0 International, not under the software's Apache-2.0 license:
+https://creativecommons.org/licenses/by-nc-sa/4.0/
+https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
+
+Credit the source, retain this license notice, and indicate modifications.
+Commercial use is not permitted. Adaptations must use the same license.
+No endorsement by MVTec Software GmbH is implied.
+
+Source-image identifiers, checkpoint hashes, and display scaling are recorded
+in results/GRDNet/selected_categories.json.
