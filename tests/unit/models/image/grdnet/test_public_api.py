@@ -16,6 +16,15 @@ from anomalib.data.datasets import GRDNetFolderDataset as DatasetsGRDNetFolderDa
 from anomalib.models import GRDNet, get_model, list_models
 from anomalib.models.image import GRDNet as ImageGRDNet
 
+_NONDEFAULT_PARAMETERS = {
+    "contextual_l1_weight": 2.0,
+    "contextual_ssim_weight": 0.5,
+    "generator_scheduler_decay": 0.2,
+    "generator_scheduler_patience": 0,
+    "rotation_degrees": 30.0,
+    "smoothing_kernel_size": 3,
+}
+
 
 def test_public_imports() -> None:
     """GRD-Net model and data types are available from their public packages."""
@@ -38,15 +47,18 @@ def test_model_listing_uses_existing_acronym_conversion() -> None:
     assert "GRDNet" in list_models(case="pascal")
 
 
-def test_yaml_configuration_with_mvtec(tmp_path: Path) -> None:
+@pytest.mark.parametrize("parameters", [{}, _NONDEFAULT_PARAMETERS])
+def test_yaml_configuration_with_mvtec(tmp_path: Path, parameters: dict[str, float | int]) -> None:
     """A YAML configuration constructs GRD-Net with the standard MVTec datamodule."""
     config_path = tmp_path / "grdnet.yaml"
+    parameter_lines = "\n".join(f"    {name}: {value}" for name, value in parameters.items())
     config_path.write_text(
         f"""
 model:
   class_path: anomalib.models.GRDNet
   init_args:
     texture_source: image
+{parameter_lines}
 data:
   class_path: anomalib.data.MVTecAD
   init_args:
@@ -63,10 +75,23 @@ trainer:
     assert isinstance(cli.model, GRDNet)
     assert cli.model.anomaly_generator.texture_source == "image"
     assert isinstance(cli.datamodule, MVTecAD)
+    expected = parameters or {
+        "contextual_l1_weight": 1.0,
+        "contextual_ssim_weight": 1.0,
+        "generator_scheduler_decay": 0.1,
+        "generator_scheduler_patience": 3,
+        "rotation_degrees": 90.0,
+        "smoothing_kernel_size": 21,
+    }
+    assert all(cli.model.hparams[name] == value for name, value in expected.items())
+    assert cli.model.model.smoothing_kernel_size == expected["smoothing_kernel_size"]
 
 
 def test_cli_configuration_with_roi_folder(tmp_path: Path) -> None:
     """CLI arguments construct the ROI-aware folder datamodule."""
+    parameter_args = [
+        argument for name, value in _NONDEFAULT_PARAMETERS.items() for argument in (f"--model.{name}", str(value))
+    ]
     cli = AnomalibCLI(
         args=[
             "fit",
@@ -82,6 +107,7 @@ def test_cli_configuration_with_roi_folder(tmp_path: Path) -> None:
             "train/good",
             "--data.roi_dir",
             "roi",
+            *parameter_args,
         ],
         run=False,
     )
@@ -89,3 +115,10 @@ def test_cli_configuration_with_roi_folder(tmp_path: Path) -> None:
     assert isinstance(cli.model, GRDNet)
     assert isinstance(cli.datamodule, GRDNetFolder)
     assert cli.datamodule.roi_dir == "roi"
+    assert all(cli.model.hparams[name] == value for name, value in _NONDEFAULT_PARAMETERS.items())
+    assert cli.model.generator_loss.contextual_l1_weight == 2.0
+    assert cli.model.generator_loss.contextual_ssim_weight == 0.5
+    assert cli.model.rotation_degrees == 30.0
+    assert cli.model.model.smoothing_kernel_size == 3
+    _, schedulers = cli.model.configure_optimizers()
+    assert schedulers[0].patience == 0

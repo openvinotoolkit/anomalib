@@ -6,7 +6,7 @@
 from copy import deepcopy
 from pathlib import Path
 from typing import NamedTuple
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 import torch
@@ -17,10 +17,12 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize
 from anomalib import LearningType
 from anomalib.data import ImageBatch, ImageItem, InferenceBatch
 from anomalib.data.dataclasses.torch.grdnet import GRDNetBatch, GRDNetItem
+from anomalib.deploy import ExportType
 from anomalib.engine import Engine
 from anomalib.models.image.grdnet import lightning_model
 from anomalib.models.image.grdnet.lightning_model import GRDNet
 from anomalib.models.image.grdnet.loss import GeneratorLosses
+from anomalib.models.image.grdnet.torch_model import GRDNetModel
 from anomalib.pre_processing import PreProcessor
 
 
@@ -96,6 +98,18 @@ class _TinyModel(nn.Module):
             pred_score=anomaly_map.amax(dim=(-2, -1)).squeeze(1),
             anomaly_map=anomaly_map,
         )
+
+
+def _tiny_inference_model() -> GRDNetModel:
+    """Keep real tiling, pooling, and scoring while substituting small local subnetworks."""
+    with patch(
+        "anomalib.models.image.grdnet.torch_model.DiscriminativeSubNetwork",
+        return_value=_TinySegmentator(),
+    ):
+        container = GRDNetModel(base_features=1, stage_blocks=(1,))
+    container.generator = _TinyGenerator()
+    container.discriminator = _TinyDiscriminator()
+    return container
 
 
 class _TinyAnomalyGenerator(nn.Module):
@@ -442,13 +456,14 @@ def test_standard_batch_uses_full_roi() -> None:
     assert roi_masks.all()
 
 
-def test_training_uses_low_level_model_geometry(
+def test_training_uses_model_geometry_and_rotation(
     model: GRDNet,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Training tiles images using the geometry selected by the Torch model."""
+    """Training uses the Torch model's geometry and forwards the configured rotation bound."""
     model.model.tile_size = (256, 256)
     model.model.stride = (256, 256)
+    model.rotation_degrees = 30.0
     captured: dict[str, object] = {}
     tile_image_and_roi = lightning_model.tile_image_and_roi
 
@@ -463,14 +478,19 @@ def test_training_uses_low_level_model_geometry(
         captured["tile_count"] = image_tiles.shape[0]
         return image_tiles, roi_tiles
 
+    def capture_rotation(
+        images: torch.Tensor,
+        roi_masks: torch.Tensor,
+        *,
+        rotation_degrees: float,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        captured["rotation_degrees"] = rotation_degrees
+        return images, roi_masks
+
     loss = torch.tensor(1.0)
     generator_losses = GeneratorLosses(loss, loss, loss, loss)
     monkeypatch.setattr(lightning_model, "tile_image_and_roi", capture_geometry)
-    monkeypatch.setattr(
-        lightning_model,
-        "rotate_image_and_roi",
-        lambda images, roi_masks, **_kwargs: (images, roi_masks),
-    )
+    monkeypatch.setattr(lightning_model, "rotate_image_and_roi", capture_rotation)
     monkeypatch.setattr(model, "optimizers", lambda: (MagicMock(), MagicMock(), MagicMock()))
     monkeypatch.setattr(model, "_update_discriminator", MagicMock(return_value=loss))
     monkeypatch.setattr(model, "_update_generator", MagicMock(return_value=generator_losses))
@@ -479,7 +499,7 @@ def test_training_uses_low_level_model_geometry(
 
     model.training_step(ImageBatch(image=torch.rand(1, 3, 256, 256)), 0)
 
-    assert captured == {"tile_size": (256, 256), "stride": (256, 256), "tile_count": 1}
+    assert captured == {"tile_size": (256, 256), "stride": (256, 256), "tile_count": 1, "rotation_degrees": 30.0}
 
 
 def test_generator_scheduler_uses_contextual_epoch_mean(
@@ -586,11 +606,29 @@ def test_engine_fit_with_standard_and_roi_batches(
     assert engine.trainer.global_step == 3
 
 
+@pytest.mark.usefixtures("model")
+@pytest.mark.parametrize(
+    "parameters",
+    [
+        {},
+        {
+            "contextual_l1_weight": 2.0,
+            "contextual_ssim_weight": 0.5,
+            "generator_scheduler_decay": 0.2,
+            "generator_scheduler_patience": 0,
+            "rotation_degrees": 30.0,
+            "smoothing_kernel_size": 3,
+        },
+    ],
+)
 def test_checkpoint_roundtrip_restores_training_state(
-    model: GRDNet,
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    parameters: dict[str, float | int],
 ) -> None:
     """Engine checkpoints restore networks, optimizers, scheduler, and predictions."""
+    monkeypatch.setattr(GRDNet, "configure_torch_model", staticmethod(_tiny_inference_model))
+    model = GRDNet(**parameters, pre_processor=False, post_processor=False, evaluator=False, visualizer=False)
     loader = _loader(with_roi=False)
     engine = _engine(tmp_path / "fit")
     engine.fit(model=model, train_dataloaders=loader, val_dataloaders=loader)
@@ -615,8 +653,36 @@ def test_checkpoint_roundtrip_restores_training_state(
     assert predictions_after is not None
     assert torch.equal(predictions_before[0].pred_score, predictions_after[0].pred_score)
     assert torch.equal(predictions_before[0].anomaly_map, predictions_after[0].anomaly_map)
+    assert loaded.hparams == model.hparams
+    assert loaded.model.smoothing_kernel_size == model.model.smoothing_kernel_size
+    assert loaded.rotation_degrees == model.rotation_degrees
+    inputs = torch.linspace(0, 1, 3 * 11 * 11).reshape(1, 3, 11, 11)
+    reconstruction = inputs * 0.5
+    expected_losses = model.generator_loss(inputs, reconstruction, inputs, inputs, inputs, inputs)
+    actual_losses = loaded.generator_loss(inputs, reconstruction, inputs, inputs, inputs, inputs)
+    for actual, expected in zip(actual_losses, expected_losses, strict=True):
+        torch.testing.assert_close(actual, expected)
+    _, loaded_schedulers = loaded.configure_optimizers()
+    assert loaded_schedulers[0].factor == engine.trainer.lr_scheduler_configs[0].scheduler.factor
+    assert loaded_schedulers[0].patience == engine.trainer.lr_scheduler_configs[0].scheduler.patience
+
+    if parameters:
+        legacy_checkpoint = deepcopy(checkpoint)
+        for name in parameters:
+            del legacy_checkpoint["hyper_parameters"][name]
+        legacy_path = tmp_path / "legacy.ckpt"
+        torch.save(legacy_checkpoint, legacy_path)
+        legacy = GRDNet.load_from_checkpoint(legacy_path, evaluator=False, visualizer=False)
+        assert legacy.generator_loss.contextual_l1_weight == 1.0
+        assert legacy.generator_loss.contextual_ssim_weight == 1.0
+        assert legacy.generator_scheduler_decay == 0.1
+        assert legacy.generator_scheduler_patience == 3
+        assert legacy.rotation_degrees == 90.0
+        assert legacy.model.smoothing_kernel_size == 21
+        _assert_nested_equal(legacy.state_dict(), loaded.state_dict())
 
     resumed = GRDNet(
+        **parameters,
         pre_processor=False,
         post_processor=False,
         evaluator=False,
@@ -637,6 +703,33 @@ def test_checkpoint_roundtrip_restores_training_state(
         resume_engine.trainer.lr_scheduler_configs[0].scheduler.state_dict(),
         checkpoint["lr_schedulers"][0],
     )
+
+
+@pytest.mark.usefixtures("model")
+def test_nondefault_smoothing_torch_export(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A Torch export retains nondefault pooling and agrees with eager image-only inference."""
+    monkeypatch.setattr(GRDNet, "configure_torch_model", staticmethod(_tiny_inference_model))
+    configured = GRDNet(
+        smoothing_kernel_size=3,
+        pre_processor=False,
+        post_processor=False,
+        evaluator=False,
+        visualizer=False,
+    ).eval()
+    images = torch.linspace(0, 1, 3 * 256 * 256).reshape(1, 3, 256, 256)
+    export_path = _engine(tmp_path / "runtime").export(
+        model=configured,
+        export_type=ExportType.TORCH,
+        export_root=tmp_path / "export",
+    )
+    assert export_path is not None
+    exported = torch.load(export_path, map_location="cpu", weights_only=False)["model"].eval()
+    assert exported.model.smoothing_kernel_size == 3
+    with torch.no_grad():
+        expected = configured(images)
+        actual = exported(images)
+    torch.testing.assert_close(actual.anomaly_map, expected.anomaly_map, rtol=1e-5, atol=1e-6)
+    torch.testing.assert_close(actual.pred_score, expected.pred_score, rtol=1e-5, atol=1e-6)
 
 
 def test_normalizing_preprocessor_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
