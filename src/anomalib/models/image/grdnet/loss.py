@@ -16,7 +16,7 @@ class GeneratorLosses(NamedTuple):
     Attributes:
         total: Weighted sum of the generator objectives.
         adversarial: Discriminator feature-matching loss.
-        contextual: Image reconstruction and structural-similarity loss.
+        contextual: Inner-weighted reconstruction and structural-similarity loss, before the outer coefficient.
         encoder: Latent-consistency loss.
     """
 
@@ -33,6 +33,8 @@ class GRDNetGeneratorLoss(nn.Module):
         adversarial_weight: Weight applied to discriminator feature matching.
         contextual_weight: Weight applied to image reconstruction.
         encoder_weight: Weight applied to latent consistency.
+        contextual_l1_weight: Inner coefficient applied to L1 reconstruction. Defaults to ``1.0``.
+        contextual_ssim_weight: Inner coefficient applied to one-minus-SSIM. Defaults to ``1.0``.
     """
 
     def __init__(
@@ -40,11 +42,16 @@ class GRDNetGeneratorLoss(nn.Module):
         adversarial_weight: float = 1.0,
         contextual_weight: float = 50.0,
         encoder_weight: float = 1.0,
+        *,
+        contextual_l1_weight: float = 1.0,
+        contextual_ssim_weight: float = 1.0,
     ) -> None:
         super().__init__()
         self.adversarial_weight = adversarial_weight
         self.contextual_weight = contextual_weight
         self.encoder_weight = encoder_weight
+        self.contextual_l1_weight = contextual_l1_weight
+        self.contextual_ssim_weight = contextual_ssim_weight
         self.l1_loss = nn.L1Loss()
         self.mse_loss = nn.MSELoss()
         self.ssim_loss = SSIMLoss(window_size=11)
@@ -69,9 +76,12 @@ class GRDNetGeneratorLoss(nn.Module):
             fake_features: Discriminator features for the reconstruction.
 
         Returns:
-            GeneratorLosses: Total loss and its three unweighted components.
+            GeneratorLosses: Total loss and components before their outer coefficients. The contextual
+                component includes its inner L1 and SSIM coefficients.
         """
-        contextual = self.l1_loss(reconstruction, image) + (2 * self.ssim_loss(reconstruction, image))
+        contextual = self.contextual_l1_weight * self.l1_loss(reconstruction, image) + (
+            self.contextual_ssim_weight * (2 * self.ssim_loss(reconstruction, image))
+        )
         adversarial = self.mse_loss(fake_features, real_features.detach())
         encoder = self.l1_loss(reconstruction_latent, latent)
         total = (

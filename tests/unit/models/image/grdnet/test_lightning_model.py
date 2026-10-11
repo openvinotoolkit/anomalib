@@ -215,6 +215,82 @@ def test_constructor_validation(argument: str, value: object) -> None:
         GRDNet(**{argument: value})
 
 
+@pytest.mark.parametrize(
+    "argument",
+    [
+        "contextual_l1_weight",
+        "contextual_ssim_weight",
+        "generator_scheduler_decay",
+        "generator_scheduler_patience",
+        "rotation_degrees",
+        "smoothing_kernel_size",
+    ],
+)
+@pytest.mark.parametrize("value", [True, float("nan"), float("inf"), -1])
+def test_new_parameters_reject_invalid_numeric_values(argument: str, value: object) -> None:
+    """All new public controls reject booleans, nonfinite values, and negative numbers before construction."""
+    with pytest.raises(ValueError, match=argument):
+        GRDNet(**{argument: value})
+
+
+@pytest.mark.parametrize(
+    ("argument", "value"),
+    [
+        ("generator_scheduler_decay", 0.0),
+        ("generator_scheduler_decay", 1e-20),
+        ("generator_scheduler_decay", 1000.0),
+        ("generator_scheduler_patience", 1.0),
+        ("smoothing_kernel_size", 3.0),
+        ("smoothing_kernel_size", 0),
+        ("smoothing_kernel_size", 2),
+    ],
+)
+def test_new_parameter_boundaries(argument: str, value: object) -> None:
+    """Scheduler factors must reduce the rate and integer controls must retain their exact type."""
+    with pytest.raises(ValueError, match=argument):
+        GRDNet(**{argument: value})
+
+
+def test_both_inner_contextual_coefficients_cannot_be_zero() -> None:
+    """A degenerate contextual objective is rejected even when the outer coefficient is zero."""
+    with pytest.raises(ValueError, match="contextual_l1_weight and contextual_ssim_weight"):
+        GRDNet(contextual_l1_weight=0.0, contextual_ssim_weight=0.0, contextual_weight=0.0)
+
+
+@pytest.mark.parametrize(("l1_weight", "ssim_weight"), [(0.0, 1.0), (1.0, 0.0)])
+def test_zero_parameter_boundaries_and_positional_components(
+    model: GRDNet,
+    l1_weight: float,
+    ssim_weight: float,
+) -> None:
+    """Valid zero controls do not change existing positional component arguments or tensor state."""
+    component_flags = (False, False, False, False)
+    configured = GRDNet(
+        "random",
+        0.75,
+        1.0,
+        0.0,
+        1.0,
+        1e-4,
+        *component_flags,
+        contextual_l1_weight=l1_weight,
+        contextual_ssim_weight=ssim_weight,
+        generator_scheduler_patience=0,
+        rotation_degrees=0.0,
+        smoothing_kernel_size=1,
+    )
+    assert configured.pre_processor is None
+    assert configured.post_processor is None
+    assert configured.evaluator is None
+    assert configured.visualizer is None
+    assert configured.generator_loss.contextual_l1_weight == l1_weight
+    assert configured.generator_loss.contextual_ssim_weight == ssim_weight
+    assert configured.generator_scheduler_patience == 0
+    assert configured.rotation_degrees == 0
+    assert configured.model.smoothing_kernel_size == 1
+    assert configured.state_dict().keys() == model.state_dict().keys()
+
+
 def test_optimizer_order_and_parameters(model: GRDNet, optimizer_config: _OptimizerConfig) -> None:
     """Optimizers are ordered by discriminator, generator, then segmentator."""
     expected_modules = (model.model.discriminator, model.model.generator, model.model.segmentator)
@@ -390,7 +466,11 @@ def test_training_uses_low_level_model_geometry(
     loss = torch.tensor(1.0)
     generator_losses = GeneratorLosses(loss, loss, loss, loss)
     monkeypatch.setattr(lightning_model, "tile_image_and_roi", capture_geometry)
-    monkeypatch.setattr(lightning_model, "rotate_image_and_roi", lambda images, roi_masks: (images, roi_masks))
+    monkeypatch.setattr(
+        lightning_model,
+        "rotate_image_and_roi",
+        lambda images, roi_masks, **_kwargs: (images, roi_masks),
+    )
     monkeypatch.setattr(model, "optimizers", lambda: (MagicMock(), MagicMock(), MagicMock()))
     monkeypatch.setattr(model, "_update_discriminator", MagicMock(return_value=loss))
     monkeypatch.setattr(model, "_update_generator", MagicMock(return_value=generator_losses))
@@ -422,6 +502,44 @@ def test_generator_scheduler_uses_contextual_epoch_mean(
     assert generator_optimizer.param_groups[0]["lr"] == pytest.approx(expected_generator_rate)
     assert segmentator_optimizer.param_groups[0]["lr"] == initial_rates[2]
     assert model.contextual_loss_mean.update_count == 0
+
+
+@pytest.mark.usefixtures("model")
+def test_nondefault_scheduler_monitors_inner_weighted_contextual_mean(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The scheduler uses inner-weighted contextual loss without its outer coefficient and changes only generator LR."""
+    configured = GRDNet(
+        contextual_weight=0.0,
+        contextual_l1_weight=2.0,
+        contextual_ssim_weight=0.5,
+        generator_scheduler_decay=0.2,
+        generator_scheduler_patience=0,
+        pre_processor=False,
+        post_processor=False,
+        evaluator=False,
+        visualizer=False,
+    )
+    optimizers, schedulers = configured.configure_optimizers()
+    scheduler = schedulers[0]
+    monkeypatch.setattr(configured, "lr_schedulers", lambda: scheduler)
+    monkeypatch.setattr(configured, "log", MagicMock())
+    inputs = torch.zeros((1, 3, 11, 11))
+    reconstruction = torch.ones_like(inputs)
+    losses = configured.generator_loss(inputs, reconstruction, inputs, inputs, inputs, inputs)
+    contextual = losses.contextual.detach()
+    assert losses.total == 0
+    for _ in range(2):
+        configured.contextual_loss_mean.update(contextual)
+        configured.contextual_loss_mean.update(contextual * 3)
+        configured.on_train_epoch_end()
+    assert scheduler.best == pytest.approx((2 * contextual).item())
+    assert scheduler.patience == 0
+    assert optimizers[0].param_groups[0]["lr"] == configured.learning_rate
+    assert optimizers[1].param_groups[0]["lr"] == pytest.approx(configured.learning_rate * scheduler.factor)
+    assert scheduler.factor == pytest.approx(torch.exp(torch.tensor(-0.2)).item())
+    assert optimizers[2].param_groups[0]["lr"] == configured.learning_rate
+    assert configured.contextual_loss_mean.update_count == 0
 
 
 def test_validation_step_returns_standard_predictions(model: GRDNet) -> None:

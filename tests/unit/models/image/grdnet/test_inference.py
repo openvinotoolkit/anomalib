@@ -5,6 +5,7 @@
 
 from unittest.mock import patch
 
+import pytest
 import torch
 from torch import nn
 
@@ -53,13 +54,19 @@ class _IndexedSegmentator(nn.Module):
         return torch.cat((torch.zeros_like(anomaly_logits), anomaly_logits), dim=1)
 
 
-def _build_model(segmentator: nn.Module) -> GRDNetModel:
+def _build_model(segmentator: nn.Module, *, smoothing_kernel_size: int = 21) -> GRDNetModel:
     """Build the container without allocating the full segmentator for a focused inference test."""
     with patch(
         "anomalib.models.image.grdnet.torch_model.DiscriminativeSubNetwork",
         return_value=nn.Identity(),
     ):
-        model = GRDNetModel(input_size=(128, 128), stride=(64, 64), base_features=1, stage_blocks=(1,))
+        model = GRDNetModel(
+            input_size=(128, 128),
+            stride=(64, 64),
+            base_features=1,
+            stage_blocks=(1,),
+            smoothing_kernel_size=smoothing_kernel_size,
+        )
     model.generator = _Reconstruction()
     model.segmentator = segmentator
     return model.eval()
@@ -83,9 +90,10 @@ def test_inference_shapes_finiteness_and_batch_isolation() -> None:
     assert torch.allclose(predictions.pred_score, torch.cat([item.pred_score for item in individual]))
 
 
-def test_inference_averages_overlaps_smooths_and_scores_non_square_images() -> None:
+@pytest.mark.parametrize("kernel_size", [1, 3, 21])
+def test_inference_averages_overlaps_smooths_and_scores_non_square_images(kernel_size: int) -> None:
     """Inference should average overlapping tiles before smoothing and max scoring."""
-    model = _build_model(_IndexedSegmentator())
+    model = _build_model(_IndexedSegmentator(), smoothing_kernel_size=kernel_size)
     images = torch.zeros((1, 3, 192, 256))
 
     with torch.no_grad():
@@ -103,8 +111,20 @@ def test_inference_averages_overlaps_smooths_and_scores_non_square_images() -> N
         expected_map[..., top : top + 128, left : left + 128] += probability
         overlap_count[..., top : top + 128, left : left + 128] += 1
     expected_map = expected_map / overlap_count
-    expected_map = torch.nn.functional.avg_pool2d(expected_map, kernel_size=21, stride=1, padding=10)
+    expected_map = torch.nn.functional.avg_pool2d(
+        expected_map,
+        kernel_size=kernel_size,
+        stride=1,
+        padding=kernel_size // 2,
+    )
 
     assert predictions.anomaly_map.shape == (1, 1, 192, 256)
     assert torch.allclose(predictions.anomaly_map, expected_map)
     assert torch.equal(predictions.pred_score, expected_map.amax(dim=(-2, -1)).squeeze(1))
+
+
+@pytest.mark.parametrize("kernel_size", [True, 0, 2, -1, 3.0])
+def test_torch_model_rejects_invalid_smoothing_kernel(kernel_size: object) -> None:
+    """Direct Torch construction enforces the same positive odd integer kernel contract."""
+    with pytest.raises(ValueError, match="smoothing_kernel_size"):
+        GRDNetModel(smoothing_kernel_size=kernel_size)

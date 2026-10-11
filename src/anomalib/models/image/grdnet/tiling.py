@@ -47,6 +47,8 @@ def rotate_image_and_roi(
     image_tiles: torch.Tensor,
     roi_tiles: torch.Tensor,
     angles: torch.Tensor | None = None,
+    *,
+    rotation_degrees: float = 90.0,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Rotate each image and ROI tile pair by the same angle.
 
@@ -54,7 +56,9 @@ def rotate_image_and_roi(
         image_tiles: RGB tiles with shape ``[N, 3, H, W]``.
         roi_tiles: ROI tiles with shape ``[N, 1, H, W]``.
         angles: Optional rotation angles with shape ``[N]``. When omitted,
-            angles are sampled uniformly from ``[-90, 90]`` degrees.
+            angles are sampled uniformly from ``[-rotation_degrees, rotation_degrees]``.
+        rotation_degrees: Symmetric bound for sampled angles, ignored when explicit angles are supplied.
+            Defaults to ``90.0``. A zero bound preserves geometry while retaining the sampling path.
 
     Returns:
         Tuple containing rotated image and binary ROI tiles.
@@ -64,7 +68,10 @@ def rotate_image_and_roi(
     """
     _validate_image_and_roi(image_tiles, roi_tiles)
     if angles is None:
-        angles = torch.empty(image_tiles.shape[0], device=image_tiles.device).uniform_(-90.0, 90.0)
+        angles = torch.empty(image_tiles.shape[0], device=image_tiles.device).uniform_(
+            -rotation_degrees,
+            rotation_degrees,
+        )
     if angles.ndim != 1 or angles.shape[0] != image_tiles.shape[0]:
         msg = f"Expected one rotation angle per tile, got shape {tuple(angles.shape)}."
         raise ValueError(msg)

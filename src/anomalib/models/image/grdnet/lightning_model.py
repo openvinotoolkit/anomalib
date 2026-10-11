@@ -47,10 +47,19 @@ class GRDNet(AnomalibModule):
         post_processor (PostProcessor | bool): Instance or default flag. Defaults to ``True``.
         evaluator (Evaluator | bool): Instance or default flag. Defaults to ``True``.
         visualizer (Visualizer | bool): Instance or default flag. Defaults to ``True``.
+        contextual_l1_weight (float): Inner L1 reconstruction coefficient. Defaults to ``1.0``.
+        contextual_ssim_weight (float): Inner one-minus-SSIM coefficient. Defaults to ``1.0``.
+        generator_scheduler_decay (float): Positive exponent for the generator plateau reduction
+            factor ``exp(-decay)``. Defaults to ``0.1``.
+        generator_scheduler_patience (int): Generator plateau patience in epochs. Defaults to ``3``.
+        rotation_degrees (float): Symmetric bound for paired tile rotation. Defaults to ``90.0``.
+        smoothing_kernel_size (int): Positive odd inference pooling kernel. ``1`` disables smoothing.
+            Defaults to ``21``.
 
     Raises:
         ValueError: If a texture source is unsupported, a numeric parameter is a boolean or nonfinite,
-            a probability is outside ``[0, 1]``, a weight is negative, or the learning rate is not positive.
+            a probability is outside ``[0, 1]``, a weight is negative, both inner contextual weights are zero,
+            an integer parameter is invalid, or a learning rate or scheduler factor is invalid.
 
     Example:
         >>> from anomalib.models import GRDNet
@@ -71,6 +80,13 @@ class GRDNet(AnomalibModule):
         post_processor: PostProcessor | bool = True,
         evaluator: Evaluator | bool = True,
         visualizer: Visualizer | bool = True,
+        *,
+        contextual_l1_weight: float = 1.0,
+        contextual_ssim_weight: float = 1.0,
+        generator_scheduler_decay: float = 0.1,
+        generator_scheduler_patience: int = 3,
+        rotation_degrees: float = 90.0,
+        smoothing_kernel_size: int = 21,
     ) -> None:
         _validate_texture_source(texture_source)
         perlin_probability = _validate_numeric("perlin_probability", perlin_probability, minimum=0.0, maximum=1.0)
@@ -78,6 +94,30 @@ class GRDNet(AnomalibModule):
         contextual_weight = _validate_numeric("contextual_weight", contextual_weight, minimum=0.0)
         encoder_weight = _validate_numeric("encoder_weight", encoder_weight, minimum=0.0)
         learning_rate = _validate_numeric("learning_rate", learning_rate, minimum=0.0, inclusive_minimum=False)
+        contextual_l1_weight = _validate_numeric("contextual_l1_weight", contextual_l1_weight, minimum=0.0)
+        contextual_ssim_weight = _validate_numeric("contextual_ssim_weight", contextual_ssim_weight, minimum=0.0)
+        if contextual_l1_weight == 0 and contextual_ssim_weight == 0:
+            msg = "contextual_l1_weight and contextual_ssim_weight must not both be zero."
+            raise ValueError(msg)
+        generator_scheduler_decay = _validate_numeric(
+            "generator_scheduler_decay",
+            generator_scheduler_decay,
+            minimum=0.0,
+            inclusive_minimum=False,
+        )
+        if not 0 < math.exp(-generator_scheduler_decay) < 1:
+            msg = "generator_scheduler_decay must yield an exp(-decay) factor strictly between zero and one."
+            raise ValueError(msg)
+        generator_scheduler_patience = _validate_integer(
+            "generator_scheduler_patience",
+            generator_scheduler_patience,
+            minimum=0,
+        )
+        rotation_degrees = _validate_numeric("rotation_degrees", rotation_degrees, minimum=0.0)
+        smoothing_kernel_size = _validate_integer("smoothing_kernel_size", smoothing_kernel_size, minimum=1)
+        if smoothing_kernel_size % 2 == 0:
+            msg = "smoothing_kernel_size must be a positive odd integer."
+            raise ValueError(msg)
 
         super().__init__(
             pre_processor=pre_processor,
@@ -86,16 +126,22 @@ class GRDNet(AnomalibModule):
             visualizer=visualizer,
         )
         self.model = self.configure_torch_model()
+        self.model.smoothing_kernel_size = smoothing_kernel_size
         self.anomaly_generator = self.configure_anomaly_generator(texture_source, perlin_probability)
         self.generator_loss = GRDNetGeneratorLoss(
             adversarial_weight=adversarial_weight,
             contextual_weight=contextual_weight,
             encoder_weight=encoder_weight,
+            contextual_l1_weight=contextual_l1_weight,
+            contextual_ssim_weight=contextual_ssim_weight,
         )
         self.discriminator_loss = GRDNetDiscriminatorLoss()
         self.segmentator_loss = GRDNetSegmentatorLoss()
         self.contextual_loss_mean = MeanMetric()
         self.learning_rate = learning_rate
+        self.generator_scheduler_decay = generator_scheduler_decay
+        self.generator_scheduler_patience = generator_scheduler_patience
+        self.rotation_degrees = rotation_degrees
         self.automatic_optimization = False
 
     @staticmethod
@@ -181,8 +227,8 @@ class GRDNet(AnomalibModule):
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             generator_optimizer,
             mode="min",
-            factor=math.exp(-0.1),
-            patience=3,
+            factor=math.exp(-self.generator_scheduler_decay),
+            patience=self.generator_scheduler_patience,
             threshold=1e-4,
             threshold_mode="abs",
         )
@@ -225,7 +271,7 @@ class GRDNet(AnomalibModule):
             tile_size=self.model.tile_size,
             stride=self.model.stride,
         )
-        image_tiles, roi_tiles = rotate_image_and_roi(image_tiles, roi_tiles)
+        image_tiles, roi_tiles = rotate_image_and_roi(image_tiles, roi_tiles, rotation_degrees=self.rotation_degrees)
         perturbed_tiles, _, anomaly_masks, _ = self.anomaly_generator(image_tiles)
 
         discriminator_loss = self._update_discriminator(image_tiles, perturbed_tiles, discriminator_optimizer)
@@ -428,3 +474,11 @@ def _validate_numeric(
         msg = f"{name} must be at most {maximum}, got {value!r}."
         raise ValueError(msg)
     return float(value)
+
+
+def _validate_integer(name: str, value: int, minimum: int) -> int:
+    """Validate one public integer argument without accepting booleans or floats."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+        msg = f"{name} must be an integer of at least {minimum}, got {value!r}."
+        raise ValueError(msg)
+    return value

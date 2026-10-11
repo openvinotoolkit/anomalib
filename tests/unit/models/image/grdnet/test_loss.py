@@ -3,6 +3,7 @@
 
 """Tests for the GRD-Net training objectives."""
 
+import pytest
 import torch
 from kornia.losses import FocalLoss, SSIMLoss
 from torch.nn import functional
@@ -46,6 +47,26 @@ def test_generator_loss_stops_real_feature_gradient() -> None:
     assert real_features.grad is None
     assert fake_features.grad is not None
     assert torch.isfinite(fake_features.grad).all()
+
+
+@pytest.mark.parametrize(("l1_weight", "ssim_weight"), [(1.0, 1.0), (2.0, 0.5), (0.0, 1.0), (1.0, 0.0)])
+def test_contextual_coefficients_preserve_formula_and_gradients(l1_weight: float, ssim_weight: float) -> None:
+    """Inner coefficients scale their own terms without changing the outer loss or SSIM conversion."""
+    image = torch.linspace(0, 1, 3 * 11 * 11).reshape(1, 3, 11, 11)
+    reconstruction = (image * 0.5 + 0.1).requires_grad_()
+    zeros = torch.zeros((1, 1, 2, 2))
+    criterion = GRDNetGeneratorLoss(2.0, 3.0, 4.0, contextual_l1_weight=l1_weight, contextual_ssim_weight=ssim_weight)
+
+    losses = criterion(image, reconstruction, zeros, zeros, zeros, zeros)
+    expected = l1_weight * functional.l1_loss(reconstruction, image) + ssim_weight * (
+        2 * SSIMLoss(window_size=11)(reconstruction, image)
+    )
+    actual_gradient = torch.autograd.grad(losses.total, reconstruction, retain_graph=True)[0]
+    expected_gradient = torch.autograd.grad(3 * expected, reconstruction)[0]
+
+    torch.testing.assert_close(losses.contextual, expected, rtol=1e-5, atol=1e-6)
+    torch.testing.assert_close(losses.total, 3 * expected, rtol=1e-5, atol=1e-6)
+    torch.testing.assert_close(actual_gradient, expected_gradient, rtol=1e-5, atol=1e-6)
 
 
 def test_discriminator_loss_matches_binary_cross_entropy() -> None:

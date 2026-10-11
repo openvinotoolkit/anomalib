@@ -299,6 +299,11 @@ class GRDNetModel(nn.Module):
         stage_blocks: Number of residual blocks in each stage.
         latent_channels: Number of generator latent channels.
         stride: Vertical and horizontal stride between image tiles.
+        smoothing_kernel_size: Positive odd pooling kernel applied after overlap averaging.
+            ``1`` disables smoothing. Defaults to ``21``.
+
+    Raises:
+        ValueError: If the smoothing kernel is not a positive odd integer.
     """
 
     def __init__(
@@ -309,10 +314,21 @@ class GRDNetModel(nn.Module):
         stage_blocks: Sequence[int] = (2, 2, 2, 2),
         latent_channels: int = 32,
         stride: tuple[int, int] = (64, 64),
+        *,
+        smoothing_kernel_size: int = 21,
     ) -> None:
+        if (
+            isinstance(smoothing_kernel_size, bool)
+            or not isinstance(smoothing_kernel_size, int)
+            or smoothing_kernel_size < 1
+            or smoothing_kernel_size % 2 == 0
+        ):
+            msg = "smoothing_kernel_size must be a positive odd integer."
+            raise ValueError(msg)
         super().__init__()
         self.tile_size = input_size
         self.stride = stride
+        self.smoothing_kernel_size = smoothing_kernel_size
         self.generator = GRDNetGenerator(
             in_channels=in_channels,
             base_features=base_features,
@@ -342,6 +358,11 @@ class GRDNetModel(nn.Module):
         logits = self.segmentator(torch.cat((image_tiles, reconstruction), dim=1))
         tile_maps = torch.softmax(logits, dim=1)[:, 1:2]
         anomaly_map = tiler.untile(tile_maps)
-        anomaly_map = torch.nn.functional.avg_pool2d(anomaly_map, kernel_size=21, stride=1, padding=10)
+        anomaly_map = torch.nn.functional.avg_pool2d(
+            anomaly_map,
+            kernel_size=self.smoothing_kernel_size,
+            stride=1,
+            padding=self.smoothing_kernel_size // 2,
+        )
         pred_score = anomaly_map.amax(dim=(-2, -1)).squeeze(1)
         return InferenceBatch(pred_score=pred_score, anomaly_map=anomaly_map)

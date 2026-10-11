@@ -74,6 +74,41 @@ def test_rotation_uses_nearest_neighbor_for_roi() -> None:
     assert torch.all(rotated_images[:, :1][rotated_rois.bool()] > 0)
 
 
+@pytest.mark.parametrize("degrees", [0.0, 30.0, 90.0])
+def test_sampled_rotation_matches_explicit_angles_and_random_state(degrees: float) -> None:
+    """Changing the angle bound preserves paired interpolation and the established random draw order."""
+    rois = torch.zeros((2, 1, 16, 16))
+    rois[..., 4:12, 5:11] = 1
+    images = rois.repeat(1, 3, 1, 1)
+    torch.manual_seed(42)
+    angles = torch.empty(2).uniform_(-degrees, degrees)
+    expected_state = torch.get_rng_state()
+    expected_images, expected_rois = rotate_image_and_roi(images, rois, angles)
+
+    torch.manual_seed(42)
+    if degrees == 90.0:
+        actual_images, actual_rois = rotate_image_and_roi(images, rois)
+    else:
+        actual_images, actual_rois = rotate_image_and_roi(images, rois, rotation_degrees=degrees)
+
+    assert torch.equal(actual_images, expected_images)
+    assert torch.equal(actual_rois, expected_rois)
+    assert torch.equal(torch.get_rng_state(), expected_state)
+    if degrees == 0:
+        assert torch.equal(actual_images, images)
+        assert torch.equal(actual_rois, rois)
+
+
+def test_explicit_rotation_angles_ignore_sampling_bound() -> None:
+    """Existing positional angles remain authoritative when a sampling bound is also supplied."""
+    images = torch.linspace(0, 1, 3 * 16 * 16).reshape(1, 3, 16, 16)
+    rois = torch.ones((1, 1, 16, 16))
+    angles = torch.tensor([31.0])
+    expected = rotate_image_and_roi(images, rois, angles)
+    actual = rotate_image_and_roi(images, rois, angles, rotation_degrees=0.0)
+    assert all(torch.equal(left, right) for left, right in zip(actual, expected, strict=True))
+
+
 def test_rotation_clamps_floating_point_interpolation_overshoot(monkeypatch: pytest.MonkeyPatch) -> None:
     """Bilinear interpolation roundoff should remain inside the image contract."""
     epsilon = torch.finfo(torch.float32).eps
