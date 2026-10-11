@@ -12,9 +12,9 @@ Images are resized to 256 × 256 without ImageNet normalization. Internal 128 ×
 
 The generator has two independently parameterized residual encoders, a mirrored decoder, and independent 32 × 8 × 8 latent projections. It reconstructs the clean tile from the corrupted tile. An adversarial discriminator provides feature matching; the existing DRÆM discriminative subnetwork predicts two-class segmentation logits from the corrupted tile and its detached reconstruction.
 
-Training uses three separate Adam steps: discriminator, generator, then segmentator. The generator combines feature MSE, contextual L1 plus one minus SSIM, and latent L1, weighted 1, 50, and 1. Discriminator parameters and batch-normalization statistics are frozen during the generator step. The segmentation loss is focal loss with gamma 2 and no alpha class balancing. Only the generator learning rate is reduced on a plateau in mean training contextual loss, by a factor of exp(-0.1).
+Training uses three separate Adam steps: discriminator, generator, then segmentator. By default, the generator combines feature MSE, contextual L1 plus one minus SSIM, and latent L1, weighted 1, 50, and 1. Discriminator parameters and batch-normalization statistics are frozen during the generator step. The segmentation loss is focal loss with gamma 2 and no alpha class balancing. Only the generator learning rate is reduced on a plateau in mean training contextual loss, with default patience 3 and reduction factor exp(-0.1).
 
-At inference, clean tiles and their reconstructions enter the segmentator. Anomalous-class probabilities are averaged across overlaps and smoothed with a 21 × 21 average filter. The maximum smoothed value is the image anomaly score. The low-level model returns an `InferenceBatch` with scores shaped `[B]` and maps shaped `[B, 1, 256, 256]`; the ordinary postprocessor can additionally normalize scores and derive labels/masks.
+At inference, clean tiles and their reconstructions enter the segmentator. Anomalous-class probabilities are averaged across overlaps and smoothed with a 21 × 21 average filter by default. The maximum value of the returned map is the image anomaly score. The low-level model returns an `InferenceBatch` with scores shaped `[B]` and maps shaped `[B, 1, 256, 256]`; the ordinary postprocessor can additionally normalize scores and derive labels/masks.
 
 ## Usage
 
@@ -31,7 +31,7 @@ datamodule = MVTecAD(
     train_batch_size=4,
     eval_batch_size=1,
 )
-model = GRDNet()
+model = GRDNet(rotation_degrees=90.0, smoothing_kernel_size=21)
 engine = Engine(max_epochs=200)
 engine.fit(model=model, datamodule=datamodule)
 engine.test(model=model, datamodule=datamodule)
@@ -42,6 +42,7 @@ engine.test(model=model, datamodule=datamodule)
 ```bash
 anomalib train --model GRDNet --data MVTecAD \
   --data.root datasets/mvtec_anomaly_detection --data.category hazelnut \
+  --model.generator_scheduler_decay 0.1 --model.generator_scheduler_patience 3 \
   --data.train_batch_size 4 --data.eval_batch_size 1 --trainer.max_epochs 200
 ```
 
@@ -54,6 +55,12 @@ model:
   class_path: anomalib.models.GRDNet
   init_args:
     texture_source: random
+    contextual_l1_weight: 1.0
+    contextual_ssim_weight: 1.0
+    generator_scheduler_decay: 0.1
+    generator_scheduler_patience: 3
+    rotation_degrees: 90.0
+    smoothing_kernel_size: 21
 data:
   class_path: anomalib.data.MVTecAD
   init_args:
@@ -69,16 +76,28 @@ These are ordinary anomalib workflows, not the test-oracle checkpoint-selection 
 
 ### Model options
 
-| Parameter            | Default    | Meaning                                                                                                 |
-| -------------------- | ---------- | ------------------------------------------------------------------------------------------------------- |
-| `texture_source`     | `"random"` | Independent uniform RGB texture; `"image"` instead circularly shifts the same tile by a nonzero offset. |
-| `perlin_probability` | `0.75`     | Probability of synthesizing an anomaly in each tile.                                                    |
-| `adversarial_weight` | `1.0`      | Generator feature-matching weight.                                                                      |
-| `contextual_weight`  | `50.0`     | Generator L1 plus one-minus-SSIM weight.                                                                |
-| `encoder_weight`     | `1.0`      | Latent-consistency weight.                                                                              |
-| `learning_rate`      | `1e-4`     | Initial learning rate of all three Adam optimizers.                                                     |
+| Parameter                      | Default    | Meaning                                                                                                 |
+| ------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------- |
+| `texture_source`               | `"random"` | Independent uniform RGB texture; `"image"` instead circularly shifts the same tile by a nonzero offset. |
+| `perlin_probability`           | `0.75`     | Probability of synthesizing an anomaly in each tile.                                                    |
+| `adversarial_weight`           | `1.0`      | Generator feature-matching weight.                                                                      |
+| `contextual_weight`            | `50.0`     | Generator L1 plus one-minus-SSIM weight.                                                                |
+| `encoder_weight`               | `1.0`      | Latent-consistency weight.                                                                              |
+| `learning_rate`                | `1e-4`     | Initial learning rate of all three Adam optimizers.                                                     |
+| `contextual_l1_weight`         | `1.0`      | Inner coefficient for L1 reconstruction.                                                                |
+| `contextual_ssim_weight`       | `1.0`      | Inner coefficient for one minus SSIM.                                                                   |
+| `generator_scheduler_decay`    | `0.1`      | Positive exponent in the generator reduction factor `exp(-decay)`.                                      |
+| `generator_scheduler_patience` | `3`        | Plateau patience in epochs; zero reduces the rate after the first non-improving epoch.                  |
+| `rotation_degrees`             | `90.0`     | Per-tile rotation sampled uniformly within the symmetric bound; zero disables rotation.                 |
+| `smoothing_kernel_size`        | `21`       | Positive odd average-pooling kernel; one returns the overlap-averaged map without smoothing.            |
 
-Both texture modes use the same Perlin mask and blend factor sampled uniformly from 0.5 to 1.0. No external texture dataset is required. The architecture, internal tiling, and smoothing are fixed. The usual `pre_processor`, `post_processor`, `evaluator`, and `visualizer` arguments accept instances or booleans and default to `True`. Custom preprocessing must not include `Normalize`; images must remain in `[0, 1]`.
+The six options from `contextual_l1_weight` onward are keyword-only. They use ordinary `model.init_args` in YAML and `--model.<parameter>` in the CLI; existing positional component arguments are unchanged. Numeric values must be finite and cannot be booleans. Inner contextual weights must be nonnegative and cannot both be zero. Scheduler decay must produce a factor strictly between zero and one. Patience must be a nonnegative integer, rotation a nonnegative bound, and smoothing a positive odd integer; floating-point values are not accepted for integer options.
+
+The contextual objective is `contextual_l1_weight * L1 + contextual_ssim_weight * (1 - SSIM)`. The existing outer `contextual_weight` scales this complete objective in the generator loss. Kornia's SSIM loss is multiplied by two to obtain one minus SSIM; the window remains 11. The generator scheduler monitors the mean contextual objective **with its inner coefficients but without its outer coefficient**. Its absolute improvement threshold remains `1e-4`, so changing inner coefficients also changes the monitor's scale; no automatic normalization is applied. Configure these model options rather than overriding the CLI optimizer, which would replace the three-optimizer lifecycle.
+
+Rotation applies the same sampled angle to each image/ROI pair, with bilinear image and nearest-neighbor mask interpolation. A zero bound preserves geometry while keeping the random sampling path. Smoothing runs after overlap averaging, with zero padding and padding included in the average, then image scoring uses that same map. Changing the kernel changes maps, scores, exports, and existing calibration: validate and recalibrate a fitted model before using a different kernel.
+
+Both texture modes use the same Perlin mask and blend factor sampled uniformly from 0.5 to 1.0. No external texture dataset is required. The architecture, input geometry, internal tiling, blend range, focal settings, Adam betas, and generator gradient clipping remain fixed. The usual `pre_processor`, `post_processor`, `evaluator`, and `visualizer` arguments accept instances or booleans and default to `True`. Custom preprocessing must not include `Normalize`; images must remain in `[0, 1]`.
 
 ### Optional ROI supervision
 
@@ -110,7 +129,17 @@ ROI paths mirror image paths relative to `root`. For `train/good/000.jpg`, the d
 
 ## Checkpoints and export
 
-Standard Lightning checkpoints contain the three subnetworks, optimizers, and generator scheduler. Pass `ckpt_path` to the usual Engine methods to restore or resume. The contextual epoch mean is reset each epoch rather than persisted as training history.
+Standard Lightning checkpoints contain the three subnetworks, optimizers, generator scheduler, and scalar constructor configuration. `GRDNet.load_from_checkpoint` reconstructs the six options above; checkpoints created before those options were introduced use their defaults. The contextual epoch mean is reset each epoch rather than persisted as training history.
+
+For training resume, reconstruct the model from the checkpoint or supply matching constructor values, then pass the same checkpoint to `Engine.fit`:
+
+```python
+checkpoint_path = "results/GRDNet/checkpoint.ckpt"
+model = GRDNet.load_from_checkpoint(checkpoint_path)
+engine.fit(model=model, datamodule=datamodule, ckpt_path=checkpoint_path)
+```
+
+Passing `ckpt_path` to `Engine.fit` with an independently constructed model does not reconstruct its scalar options. Restored optimizer and scheduler state takes precedence over constructor settings during resume. A bare `state_dict` contains tensor weights, not these scalar settings; keep the matching configuration when using it. Loading a nondefault configuration in an older implementation is not supported.
 
 Torch, ONNX, and OpenVINO export use images only, at fixed 256 × 256 input size. The inference graph contains reconstruction, segmentation, overlap averaging, smoothing, and scoring—not ROI loading or synthetic anomaly generation:
 
@@ -127,7 +156,7 @@ engine.export(
 
 ## Selected-category MVTec AD measurements
 
-The following measurements cover Hazelnut, Metal Nut, and Pill, with seed 1337, random textures, no ROI, float32, training batch size 4, and evaluation batch size 1. Twenty percent of normal training images were held out for synthetic-SSIM diagnostics. The complete test split was evaluated after every epoch, and image and raw-pixel AUROC maxima were selected **independently using test labels**. Later ties replaced earlier selections. This is test-oracle selection, not an unbiased estimate of generalization.
+The following measurements use the six model-option defaults above and cover Hazelnut, Metal Nut, and Pill, with seed 1337, random textures, no ROI, float32, training batch size 4, and evaluation batch size 1. They do not validate nondefault configurations. Twenty percent of normal training images were held out for synthetic-SSIM diagnostics. The complete test split was evaluated after every epoch, and image and raw-pixel AUROC maxima were selected **independently using test labels**. Later ties replaced earlier selections. This is test-oracle selection, not an unbiased estimate of generalization.
 
 Image scores use the smoothed map maximum. The raw-pixel selection uses the unsmoothed map; the table also shows the public smoothed-map AUROC at that pixel-selected checkpoint. Image and pixel maxima generally belong to different checkpoints and must not be interpreted as the performance of one fitted model.
 
