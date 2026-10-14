@@ -3,6 +3,7 @@
 
 """Tests for AnomalibCheckpointIO and Engine plugin installation."""
 
+import logging
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -18,7 +19,7 @@ from torchvision.transforms.v2 import Resize
 from anomalib import LearningType, PrecisionType
 from anomalib.engine import Engine
 from anomalib.engine.plugins import AnomalibCheckpointIO
-from anomalib.models import Padim
+from anomalib.models import Padim, Patchcore
 from anomalib.models.components.base import AnomalibModule
 from anomalib.models.image.efficient_ad import EfficientAd
 from anomalib.models.image.efficient_ad.torch_model import EfficientAdModelSize
@@ -367,3 +368,109 @@ def test_preprocessor_subclass_without_super_init_is_skipped() -> None:
     model.on_save_checkpoint(checkpoint)
 
     assert checkpoint["anomalib_pre_processor_config"] == {"transform": None}
+
+
+_MODULE_LOGGER = "anomalib.models.components.base.anomalib_module"
+_MISMATCH_MESSAGE = "differ from the checkpoint"
+
+
+def _save_checkpoint(model: AnomalibModule, checkpoint_path: Path) -> Path:
+    """Save ``model`` to ``checkpoint_path`` the way the trainer does."""
+    trainer = Trainer(max_epochs=1, logger=False, barebones=True)
+    trainer.strategy.connect(model)
+    trainer.save_checkpoint(checkpoint_path)
+    return checkpoint_path
+
+
+def test_hyperparameter_mismatch_is_logged_on_load(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """Loading weights into a model built with other arguments names every mismatch.
+
+    This is the ``Engine.predict(model=..., ckpt_path=...)`` path: Lightning loads
+    the checkpoint into the caller's instance, so ``num_neighbors`` keeps its
+    default of 9 although the checkpoint was trained with 2.
+    """
+    checkpoint_path = _save_checkpoint(
+        Patchcore(backbone="resnet18", pre_trained=False, num_neighbors=2),
+        tmp_path / "patchcore.ckpt",
+    )
+    checkpoint = AnomalibCheckpointIO().load_checkpoint(checkpoint_path, weights_only=True)
+    model = Patchcore(backbone="resnet18", pre_trained=False)
+
+    with caplog.at_level(logging.WARNING, logger=_MODULE_LOGGER):
+        model.on_load_checkpoint(checkpoint)
+
+    assert "num_neighbors=9 (checkpoint: 2)" in caplog.text
+
+
+def test_matching_hyperparameters_are_not_logged(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """No warning when the model is created with the checkpoint's arguments."""
+    checkpoint_path = _save_checkpoint(
+        Patchcore(backbone="resnet18", pre_trained=False, num_neighbors=2),
+        tmp_path / "patchcore.ckpt",
+    )
+    checkpoint = AnomalibCheckpointIO().load_checkpoint(checkpoint_path, weights_only=True)
+    model = Patchcore(backbone="resnet18", pre_trained=False, num_neighbors=2)
+
+    with caplog.at_level(logging.WARNING, logger=_MODULE_LOGGER):
+        model.on_load_checkpoint(checkpoint)
+
+    assert _MISMATCH_MESSAGE not in caplog.text
+
+
+def test_load_from_checkpoint_restores_arguments_silently(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """``load_from_checkpoint`` rebuilds the model from the saved arguments, so nothing differs."""
+    checkpoint_path = _save_checkpoint(
+        Patchcore(backbone="resnet18", pre_trained=False, num_neighbors=2),
+        tmp_path / "patchcore.ckpt",
+    )
+
+    with caplog.at_level(logging.WARNING, logger=_MODULE_LOGGER):
+        loaded = Patchcore.load_from_checkpoint(checkpoint_path, weights_only=True)
+
+    assert loaded.model.num_neighbors == 2
+    assert _MISMATCH_MESSAGE not in caplog.text
+
+
+def test_list_and_tuple_hyperparameters_are_equivalent(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """``layers`` passed as a list (as from a config file) matches the saved tuple."""
+    checkpoint_path = _save_checkpoint(
+        Patchcore(backbone="resnet18", pre_trained=False, layers=("layer2", "layer3")),
+        tmp_path / "patchcore.ckpt",
+    )
+    checkpoint = AnomalibCheckpointIO().load_checkpoint(checkpoint_path, weights_only=True)
+    model = Patchcore(backbone="resnet18", pre_trained=False, layers=["layer2", "layer3"])
+
+    with caplog.at_level(logging.WARNING, logger=_MODULE_LOGGER):
+        model.on_load_checkpoint(checkpoint)
+
+    assert _MISMATCH_MESSAGE not in caplog.text
+
+
+def test_checkpoint_without_hyperparameters_is_not_logged(caplog: pytest.LogCaptureFixture) -> None:
+    """Checkpoints that carry no ``hyper_parameters`` load without a warning."""
+    model = Patchcore(backbone="resnet18", pre_trained=False)
+
+    with caplog.at_level(logging.WARNING, logger=_MODULE_LOGGER):
+        model.on_load_checkpoint({"state_dict": {}})
+
+    assert _MISMATCH_MESSAGE not in caplog.text
+
+
+def test_pre_trained_difference_is_not_logged(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """``pre_trained`` only picks the initial weights, which the checkpoint replaces.
+
+    Building the model with ``pre_trained=False`` before loading a checkpoint is a
+    common way to skip downloading backbone weights, so it must not be reported.
+    """
+    checkpoint_path = _save_checkpoint(
+        Patchcore(backbone="resnet18", pre_trained=False),
+        tmp_path / "patchcore.ckpt",
+    )
+    checkpoint = AnomalibCheckpointIO().load_checkpoint(checkpoint_path, weights_only=True)
+    checkpoint["hyper_parameters"]["pre_trained"] = True  # as if trained from ImageNet weights
+    model = Patchcore(backbone="resnet18", pre_trained=False)
+
+    with caplog.at_level(logging.WARNING, logger=_MODULE_LOGGER):
+        model.on_load_checkpoint(checkpoint)
+
+    assert _MISMATCH_MESSAGE not in caplog.text

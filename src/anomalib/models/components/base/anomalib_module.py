@@ -43,8 +43,8 @@ Example:
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
-from pathlib import Path
-from typing import Any
+from pathlib import Path, PurePath
+from typing import Any, ClassVar
 
 import lightning.pytorch as pl
 import torch
@@ -67,6 +67,49 @@ from anomalib.visualization import ImageVisualizer, Visualizer
 from .export_mixin import ExportMixin
 
 logger = logging.getLogger(__name__)
+
+
+def _comparable_hyperparameter(value: object) -> object:
+    """Normalize a hyperparameter value so equivalent values compare equal.
+
+    Checkpoints store paths as strings, and configuration files produce lists
+    where Python code usually passes tuples. Neither difference changes what the
+    model does, so both are normalized before comparison.
+
+    Args:
+        value (object): Hyperparameter value from a checkpoint or a live model.
+
+    Returns:
+        object: The value with paths converted to strings and lists to tuples.
+    """
+    if isinstance(value, PurePath):
+        return str(value)
+    if isinstance(value, (list, tuple)):
+        return tuple(_comparable_hyperparameter(item) for item in value)
+    if isinstance(value, dict):
+        return {key: _comparable_hyperparameter(item) for key, item in value.items()}
+    return value
+
+
+def _hyperparameters_match(saved: object, current: object) -> bool:
+    """Check whether a saved hyperparameter matches the live model's value.
+
+    Values that cannot be reduced to a single boolean, such as multi-element
+    tensors, are treated as matching so that no false warning is raised.
+
+    Args:
+        saved (object): Value stored in the checkpoint.
+        current (object): Value on the model instance.
+
+    Returns:
+        bool: ``True`` if the values are equivalent or cannot be compared.
+    """
+    try:
+        # ``==`` on tensors and arrays is elementwise; ``bool()`` raises for them.
+        matches = bool(_comparable_hyperparameter(saved) == _comparable_hyperparameter(current))
+    except (RuntimeError, TypeError, ValueError):
+        return True
+    return matches
 
 
 class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
@@ -121,6 +164,11 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         ...     visualizer=False
         ... )
     """
+
+    # Constructor arguments that only choose the initial weights. A checkpoint's
+    # ``state_dict`` replaces those weights, so a different value when loading a
+    # checkpoint is expected and not reported as a mismatch.
+    _HYPERPARAMETERS_REPLACED_BY_WEIGHTS: ClassVar[frozenset[str]] = frozenset({"pre_trained"})
 
     def __init__(
         self,
@@ -199,13 +247,53 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
                 )
 
     def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Restore component configuration from safe plain data."""
+        """Restore component configuration and report constructor argument mismatches."""
         super().on_load_checkpoint(checkpoint)
+        self._warn_on_hyperparameter_mismatch(checkpoint.get("hyper_parameters"))
         self._restore_component_enabled_flags(checkpoint.get("anomalib_components_enabled"))
         for checkpoint_key, component in self._checkpointable_components().items():
             config = checkpoint.get(checkpoint_key)
             if config is not None and hasattr(component, "load_checkpoint_config"):
                 component.load_checkpoint_config(config)
+
+    def _warn_on_hyperparameter_mismatch(self, saved: dict[str, Any] | None) -> None:
+        """Warn when a checkpoint was saved with different constructor arguments.
+
+        ``load_from_checkpoint`` rebuilds the model from the saved
+        ``hyper_parameters``. Loading a checkpoint into an existing instance,
+        for example through ``Engine.predict(model=..., ckpt_path=...)``, only
+        restores the weights. Arguments kept as plain attributes, such as
+        ``num_neighbors`` in PatchCore, then keep the instance's values, and the
+        scores no longer match the thresholds and normalization statistics
+        stored in the checkpoint. Only arguments present in both the checkpoint
+        and the model are compared, and arguments listed in
+        ``_HYPERPARAMETERS_REPLACED_BY_WEIGHTS`` are skipped.
+
+        Args:
+            saved (dict[str, Any] | None): ``hyper_parameters`` from the
+                checkpoint, or ``None`` if the checkpoint has none.
+        """
+        if not saved:
+            return
+        current = dict(self.hparams)
+        compared = (saved.keys() & current.keys()) - self._HYPERPARAMETERS_REPLACED_BY_WEIGHTS
+        mismatches = [
+            f"{key}={current[key]!r} (checkpoint: {saved[key]!r})"
+            for key in sorted(compared)
+            if not _hyperparameters_match(saved[key], current[key])
+        ]
+        if not mismatches:
+            return
+        logger.warning(
+            "%s was created with arguments that differ from the checkpoint: %s. The model runs with the current "
+            "values. Differences in arguments that only affect training are harmless, but differences in "
+            "arguments used at inference make scores inconsistent with the thresholds and normalization "
+            "statistics saved in the checkpoint. Use %s.load_from_checkpoint(...) or create the model with the "
+            "same arguments.",
+            self.__class__.__name__,
+            ", ".join(mismatches),
+            self.__class__.__name__,
+        )
 
     def _restore_component_enabled_flags(self, flags: dict[str, bool] | None) -> None:
         """Apply plain-boolean enable/disable flags saved with the checkpoint.
