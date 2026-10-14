@@ -3,7 +3,13 @@
 
 import type { SchemaDeviceInfo } from 'src/api/openapi-spec';
 
-import { getDeviceDescription, getDeviceKey, getDeviceLabel, selectPreferredDevice } from './device-metadata';
+import {
+    getDeviceDescription,
+    getDeviceKey,
+    getDeviceLabel,
+    isSamePhysicalDevice,
+    selectPreferredDevice,
+} from './device-metadata';
 
 const makeDevice = (
     type: string,
@@ -101,5 +107,47 @@ describe('selectPreferredDevice', () => {
         ];
         // Should prefer the first XPU found
         expect(selectPreferredDevice(devices)).toBe('xpu-0');
+    });
+});
+
+describe('isSamePhysicalDevice', () => {
+    it('returns false when there is no selected training device', () => {
+        expect(isSamePhysicalDevice(undefined, 'CPU')).toBe(false);
+    });
+
+    it('returns false when there is no inference device', () => {
+        expect(isSamePhysicalDevice(makeDevice('cpu', 'CPU'), null)).toBe(false);
+        expect(isSamePhysicalDevice(makeDevice('cpu', 'CPU'), undefined)).toBe(false);
+        expect(isSamePhysicalDevice(makeDevice('cpu', 'CPU'), '')).toBe(false);
+    });
+
+    it('matches CPU training device with CPU inference device', () => {
+        expect(isSamePhysicalDevice(makeDevice('cpu', 'CPU'), 'CPU')).toBe(true);
+    });
+
+    it('matches an Intel GPU (xpu) training device with the same-index GPU inference device', () => {
+        expect(isSamePhysicalDevice(makeDevice('xpu', 'Intel(R) Graphics', 0), 'GPU.0')).toBe(true);
+    });
+
+    it('does not match an Intel GPU (xpu) training device with a different-index GPU inference device', () => {
+        expect(isSamePhysicalDevice(makeDevice('xpu', 'Intel(R) Graphics', 0), 'GPU.1')).toBe(false);
+        expect(isSamePhysicalDevice(makeDevice('xpu', 'Intel(R) Graphics', 1), 'GPU.0')).toBe(false);
+    });
+
+    it('is case-insensitive when comparing device types', () => {
+        expect(isSamePhysicalDevice(makeDevice('xpu', 'Intel(R) Graphics', 0), 'gpu.0')).toBe(true);
+    });
+
+    it('never conflicts for CUDA training devices (unsupported by OpenVINO inference)', () => {
+        expect(isSamePhysicalDevice(makeDevice('cuda', 'NVIDIA RTX 4090', 0), 'GPU.0')).toBe(false);
+        expect(isSamePhysicalDevice(makeDevice('cuda', 'NVIDIA RTX 4090', 0), 'CPU')).toBe(false);
+    });
+
+    it('never conflicts for MPS training devices (unsupported by OpenVINO inference)', () => {
+        expect(isSamePhysicalDevice(makeDevice('mps', 'MPS'), 'CPU')).toBe(false);
+    });
+
+    it('does not match a CPU training device with a GPU inference device', () => {
+        expect(isSamePhysicalDevice(makeDevice('cpu', 'CPU'), 'GPU.0')).toBe(false);
     });
 });

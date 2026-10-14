@@ -42,6 +42,49 @@ export const getDeviceDescription = (type: string): string | undefined => {
     return DEVICE_DESCRIPTIONS[type.toUpperCase()];
 };
 
+/**
+ * Maps a training device type to the OpenVINO inference device prefix it corresponds to
+ * on the same physical hardware. Training reports Intel GPUs as "xpu", while the inference
+ * pipeline (OpenVINO) reports the same hardware as "GPU.<index>".
+ * Device types with no OpenVINO inference equivalent (e.g. CUDA, MPS) map to `null`.
+ */
+const TRAINING_TO_INFERENCE_DEVICE_TYPE: Record<string, string | null> = {
+    CPU: 'CPU',
+    XPU: 'GPU',
+    NPU: 'NPU',
+    CUDA: null,
+    MPS: null,
+};
+
+/**
+ * Training device types and OpenVINO inference device names use different conventions
+ * (e.g. an Intel GPU is reported as type "xpu" for training but as "GPU.0" for inference),
+ * so types are normalized before comparing. When the inference device is indexed
+ * (e.g. "GPU.1"), the training device's index must also match; otherwise they are
+ * considered different physical devices.
+ */
+export const isSamePhysicalDevice = (
+    trainingDevice: Pick<SchemaDeviceInfo, 'type' | 'index'> | undefined,
+    inferenceDevice: string | null | undefined
+): boolean => {
+    if (trainingDevice === undefined || !inferenceDevice) {
+        return false;
+    }
+
+    const [inferenceTypePart, inferenceIndexPart] = inferenceDevice.toUpperCase().split('.');
+    const normalizedTrainingType = TRAINING_TO_INFERENCE_DEVICE_TYPE[trainingDevice.type.toUpperCase()];
+
+    if (normalizedTrainingType === null || normalizedTrainingType !== inferenceTypePart) {
+        return false;
+    }
+
+    if (inferenceIndexPart === undefined) {
+        return trainingDevice.index == null;
+    }
+
+    return trainingDevice.index === Number(inferenceIndexPart);
+};
+
 export const selectPreferredDevice = (devices: SchemaDeviceInfo[]): string | null => {
     if (devices.length === 0) {
         return null;

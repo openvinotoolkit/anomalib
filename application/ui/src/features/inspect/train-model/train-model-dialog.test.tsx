@@ -5,8 +5,11 @@ import { DialogContainer, ThemeProvider } from '@geti-ui/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { getMockedPagination } from 'mocks/mock-pagination';
+import { getMockedPipeline } from 'mocks/mock-pipeline';
 import { TRAINABLE_MODELS } from 'mocks/mock-trainable-models';
 import { MemoryRouter, Route, Routes } from 'react-router';
+import { SchemaJob, SchemaPipeline } from 'src/api/openapi-spec';
 import { http } from 'src/api/utils';
 import { server } from 'src/msw-node-setup';
 
@@ -38,16 +41,26 @@ const MULTI_XPU_DEVICES: MockDeviceInfo[] = [
     { type: 'xpu', name: 'Intel(R) Graphics', memory: 30673268736, index: 1 },
 ];
 
+interface RenderDialogOptions {
+    devices?: MockDeviceInfo[];
+    jobs?: SchemaJob[];
+    pipelineConfig?: Partial<SchemaPipeline>;
+}
+
 describe('TrainModelDialog', () => {
     const closeMock = vi.fn();
 
-    const renderDialog = ({ devices = DEFAULT_MOCK_DEVICES }: { devices?: MockDeviceInfo[] } = {}) => {
+    const renderDialog = ({ devices = DEFAULT_MOCK_DEVICES, jobs = [], pipelineConfig }: RenderDialogOptions = {}) => {
         server.use(
             http.get('/api/trainable-models', ({ response }) =>
                 response(200).json({ trainable_models: TRAINABLE_MODELS })
             ),
             http.get('/api/system/devices/training', ({ response }) => response(200).json(devices)),
-            http.post('/api/jobs:train', ({ response }) => response(200).json({ job_id: 'job-123' }))
+            http.post('/api/jobs:train', ({ response }) => response(200).json({ job_id: 'job-123' })),
+            http.get('/api/jobs', ({ response }) => response(200).json({ jobs, pagination: getMockedPagination() })),
+            http.get('/api/projects/{project_id}/pipeline', ({ response }) =>
+                response(200).json(getMockedPipeline({ status: 'idle', ...pipelineConfig }))
+            )
         );
 
         return render(
@@ -157,6 +170,87 @@ describe('TrainModelDialog', () => {
             // NVIDIA RTX 4090 should show with index
             expect(screen.getAllByText('CPU').length).toBeGreaterThanOrEqual(1);
             expect(screen.getAllByText('NVIDIA RTX 4090 [0]').length).toBeGreaterThanOrEqual(1);
+        });
+    });
+
+    describe('Warnings', () => {
+        const makeJob = (status: SchemaJob['status']): SchemaJob => ({
+            id: 'job-1',
+            project_id: '123',
+            type: 'training',
+            status,
+            progress: 0,
+            payload: {},
+            message: 'Job created',
+        });
+
+        const CPU_ONLY = [{ type: 'cpu' as const, name: 'CPU', memory: null, index: null }];
+
+        it.each([['running'], ['pending']] as const)(
+            'shows the queued job warning when a training job is %s',
+            async (status) => {
+                renderDialog({ jobs: [makeJob(status)] });
+
+                expect(await screen.findByText('Training already queued')).toBeVisible();
+            }
+        );
+
+        it('does not show the queued job warning when no active jobs exist', async () => {
+            renderDialog();
+
+            expect(await screen.findByText('Train model')).toBeVisible();
+            expect(screen.queryByText('Training already queued')).not.toBeInTheDocument();
+        });
+
+        it.each([['running'], ['active']] as const)(
+            'shows the device conflict warning when pipeline is %s on the same device',
+            async (status) => {
+                renderDialog({
+                    devices: CPU_ONLY,
+                    pipelineConfig: { status, inference_device: 'CPU' },
+                });
+
+                expect(await screen.findByText(/Inference pipeline is running on CPU/i)).toBeVisible();
+            }
+        );
+
+        it('does not show the device conflict warning when pipeline is idle', async () => {
+            renderDialog({ devices: CPU_ONLY, pipelineConfig: { status: 'idle', inference_device: 'CPU' } });
+
+            expect(await screen.findByText('Train model')).toBeVisible();
+            expect(screen.queryByText(/Inference pipeline is running on/i)).not.toBeInTheDocument();
+        });
+
+        it('does not show the device conflict warning when pipeline runs on a different device', async () => {
+            // XPU is the preferred default device; CPU pipeline should not conflict
+            renderDialog({
+                devices: [
+                    { type: 'cpu', name: 'CPU', memory: null, index: null },
+                    { type: 'xpu', name: 'Intel(R) Graphics', memory: 30673268736, index: 0 },
+                ],
+                pipelineConfig: { status: 'running', inference_device: 'CPU' },
+            });
+
+            expect(await screen.findByText('Train model')).toBeVisible();
+            expect(screen.queryByText(/Inference pipeline is running on/i)).not.toBeInTheDocument();
+        });
+
+        it('clears the device conflict warning when the user switches to a non-conflicting device', async () => {
+            renderDialog({
+                devices: [
+                    { type: 'cpu', name: 'CPU', memory: null, index: null },
+                    { type: 'xpu', name: 'Intel(R) Graphics', memory: 30673268736, index: 0 },
+                ],
+                pipelineConfig: { status: 'running', inference_device: 'CPU' },
+            });
+
+            await userEvent.click(await screen.findByRole('button', { name: /select a training device/i }));
+            await userEvent.click(await screen.findByRole('option', { name: /^CPU$/i }));
+            expect(await screen.findByText(/Inference pipeline is running on CPU/i)).toBeVisible();
+
+            await userEvent.click(screen.getByRole('button', { name: /select a training device/i }));
+            await userEvent.click(await screen.findByRole('option', { name: /Intel\(R\) Graphics/i }));
+            expect(screen.queryByText(/Inference pipeline is running on/i)).not.toBeInTheDocument();
         });
     });
 });

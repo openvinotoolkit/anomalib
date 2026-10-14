@@ -4,6 +4,8 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { getMockedMediaItem } from 'mocks/mock-media-item';
+import { getMockedPagination } from 'mocks/mock-pagination';
+import { getMockedPipeline } from 'mocks/mock-pipeline';
 import { TRAINABLE_MODELS } from 'mocks/mock-trainable-models';
 import { HttpResponse } from 'msw';
 import { http } from 'src/api/utils';
@@ -35,6 +37,10 @@ const mockTrainModelDialogResources = () => {
         http.get('/api/trainable-models', () => HttpResponse.json({ trainable_models: TRAINABLE_MODELS })),
         http.get('/api/system/devices/training', () =>
             HttpResponse.json([{ type: 'cpu', name: 'CPU', memory: null, index: null }])
+        ),
+        http.get('/api/jobs', () => HttpResponse.json({ jobs: [], pagination: getMockedPagination() })),
+        http.get('/api/projects/{project_id}/pipeline', () =>
+            HttpResponse.json(getMockedPipeline({ status: 'idle' }))
         )
     );
 };

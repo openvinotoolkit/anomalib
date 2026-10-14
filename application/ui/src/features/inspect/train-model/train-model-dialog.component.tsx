@@ -1,7 +1,7 @@
 import { Suspense, useState } from 'react';
 
 import { $api } from '@anomalib-studio/api';
-import { useProjectIdentifier } from '@anomalib-studio/hooks';
+import { usePipeline, useProjectIdentifier } from '@anomalib-studio/hooks';
 import {
     Button,
     ButtonGroup,
@@ -11,6 +11,7 @@ import {
     Divider,
     Flex,
     Heading,
+    InlineAlert,
     Loading,
     RadioGroup,
     Text,
@@ -18,25 +19,38 @@ import {
 } from '@geti-ui/ui';
 import { useSearchParams } from 'react-router';
 import { toast as sonnerToast } from 'sonner';
+import { useProjectTrainingJobs } from 'src/hooks/use-project-trainingJobs.hook';
 
 import { TrainableModelListBox } from './trainable-model-list-box/trainable-model-list-box.component';
 import { TrainingDevicePicker, useTrainingDevice } from './training-device-picker.component';
-import { getDeviceKey } from './utils/device-metadata';
+import { getDeviceKey, isSamePhysicalDevice } from './utils/device-metadata';
 
 import classes from './train-model.module.scss';
 
 export const TrainModelDialog = ({ close }: { close: () => void }) => {
-    const [searchParams, setSearchParams] = useSearchParams();
     const { projectId } = useProjectIdentifier();
+    const { jobs = [] } = useProjectTrainingJobs();
+    const [searchParams, setSearchParams] = useSearchParams();
     const startTrainingMutation = $api.useMutation('post', '/api/jobs:train', {
         meta: { invalidates: [['get', '/api/jobs']] },
     });
 
-    const { selectedDevice, setSelectedDevice, devices } = useTrainingDevice();
     const [selectedModel, setSelectedModel] = useState<string | null>(null);
+    const { selectedDevice, setSelectedDevice, devices } = useTrainingDevice();
 
     // Resolve selected key back to the full device object
-    const selectedDeviceInfo = devices.find((d) => getDeviceKey(d) === selectedDevice);
+    const selectedDeviceInfo = devices.find((device) => getDeviceKey(device) === selectedDevice);
+
+    // Warning 1: active training job for this project
+    const hasActiveTrainingJob = jobs.some(
+        (job) => job.type === 'training' && (job.status === 'running' || job.status === 'pending')
+    );
+
+    // Warning 2: pipeline running on the same device as selected for training
+    const { data: pipeline } = usePipeline();
+
+    const pipelineIsActive = pipeline?.status === 'running' || pipeline?.status === 'active';
+    const isDeviceConflict = pipelineIsActive && isSamePhysicalDevice(selectedDeviceInfo, pipeline?.inference_device);
 
     const startTraining = async () => {
         if (selectedModel === null || selectedDeviceInfo === undefined) {
@@ -75,6 +89,16 @@ export const TrainModelDialog = ({ close }: { close: () => void }) => {
                     minWidth={'60vw'}
                 >
                     <Flex direction='column' gap='size-300'>
+                        {hasActiveTrainingJob && (
+                            <InlineAlert variant='info'>
+                                <Heading level={5}>Training already queued</Heading>
+                                <Text>
+                                    A training job is already pending or running for this project. Starting now will
+                                    queue this job to run after the current one finishes.
+                                </Text>
+                            </InlineAlert>
+                        )}
+
                         <Flex direction='column' gap='size-150'>
                             <Flex alignItems='center' gap='size-100'>
                                 <Heading level={4} margin={0}>
@@ -115,6 +139,18 @@ export const TrainModelDialog = ({ close }: { close: () => void }) => {
                                 onDeviceChange={setSelectedDevice}
                                 devices={devices}
                             />
+
+                            {isDeviceConflict && (
+                                <InlineAlert variant='notice'>
+                                    <Heading level={5}>
+                                        Inference pipeline is running on {pipeline?.inference_device}
+                                    </Heading>
+                                    <Text>
+                                        Training on the same device may reduce inference performance. Consider switching
+                                        to a different device or stopping the pipeline before training.
+                                    </Text>
+                                </InlineAlert>
+                            )}
                         </Flex>
                     </Flex>
                 </View>
