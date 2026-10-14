@@ -1,14 +1,14 @@
-// Copyright (C) 2025 Intel Corporation
+// Copyright (C) 2025-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { Toast } from '@geti/ui';
-import { ThemeProvider } from '@geti/ui/theme';
+import { ThemeProvider } from '@geti-ui/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { HttpResponse } from 'msw';
 import { MemoryRouter, Route, Routes } from 'react-router';
 
 import { http } from '../../../../api/utils';
+import { Toast } from '../../../../components/toast/toast.component';
 import { server } from '../../../../msw-node-setup';
 import { DeleteMediaItem, DeleteMediaItemProps } from './delete-dataset-item.component';
 

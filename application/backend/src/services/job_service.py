@@ -5,6 +5,7 @@ import datetime
 import json
 import logging
 from collections.abc import AsyncGenerator
+from uuid import UUID
 
 import anyio
 from sqlalchemy.exc import IntegrityError
@@ -17,7 +18,6 @@ from pydantic_models import Job, JobList, JobType
 from pydantic_models.base import Pagination
 from pydantic_models.job import JobCancelled, JobStatus, JobSubmitted, TrainJobPayload
 from repositories import JobRepository
-from utils.short_uuid import ShortUUID
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class JobService:
                 yield item  # need to re-yield to extends session's context
 
     @staticmethod
-    async def get_job_by_id(job_id: ShortUUID | str) -> Job | None:
+    async def get_job_by_id(job_id: UUID | str) -> Job | None:
         async with get_async_db_session_ctx() as session:
             repo = JobRepository(session)
             return await repo.get_by_id(job_id)
@@ -79,7 +79,7 @@ class JobService:
 
     @staticmethod
     async def update_job_status(
-        job_id: ShortUUID,
+        job_id: UUID,
         status: JobStatus,
         message: str | None = None,
         progress: int | None = None,
@@ -103,7 +103,7 @@ class JobService:
 
     @staticmethod
     async def update_job_progress(
-        job_id: ShortUUID,
+        job_id: UUID,
         progress: int,
         message: str | None = None,
     ) -> None:
@@ -118,14 +118,14 @@ class JobService:
             await repo.update(job, updates)
 
     @classmethod
-    async def is_job_still_running(cls, job_id: ShortUUID | str) -> bool:
+    async def is_job_still_running(cls, job_id: UUID | str) -> bool:
         job = await cls.get_job_by_id(job_id=job_id)
         if job is None:
             raise ResourceNotFoundException(resource_id=job_id, resource_name="job")
         return job.status == JobStatus.RUNNING
 
     @classmethod
-    async def stream_logs(cls, job_id: ShortUUID | str) -> AsyncGenerator[ServerSentEvent]:
+    async def stream_logs(cls, job_id: UUID | str) -> AsyncGenerator[ServerSentEvent]:
         from core.logging.utils import get_job_logs_path  # noqa: PLC0415
 
         log_file = get_job_logs_path(job_id=job_id)
@@ -158,7 +158,7 @@ class JobService:
                 yield ServerSentEvent(data=line.rstrip())
 
     @classmethod
-    async def stream_progress(cls, job_id: ShortUUID | str) -> AsyncGenerator[ServerSentEvent]:
+    async def stream_progress(cls, job_id: UUID | str) -> AsyncGenerator[ServerSentEvent]:
         """Stream the progress of a job by its ID"""
         still_running = True
         while still_running:
@@ -170,7 +170,7 @@ class JobService:
             await asyncio.sleep(0.5)
 
     @classmethod
-    async def cancel_job(cls, job_id: ShortUUID | str) -> JobCancelled:
+    async def cancel_job(cls, job_id: UUID | str) -> JobCancelled:
         """Cancel a job by its ID"""
         async with get_async_db_session_ctx() as session:
             repo = JobRepository(session)
@@ -182,7 +182,7 @@ class JobService:
             return JobCancelled(job_id=job.id)
 
     @classmethod
-    async def delete_job(cls, job_id: ShortUUID | str) -> None:
+    async def delete_job(cls, job_id: UUID | str) -> None:
         """Delete a failed or canceled job by its ID."""
         async with get_async_db_session_ctx() as session:
             repo = JobRepository(session)
@@ -194,13 +194,13 @@ class JobService:
             await repo.delete_by_id(job_id)
 
     @classmethod
-    async def delete_project_jobs_db(cls, session: AsyncSession, project_id: ShortUUID, commit: bool = False) -> None:
+    async def delete_project_jobs_db(cls, session: AsyncSession, project_id: UUID, commit: bool = False) -> None:
         """Delete all jobs associated with a project from the database."""
         repo = JobRepository(session)
         await repo.delete_all(commit=commit, extra_filters={"project_id": str(project_id)})
 
     @staticmethod
-    async def has_running_jobs(project_id: str | ShortUUID) -> bool:
+    async def has_running_jobs(project_id: str | UUID) -> bool:
         async with get_async_db_session_ctx() as session:
             repo = JobRepository(session)
             count = await repo.get_all_count(

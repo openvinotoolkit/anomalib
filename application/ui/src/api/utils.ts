@@ -11,15 +11,16 @@ const getOpenApiHttp = (baseUrl?: string): OpenApiHttpHandlers<paths> => {
         baseUrl: baseUrl ?? process.env.PUBLIC_API_BASE_URL ?? 'http://localhost:8000',
     });
 
+    // Escape every literal ":" in the OpenAPI path so path-to-regexp (used by MSW)
+    // treats action suffixes like `/pipeline:activate` as literal characters
+    // instead of URL parameters. Otherwise `/pipeline:activate` and `/pipeline:run`
+    // collapse to the same pattern and the first-registered handler swallows both.
+    // @see https://github.com/mswjs/msw/discussions/739
+    const escapeActionColons = <P extends string>(path: P): P => path.replaceAll(':', '\\:') as P;
+
     return {
         ...http,
-        post: (path, ...other) => {
-            // @ts-expect-error MSW internal parsing function does not accept paths like
-            // `/api/models/{model_name}:activate`
-            // to get around this we escape the colon character with `\\`
-            // @see https://github.com/mswjs/msw/discussions/739
-            return http.post(path.replace('}:', '}\\:'), ...other);
-        },
+        post: (path, ...other) => http.post(escapeActionColons(path), ...other),
     };
 };
 

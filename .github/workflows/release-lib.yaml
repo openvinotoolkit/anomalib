@@ -62,7 +62,7 @@ jobs:
       contents: read # Required to checkout the repository for version validation
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -97,7 +97,7 @@ jobs:
 
   quality:
     needs: [version-check]
-    uses: ./.github/workflows/_reusable-code-quality.yaml
+    uses: $/.github/workflows/_reusable-code-quality.yaml
     permissions:
       contents: read # Required by the called workflow to checkout the repository
     with:
@@ -105,7 +105,7 @@ jobs:
 
   unit-tests:
     needs: [version-check]
-    uses: ./.github/workflows/_reusable-test-suite.yaml
+    uses: $/.github/workflows/_reusable-test-suite.yaml
     permissions:
       contents: read # Required by the called workflow to checkout the repository
     with:
@@ -118,7 +118,7 @@ jobs:
 
   integration-tests:
     needs: [version-check]
-    uses: ./.github/workflows/_reusable-test-suite.yaml
+    uses: $/.github/workflows/_reusable-test-suite.yaml
     permissions:
       contents: read # Required by the called workflow to checkout the repository
     with:
@@ -131,7 +131,7 @@ jobs:
 
   security:
     needs: [version-check]
-    uses: ./.github/workflows/_reusable-security-scan.yaml
+    uses: $/.github/workflows/_reusable-security-scan.yaml
     permissions:
       security-events: write # Required to upload SARIF scan results to the Security tab
       packages: read
@@ -147,7 +147,7 @@ jobs:
     if: |
       !inputs.dry_run &&
       !failure() && !cancelled()
-    uses: ./.github/workflows/_reusable-artifact-builder.yaml
+    uses: $/.github/workflows/_reusable-artifact-builder.yaml
     permissions:
       contents: read # Required by the called workflow to checkout the repository
     with:
@@ -164,7 +164,7 @@ jobs:
       id-token: write # Required for OIDC authentication with PyPI
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -173,8 +173,8 @@ jobs:
           name: ${{ needs.build.outputs.artifact-name }}
           path: dist
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # v1.14.1
-      - uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2 # zizmor: ignore[superfluous-actions]
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+      - uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3 # zizmor: ignore[superfluous-actions]
         with:
           tag_name: lib/${{ needs.version-check.outputs.version }}
           name: Release Anomalib Library ${{ needs.version-check.outputs.version }}
@@ -189,7 +189,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 

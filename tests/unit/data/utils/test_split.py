@@ -73,3 +73,17 @@ class TestRandomSplit:
         dataset = _make_folder_dataset(tmp_path, num_normal=4, num_abnormal=0)
         with pytest.raises(ValueError, match="must sum to 1"):
             random_split(dataset, [0.5, 0.4])
+
+    @staticmethod
+    def test_seed_zero_is_reproducible(tmp_path: Path) -> None:
+        """``seed=0`` is a valid seed and must give a reproducible split.
+
+        Regression test: the generator was created with ``if seed`` rather
+        than ``if seed is not None``, so the falsy ``0`` fell through to an
+        unseeded generator.
+        """
+        dataset = _make_folder_dataset(tmp_path, num_normal=8, num_abnormal=4)
+        first = random_split(dataset, [0.5, 0.5], seed=0)
+        second = random_split(dataset, [0.5, 0.5], seed=0)
+        for split_a, split_b in zip(first, second, strict=True):
+            assert split_a.samples["image_path"].tolist() == split_b.samples["image_path"].tolist()

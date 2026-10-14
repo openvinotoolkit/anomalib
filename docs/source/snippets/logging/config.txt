@@ -1,1 +1,6 @@
-# Place the experiment management config here.
+trainer:
+  logger:
+    class_path: lightning.pytorch.loggers.TensorBoardLogger
+    init_args:
+      save_dir: results
+      name: my_experiment

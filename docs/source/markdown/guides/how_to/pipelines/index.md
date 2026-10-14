@@ -1,6 +1,6 @@
 # Pipeline Tutorials
 
-This section contains tutorials on how to use different pipelines of Anomalib and how to creat your own.
+This section contains tutorials on how to use different pipelines of Anomalib and how to create your own.
 
 ::::{grid}
 :margin: 1 1 0 0
@@ -23,8 +23,9 @@ Learn more about how to create a new custom pipeline.
 ::::
 
 ```{toctree}
-:caption: Model Tutorials
+:caption: Pipeline Tutorials
 :hidden:
 
-./feature_extractors
+./tiled_ensemble
+./custom_pipeline
 ```

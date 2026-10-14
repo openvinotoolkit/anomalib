@@ -1,0 +1,13 @@
+model:
+  class_path: anomalib.models.MHPatchcore
+  init_args:
+    backbone: wide_resnet50_2.tv2_in1k
+    layers:
+      - layer2
+      - layer3
+    pre_trained: true
+    pca_variance_ratio: 0.99
+    covariance_shrinkage: 0.07
+    memory_bank_size: 1000
+    local_coreset_size: 256
+    num_neighbors: 9

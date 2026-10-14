@@ -18,8 +18,8 @@ import {
     Text,
     View,
     type Key,
-} from '@geti/ui';
-import { Back } from '@geti/ui/icons';
+} from '@geti-ui/ui';
+import { Back } from '@geti-ui/ui/icons';
 import type { SchemaCompressionType, SchemaExportType } from 'src/api/openapi-spec';
 import { ActiveIcon, Onnx, OpenVino, PyTorch } from 'src/assets/icons';
 import { useProjectIdentifier } from 'src/hooks/use-project-identifier.hook';

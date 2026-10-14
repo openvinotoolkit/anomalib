@@ -12,7 +12,6 @@
         "build:api:types": "npx openapi-typescript ./src/api/openapi-spec.json -o ./src/api/openapi-spec.d.ts  --root-types && prettier --write src/api/openapi-spec.d.ts",
         "build:api:download": "curl -o ./src/api/openapi-spec.json http://localhost:8000/api/openapi.json && prettier --write src/api/openapi-spec.json",
         "build:api": "npm run build:api:download && npm run build:api:types",
-        "clone-geti-ui-packages": "npx tiged --force --mode=git https://github.com/open-edge-platform/geti_v2.git/web_ui/packages/config#02d99ef600635d3c49ad9a52ca3f7aade829053e packages/config && npx tiged --force --mode=git https://github.com/open-edge-platform/geti_v2.git/web_ui/packages/ui#02d99ef600635d3c49ad9a52ca3f7aade829053e packages/ui",
         "cyclic-deps-check": "npx madge --circular src/**/*.ts*",
         "dev": "concurrently -n Server,UI -c blue,yellow \"npm run server\" \"npm start\"",
         "server": "cd ../backend && ./run.sh",
@@ -21,7 +20,6 @@
         "format:check": "prettier --check --cache \"./src/**/*.{js,ts,jsx,tsx,css,scss,sass}\"",
         "lint": "eslint \"src/**/*.ts*\" --max-warnings 0",
         "lint:fix": "eslint --fix \"./src/**/*.ts*\"",
-        "preinstall": "npm run clone-geti-ui-packages",
         "preview": "rsbuild preview",
         "test:unit": "vitest --config vitest.config.ts",
         "test:unit:watch": "vitest --config vitest.config.ts --reporter=verbose --watch",
@@ -29,8 +27,7 @@
         "type-check": "tsc --noEmit"
     },
     "dependencies": {
-        "@geti/config": "*",
-        "@geti/ui": "*",
+        "@geti-ui/ui": "^1.6.0",
         "@scalar/api-reference-react": "^0.9.20",
         "@tanstack/react-query": "^5.80.10",
         "@tauri-apps/api": "^2",
@@ -40,16 +37,19 @@
         "clsx": "^2.1.1",
         "lodash-es": "^4.18.1",
         "motion": "^12.23.24",
-        "nuqs": "^2.8.1",
-        "openapi-fetch": "^0.14.0",
-        "openapi-react-query": "^0.5.0",
-        "react": "^19.1.1",
+        "nuqs": "^2.10.1",
+        "openapi-fetch": "~0.17.0",
+        "openapi-react-query": "~0.5.4",
+        "react": "^19.2.7",
         "react-aria-components": "^1.10.1",
-        "react-dom": "^19.1.1",
-        "react-router": "^6.30.3",
-        "react-router-dom": "^6.30.3",
+        "react-dom": "^19.2.7",
+        "react-router": "^8.0.0",
+        "react-router-dom": "^7.0.0",
+        "react-stately": "^3.50.0",
         "recharts": "^3.8.1",
-        "static-path": "^0.0.4"
+        "sonner": "^2.0.7",
+        "static-path": "^0.0.4",
+        "uuid": "~14.0.1"
     },
     "devDependencies": {
         "@eslint/compat": "^1.2.8",
@@ -57,20 +57,20 @@
         "@ianvs/prettier-plugin-sort-imports": "^4.4.2",
         "@msw/playwright": "^0.4.2",
         "@msw/source": "^0.6.1",
-        "@playwright/test": "^1.57.0",
-        "@rsbuild/core": "^1.3.14",
-        "@rsbuild/plugin-babel": "^1.0.6",
-        "@rsbuild/plugin-react": "^1.3.0",
-        "@rsbuild/plugin-sass": "^1.3.1",
-        "@rsbuild/plugin-svgr": "^1.2.0",
+        "@playwright/test": "1.62.1",
+        "@rsbuild/core": "~2.1.10",
+        "@rsbuild/plugin-babel": "~2.0.1",
+        "@rsbuild/plugin-react": "~2.1.0",
+        "@rsbuild/plugin-sass": "~2.0.1",
+        "@rsbuild/plugin-svgr": "~2.0.5",
         "@tanstack/eslint-plugin-query": "^5.78.0",
         "@testing-library/jest-dom": "^6.9.1",
         "@testing-library/react": "^16.3.0",
         "@testing-library/user-event": "^14.6.1",
         "@types/lodash-es": "^4.17.12",
         "@types/node": "^24.0.15",
-        "@types/react": "^19.1.10",
-        "@types/react-dom": "^19.1.7",
+        "@types/react": "^19.2.18",
+        "@types/react-dom": "^19.2.5",
         "@typescript-eslint/eslint-plugin": "^8.31.1",
         "@vitejs/plugin-react": "^4.7.0",
         "concurrently": "^9.2.1",
@@ -86,9 +86,9 @@
         "eslint-plugin-react-hooks": "^6.0.0-rc.2",
         "identity-obj-proxy": "^3.0.0",
         "jsdom": "^26.1.0",
-        "msw": "^2.11.3",
+        "msw": "~2.12.10",
         "node-fetch": "^3.3.2",
-        "openapi-msw": "^1.3.0",
+        "openapi-msw": "~1.2.0",
         "openapi-typescript": "^7.13.0",
         "prettier": "^3.5.3",
         "typescript": "^5.8.3",
@@ -96,11 +96,8 @@
         "vite": "^7.0.6",
         "vite-plugin-svgr": "^4.3.0",
         "vite-tsconfig-paths": "^5.1.4",
-        "vitest": "^3.2.4"
+        "vitest": "^4.0.0"
     },
-    "workspaces": [
-        "packages/*"
-    ],
     "msw": {
         "workerDirectory": [
             "public"
@@ -108,18 +105,21 @@
     },
     "overrides": {
         "esbuild": "0.27.2",
-        "js-yaml": "4.3.1",
+        "js-yaml": "4.3.2",
         "@msw/source": {
             "lodash": "4.18.1"
         },
         "monaco-editor": {
-            "dompurify": "3.4.13"
+            "dompurify": "3.4.16"
         },
         "openapi-typescript": {
             "minimatch": "10.2.5"
         },
         "postcss": "8.5.23",
         "rollup": "4.59.0",
-        "picomatch": "4.0.4"
+        "picomatch": "4.0.4",
+        "react-router-dom": {
+            "react-router": "$react-router"
+        }
     }
 }

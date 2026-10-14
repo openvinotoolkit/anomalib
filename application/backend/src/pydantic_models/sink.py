@@ -4,11 +4,11 @@
 from enum import StrEnum
 from os import getenv
 from typing import Annotated, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field, TypeAdapter
 
 from pydantic_models.base import BaseIDNameModel, NoRequiredIDs, Pagination
-from utils.short_uuid import ShortUUID
 
 MQTT_USERNAME = "MQTT_USERNAME"
 MQTT_PASSWORD = "MQTT_PASSWORD"  # noqa: S105  # nosec B105
@@ -29,14 +29,14 @@ class OutputFormat(StrEnum):
 
 
 class BaseSinkConfig(BaseIDNameModel):
-    project_id: ShortUUID
+    project_id: UUID
     output_formats: list[OutputFormat]
     rate_limit: float | None = Field(default=None, ge=0.0, description="Rate limit in Hz, None means no limit")
 
 
 class DisconnectedSinkConfig(BaseSinkConfig):
     sink_type: Literal[SinkType.DISCONNECTED] = SinkType.DISCONNECTED
-    project_id: ShortUUID = ShortUUID("2222222222222222222222")
+    project_id: UUID = UUID("00000000-0000-0000-0000-000000000000")
     name: str = "No Sink"
     output_formats: list[OutputFormat] = []
 
@@ -45,7 +45,7 @@ class DisconnectedSinkConfig(BaseSinkConfig):
             "example": {
                 "sink_type": "disconnected",
                 "name": "No Sink",
-                "id": "2222222222222222222222",
+                "id": "00000000-0000-0000-0000-000000000000",
             },
         },
     }
@@ -58,7 +58,7 @@ class FolderSinkConfig(BaseSinkConfig):
     model_config = {
         "json_schema_extra": {
             "example": {
-                "id": "Bf8KYoUmuTV3hLdiEaarSA",
+                "id": "8b649217-e61c-4098-b7f2-0ad19f595410",
                 "sink_type": "folder",
                 "name": "Local Folder",
                 "folder_path": "/path/to/output",

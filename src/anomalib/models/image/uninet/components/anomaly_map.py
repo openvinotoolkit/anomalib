@@ -6,10 +6,9 @@
 # SPDX-License-Identifier: MIT
 #
 # Modified
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-import einops
 import torch
 from torch.nn import functional as F  # noqa: N812
 
@@ -35,35 +34,12 @@ def weighted_decision_mechanism(
     Returns:
         tuple[torch.Tensor, torch.Tensor]: Anomaly score and anomaly map.
     """
-    # Convert to tensor operations to avoid SequenceConstruct/ConcatFromSequence
+    # The original per-image top-k (k derived from alpha/beta weights) only ever read the
+    # first, i.e. largest, value, so the score is the max of the blurred map. Computing it
+    # directly is equivalent and avoids data-dependent shapes that dynamo cannot export.
+    del alpha, beta
     device = output_list[0].device
-    num_outputs = len(output_list)
-
-    # Pre-allocate tensors instead of using lists
-    total_weights = torch.zeros(batch_size, device=device)
     gaussian_blur = GaussianBlur2d(sigma=4.0, kernel_size=(5, 5), channels=1).to(device)
-
-    # Process each batch item individually
-    for i in range(batch_size):
-        # Get max value from each output for this batch item
-        # Create tensor directly from max values to avoid list operations
-        max_values = torch.zeros(num_outputs, device=device)
-        for j, output_tensor in enumerate(output_list):
-            max_values[j] = torch.max(output_tensor[i])
-
-        probs = F.softmax(max_values, dim=0)
-
-        # Use tensor operations instead of list filtering
-        prob_mean = torch.mean(probs)
-        mask = probs > prob_mean
-
-        if mask.any():
-            weight_tensor = max_values[mask]
-            weight = torch.max(torch.stack([torch.mean(weight_tensor) * alpha, torch.tensor(beta, device=device)]))
-        else:
-            weight = torch.tensor(beta, device=device)
-
-        total_weights[i] = weight
 
     # Process anomaly maps using tensor operations
     # Pre-allocate the processed anomaly maps tensor
@@ -83,21 +59,5 @@ def weighted_decision_mechanism(
         # Add to accumulated anomaly maps
         processed_anomaly_maps += output_resized
 
-    # Pre-allocate anomaly scores tensor instead of using list
-    anomaly_scores = torch.zeros(batch_size, device=device)
-
-    for idx in range(batch_size):
-        top_k = int(output_size[0] * output_size[1] * total_weights[idx])
-        top_k = max(top_k, 1)  # Ensure at least 1 element
-
-        single_anomaly_score_exp = processed_anomaly_maps[idx]
-        single_anomaly_score_exp = gaussian_blur(einops.rearrange(single_anomaly_score_exp, "h w -> 1 1 h w"))
-        single_anomaly_score_exp = single_anomaly_score_exp.squeeze()
-
-        # Flatten and get top-k values
-        single_map_flat = single_anomaly_score_exp.view(-1)
-        top_k_values = torch.topk(single_map_flat, top_k).values
-        single_anomaly_score = top_k_values[0] if len(top_k_values) > 0 else torch.tensor(0.0, device=device)
-        anomaly_scores[idx] = single_anomaly_score.detach()
-
-    return anomaly_scores.unsqueeze(1), processed_anomaly_maps.detach()
+    anomaly_scores = gaussian_blur(processed_anomaly_maps.unsqueeze(1)).flatten(1).amax(dim=1)
+    return anomaly_scores.detach().unsqueeze(1), processed_anomaly_maps.detach()

@@ -63,6 +63,14 @@ def test_tiler_handles_single_image_without_batch_dimension(
     assert patches.shape == shape
 
 
+def test_random_tiling_respects_non_square_tile_size() -> None:
+    """Random tiling should use both tile height and width, not a square crop."""
+    tiler = Tiler(tile_size=(128, 256), stride=(128, 256))
+    image = torch.rand(1, 3, 512, 512)
+    patches = tiler.tile(image, use_random_tiling=True)
+    assert patches.shape == torch.Size([4, 3, 128, 256])
+
+
 def test_stride_size_cannot_be_larger_than_tile_size() -> None:
     """Larger stride size than tile size is not desired, and causes issues."""
     kernel_size = (128, 128)

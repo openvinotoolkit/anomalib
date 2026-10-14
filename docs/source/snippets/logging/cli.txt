@@ -1,0 +1,1 @@
+anomalib train --model Patchcore --data MVTecAD --trainer.logger tensorboard

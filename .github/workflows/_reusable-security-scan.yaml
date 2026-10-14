@@ -89,7 +89,7 @@ jobs:
       security-events: write # needed by nested workflows to upload results
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -97,7 +97,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Bandit scan
-        uses: open-edge-platform/geti-ci/actions/bandit@7d25e47329bbfcde4ee51ab3581aea8613e245e2
+        uses: open-edge-platform/geti-ci/actions/bandit@b9abdfc0ecbe989816a7f2cf582af771f9abbb87 # bandit/v0.1.3
         with:
           scan-scope: ${{ inputs.scan-scope }}
           severity-level: ${{ inputs.severity-level }}
@@ -112,7 +112,7 @@ jobs:
       security-events: write # needed by nested workflows to upload results
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -136,7 +136,7 @@ jobs:
       security-events: write # needed by nested workflows to upload results
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -163,7 +163,7 @@ jobs:
       security-events: write # needed by nested workflows to upload results
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -171,7 +171,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Run Zizmor scan
-        uses: open-edge-platform/geti-ci/actions/zizmor@7d25e47329bbfcde4ee51ab3581aea8613e245e2
+        uses: open-edge-platform/geti-ci/actions/zizmor@27a17d738348699840c32f98edc9947f21278154 # zizmor/v0.1.5
         with:
           scan-scope: ${{ inputs.scan-scope }}
           severity-level: ${{ inputs.severity-level }}
@@ -189,7 +189,7 @@ jobs:
         ai-device: [xpu]
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -328,7 +328,7 @@ jobs:
         ai-device: [cpu, cuda, xpu]
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -355,7 +355,7 @@ jobs:
       has_findings: ${{ steps.check-results.outputs.has_findings }}
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 

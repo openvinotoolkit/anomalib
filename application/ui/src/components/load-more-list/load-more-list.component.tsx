@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-import { Button, dimensionValue, Flex } from '@geti/ui';
+import { Button, dimensionValue, Flex } from '@geti-ui/ui';
 import { useListEnd } from 'src/hooks/use-list-end.hook';
 
 type LoadMoreListProps = {

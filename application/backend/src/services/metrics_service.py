@@ -7,11 +7,10 @@ from datetime import UTC, datetime
 from multiprocessing.shared_memory import SharedMemory
 from multiprocessing.synchronize import Lock
 from typing import NamedTuple
+from uuid import UUID
 
 import numpy as np
 from loguru import logger
-
-from utils.short_uuid import ShortUUID
 
 MAX_MEASUREMENTS = 1024  # max number of measurements to keep
 DTYPE = np.dtype([
@@ -25,7 +24,7 @@ SIZE = DTYPE.itemsize * MAX_MEASUREMENTS  # 160 * 1024 = 163840 bytes (160KB) al
 class LatencyMeasurement(NamedTuple):
     """Individual latency measurement"""
 
-    model_id: str  # ShortUUID as 22 character string e.g. "Bf8KYoUmuTV3hLdiEaarSA"
+    model_id: str  # UUID as 36 character string e.g. "7fdcae10-c3e3-427c-9a88-d346bb219d0f"
     latency_ms: float
     timestamp: float
 
@@ -48,7 +47,7 @@ class MetricsService:
     def record_inference_start() -> float:
         return time.perf_counter()
 
-    def record_inference_end(self, model_id: ShortUUID, start_time: float) -> None:
+    def record_inference_end(self, model_id: UUID, start_time: float) -> None:
         """
         Record the end of an inference and store the latency measurement.
 
@@ -67,7 +66,7 @@ class MetricsService:
             self._head += 1
             logger.debug(f"Latency measurement recorded for model {model_id}: {latency_ms:.2f} ms")
 
-    def get_latency_measurements(self, model_id: ShortUUID, time_window: int = 60) -> list[float]:
+    def get_latency_measurements(self, model_id: UUID, time_window: int = 60) -> list[float]:
         """
         Retrieve latency measurements for a specific model within the given time window.
 
@@ -89,9 +88,7 @@ class MetricsService:
                 result.append(entry["latency_ms"])
         return result
 
-    def get_throughput_measurements(
-        self, model_id: ShortUUID, time_window: int = 60
-    ) -> tuple[int, list[tuple[float, int]]]:
+    def get_throughput_measurements(self, model_id: UUID, time_window: int = 60) -> tuple[int, list[tuple[float, int]]]:
         """
         Retrieve throughput measurements for a specific model within the given time window.
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """PyTorch implementation of K-means clustering algorithm.
@@ -82,7 +82,9 @@ class KMeans:
 
         # Initialize centroids randomly from the data points
         centroid_indices = torch.randint(0, batch_size, (self.n_clusters,))
-        self.cluster_centers_ = inputs[centroid_indices]
+        self.cluster_centers_ = inputs[centroid_indices].clone()
+
+        prev_labels = torch.empty(0, dtype=torch.int64, device=inputs.device)
 
         # Run the k-means algorithm for max_iter iterations
         for _ in range(self.max_iter):
@@ -92,12 +94,23 @@ class KMeans:
             # Assign each data point to the closest centroid
             self.labels_ = torch.argmin(distances, dim=1)
 
-            # Update the centroids to be the mean of the data points assigned
-            for j in range(self.n_clusters):
-                mask = self.labels_ == j
-                if mask.any():
-                    self.cluster_centers_[j] = inputs[mask].mean(dim=0)
+            if torch.equal(self.labels_, prev_labels):
+                return self.labels_, self.cluster_centers_
 
+            prev_labels = self.labels_.clone()
+
+            # Update the centroids to be the mean of the data points assigned
+            counts = torch.bincount(self.labels_, minlength=self.n_clusters)
+            accum_dtype = torch.float32 if inputs.dtype in {torch.float16, torch.bfloat16} else inputs.dtype
+            new_centers = torch.zeros_like(self.cluster_centers_, dtype=accum_dtype)
+            new_centers.index_add_(0, self.labels_, inputs.to(accum_dtype))
+
+            valid_mask = counts > 0
+            denom = counts[valid_mask].unsqueeze(1).to(accum_dtype)
+            self.cluster_centers_[valid_mask] = (new_centers[valid_mask] / denom).to(self.cluster_centers_.dtype)
+
+        distances = torch.cdist(inputs, self.cluster_centers_)
+        self.labels_ = torch.argmin(distances, dim=1)
         return self.labels_, self.cluster_centers_
 
     def predict(self, inputs: torch.Tensor) -> torch.Tensor:

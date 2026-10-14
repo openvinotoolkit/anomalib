@@ -1,12 +1,13 @@
-// Copyright (C) 2022-2025 Intel Corporation
-// LIMITED EDGE SOFTWARE DISTRIBUTION LICENSE
+// Copyright (C) 2020-2026 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
-import sharedEslintConfig from '@geti/config/lint';
+
+import sharedEslintConfig from './eslint.shared.config.js';
 
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -29,15 +30,15 @@ export default [
                     patterns: [
                         {
                             group: ['@react-spectrum'],
-                            message: 'Use component from the @geti/ui folder instead.',
+                            message: 'Use component from the @geti-ui/ui folder instead.',
                         },
                         {
                             group: ['@react-types/*'],
-                            message: 'Use type from the @geti/ui folder instead.',
+                            message: 'Use type from the @geti-ui/ui folder instead.',
                         },
                         {
                             group: ['@spectrum-icons'],
-                            message: 'Use icons from the @geti/ui/icons folder instead.',
+                            message: 'Use icons from the @geti-ui/ui/icons folder instead.',
                         },
                     ],
                 },

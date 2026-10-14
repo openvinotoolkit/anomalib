@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import asyncio
 from typing import Annotated
+from uuid import UUID
 
 import anyio
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, UploadFile, status
@@ -12,7 +13,6 @@ from api.endpoints import API_PREFIX
 from api.media_rest_validator import MediaRestValidator
 from pydantic_models import Media, MediaList
 from services.media_service import MediaService
-from utils.short_uuid import ShortUUID
 
 media_api_prefix_url = API_PREFIX + "/projects/{project_id}"
 media_router = APIRouter(
@@ -30,7 +30,7 @@ media_router = APIRouter(
 )
 async def get_media_list(
     media_service: Annotated[MediaService, Depends(get_media_service)],
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     limit: Annotated[int, Depends(PaginationLimit())],
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> MediaList:
@@ -48,8 +48,8 @@ async def get_media_list(
 )
 async def get_media(
     media_service: Annotated[MediaService, Depends(get_media_service)],
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
-    media_id: Annotated[ShortUUID, Depends(get_media_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
+    media_id: Annotated[UUID, Depends(get_media_id)],
 ) -> FileResponse:
     """Endpoint to get media metadata by ID"""
     try:
@@ -71,8 +71,8 @@ async def get_media(
 )
 async def get_media_thumbnail(
     media_service: Annotated[MediaService, Depends(get_media_service)],
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
-    media_id: Annotated[ShortUUID, Depends(get_media_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
+    media_id: Annotated[UUID, Depends(get_media_id)],
 ) -> FileResponse:
     """Return a PNG thumbnail for the requested image."""
     try:
@@ -107,8 +107,8 @@ async def get_media_thumbnail(
 )
 async def delete_media(
     media_service: Annotated[MediaService, Depends(get_media_service)],
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
-    media_id: Annotated[ShortUUID, Depends(get_media_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
+    media_id: Annotated[UUID, Depends(get_media_id)],
 ) -> None:
     """Remove an image"""
     await media_service.delete_media(media_id=media_id, project_id=project_id)
@@ -125,7 +125,7 @@ async def delete_media(
 )
 async def capture_image(
     media_service: Annotated[MediaService, Depends(get_media_service)],
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     file: Annotated[UploadFile, Depends(MediaRestValidator.validate_image_file)],
     background_tasks: BackgroundTasks,
 ) -> Media:

@@ -1,8 +1,9 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - VAD Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -17,8 +18,9 @@ class TestVAD(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> VAD:
+    def datamodule(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> VAD:
         """Create and return a VAD datamodule."""
+        make_dummy_dataset("vad")
         datamodule_ = VAD(
             root=dataset_path / "vad",
             category="vad",

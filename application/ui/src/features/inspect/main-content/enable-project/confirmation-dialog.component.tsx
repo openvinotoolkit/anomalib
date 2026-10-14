@@ -1,6 +1,13 @@
 import { $api } from '@anomalib-studio/api';
-import { useActivatePipeline, useDisablePipeline } from '@anomalib-studio/hooks';
-import { AlertDialog } from '@geti/ui';
+import {
+    useActivateAndRunPipeline,
+    useActivatePipeline,
+    useDisablePipeline,
+    usePipeline,
+} from '@anomalib-studio/hooks';
+import { toast } from '@anomalib-studio/toast';
+import { AlertDialog } from '@geti-ui/ui';
+import { useIsPipelineConfigured } from 'src/hooks/use-is-pipeline-configured.hook';
 
 interface ConfirmationDialogProps {
     activeProjectId: string;
@@ -8,8 +15,14 @@ interface ConfirmationDialogProps {
 }
 
 export const ConfirmationDialog = ({ activeProjectId, currentProjectId }: ConfirmationDialogProps) => {
-    const activePipeline = useActivatePipeline({});
+    const { data: pipeline } = usePipeline();
+    const activatePipeline = useActivatePipeline({});
     const disablePipeline = useDisablePipeline(activeProjectId);
+    const canEnablePipeline = useIsPipelineConfigured(pipeline);
+
+    const activateAndRunPipeline = useActivateAndRunPipeline({
+        onSuccess: () => toast({ type: 'success', message: `Pipeline enabled successfully` }),
+    });
 
     const activeProject = $api.useSuspenseQuery('get', '/api/projects/{project_id}', {
         params: { path: { project_id: activeProjectId } },
@@ -19,16 +32,25 @@ export const ConfirmationDialog = ({ activeProjectId, currentProjectId }: Confir
         params: { path: { project_id: currentProjectId } },
     });
 
-    const isUpdating = activeProject.isLoading || currentProject.isLoading;
+    const isUpdating =
+        activeProject.isLoading ||
+        currentProject.isLoading ||
+        disablePipeline.isPending ||
+        activatePipeline.isPending ||
+        activateAndRunPipeline.isPending;
 
     const handleEnableProject = async () => {
         await disablePipeline.mutateAsync({
             params: { path: { project_id: activeProjectId } },
         });
 
-        await activePipeline.mutateAsync({
-            params: { path: { project_id: currentProjectId } },
-        });
+        if (canEnablePipeline) {
+            await activateAndRunPipeline.mutateAsync();
+        } else {
+            await activatePipeline.mutateAsync({
+                params: { path: { project_id: currentProjectId } },
+            });
+        }
     };
 
     return (

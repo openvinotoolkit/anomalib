@@ -41,7 +41,6 @@ from anomalib import LearningType
 from anomalib.data import Batch
 from anomalib.metrics import AUROC, Evaluator, F1Score
 from anomalib.models.components import AnomalibModule
-from anomalib.models.components.base import restore_frozen_encoder_weights
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 from anomalib.visualization import Visualizer
@@ -127,20 +126,6 @@ class Patchflow(AnomalibModule):
         self.lr = lr
         self.weight_decay = weight_decay
         self.loss = PatchflowLoss()
-
-    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Make checkpoints trained before the timm-encoder migration loadable.
-
-        When using a DINOv2 backbone, the frozen feature extractor was migrated from a custom
-        Vision Transformer to a frozen :class:`TimmFeatureExtractor`. The legacy encoder weights
-        are dropped and replaced by the current timm encoder weights so the strict state-dict load
-        still succeeds. See
-        :func:`~anomalib.models.components.base.restore_frozen_encoder_weights`.
-
-        Args:
-            checkpoint (dict[str, Any]): The checkpoint dictionary being loaded, modified in place.
-        """
-        restore_frozen_encoder_weights(self, checkpoint, encoder_key="feature_extractor")
 
     def training_step(self, batch: Batch, *args, **kwargs) -> STEP_OUTPUT:
         """Perform the training step.

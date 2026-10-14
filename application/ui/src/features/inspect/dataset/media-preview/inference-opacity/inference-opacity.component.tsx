@@ -1,8 +1,8 @@
 // Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ActionButton, DialogTrigger, Flex, Slider, Text, View } from '@geti/ui';
-import { ChevronDownSmall } from '@geti/ui/icons';
+import { ActionButton, DialogTrigger, Flex, Slider, Text, View } from '@geti-ui/ui';
+import { ChevronDownSmall } from '@geti-ui/ui/icons';
 
 import { useInference } from '../providers/inference-opacity-provider.component';
 

@@ -1,5 +1,5 @@
 import { Image } from '@anomalib-studio/icons';
-import { Flex } from '@geti/ui';
+import { Flex } from '@geti-ui/ui';
 
 import styles from './dataset-item-placeholder.module.scss';
 

@@ -6,17 +6,17 @@ import os
 import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 
 from services import VideoService
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
 def fxt_project():
     """Fixture for a test project."""
-    return ShortUUID.generate()
+    return uuid4()
 
 
 @pytest.fixture

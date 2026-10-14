@@ -1,8 +1,9 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for image utils."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -15,16 +16,16 @@ class TestGetImageFilenames:
     """Tests for ``get_image_filenames`` function."""
 
     @staticmethod
-    def test_existing_image_file(dataset_path: Path) -> None:
+    def test_existing_image_file(mvtecad_path: Path) -> None:
         """Test ``get_image_filenames`` returns the correct path for an existing image file."""
-        image_path = dataset_path / "mvtecad/dummy/train/good/000.png"
+        image_path = mvtecad_path / "dummy/train/good/000.png"
         image_filenames = get_image_filenames(image_path)
         assert image_filenames == [image_path.resolve()]
 
     @staticmethod
-    def test_existing_image_directory(dataset_path: Path) -> None:
+    def test_existing_image_directory(mvtecad_path: Path) -> None:
         """Test ``get_image_filenames`` returns the correct image filenames from an existing directory."""
-        directory_path = dataset_path / "mvtecad/dummy/train/good"
+        directory_path = mvtecad_path / "dummy/train/good"
         image_filenames = get_image_filenames(directory_path)
         expected_filenames = [(directory_path / f"{i:03d}.png").resolve() for i in range(5)]
         assert set(image_filenames) == set(expected_filenames)
@@ -42,8 +43,9 @@ class TestGetImageFilenames:
             get_image_filenames("nonexistent_directory")
 
     @staticmethod
-    def test_non_image_file(dataset_path: Path) -> None:
+    def test_non_image_file(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> None:
         """Test ``get_image_filenames`` raises ValueError for a non-image file."""
+        make_dummy_dataset("avenue")
         filename = dataset_path / "avenue/ground_truth_demo/testing_label_mask/1_label.mat"
         with pytest.raises(ValueError, match=r"``filename`` is not an image file*"):
             get_image_filenames(filename)

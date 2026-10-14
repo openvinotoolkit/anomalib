@@ -1,8 +1,9 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit tests - MVTec AD 2 Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -18,8 +19,9 @@ class TestMVTecAD2(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> MVTecAD2:
+    def datamodule(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> MVTecAD2:
         """Create and return a MVTec AD 2 datamodule."""
+        make_dummy_dataset("mvtecad2")
         datamodule_ = MVTecAD2(
             root=dataset_path / "mvtecad2",
             category="dummy",

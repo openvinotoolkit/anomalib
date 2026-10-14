@@ -1,12 +1,12 @@
 // Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { act, renderHook } from '@testing-library/react';
+import { act } from '@testing-library/react';
 import { HttpResponse } from 'msw';
 import { http } from 'src/api/utils';
 import { server } from 'src/msw-node-setup';
-import { TestProviders } from 'src/providers';
 
+import { renderHook } from '../../../../../../tests/utils';
 import { UsbCameraSourceConfig } from '../util';
 import { useSourceMutation } from './use-source-mutation.hook';
 
@@ -18,8 +18,6 @@ const mockedSource: UsbCameraSourceConfig = {
     device_id: 0,
 };
 
-vi.mock('@anomalib-studio/hooks', () => ({ useProjectIdentifier: () => ({ projectId: 'project-id-123' }) }));
-
 describe('useSourceMutation', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -27,7 +25,7 @@ describe('useSourceMutation', () => {
 
     it('creates a new source and return its resource id', async () => {
         const { result } = renderHook(() => useSourceMutation(true), {
-            wrapper: TestProviders,
+            route: '/projects/project-id-123/inspect',
         });
 
         const createdSource = { ...mockedSource, id: 'created-id' };
@@ -46,7 +44,7 @@ describe('useSourceMutation', () => {
 
     it('update a source item and returns its resource id', async () => {
         const { result } = renderHook(() => useSourceMutation(false), {
-            wrapper: TestProviders,
+            route: '/projects/project-id-123/inspect',
         });
 
         server.use(

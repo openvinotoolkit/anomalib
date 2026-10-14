@@ -3,20 +3,19 @@
 
 from abc import ABC
 from typing import Any
+from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field, field_serializer
 from pydantic.json_schema import SkipJsonSchema
-
-from utils.short_uuid import ShortUUID
 
 
 class BaseIDModel(ABC, BaseModel):
     """Base model with an id field."""
 
-    id: ShortUUID = Field(default_factory=ShortUUID.generate)
+    id: UUID = Field(default_factory=uuid4)
 
     @field_serializer("id")
-    def serialize_id(self, id: ShortUUID, _info: Any) -> str:
+    def serialize_id(self, id: UUID, _info: Any) -> str:
         return str(id)
 
 
@@ -39,8 +38,8 @@ class NoRequiredIDs(BaseModel):
     from the URL path parameter in the endpoint handler.
     """
 
-    project_id: SkipJsonSchema[ShortUUID] = Field(exclude=True, default=ShortUUID("2222222222222222222222"))
-    id: SkipJsonSchema[ShortUUID] = Field(exclude=True, default_factory=ShortUUID.generate)
+    project_id: SkipJsonSchema[UUID] = Field(exclude=True, default=UUID("00000000-0000-0000-0000-000000000000"))
+    id: SkipJsonSchema[UUID] = Field(exclude=True, default_factory=uuid4)
 
 
 class Pagination(BaseModel):

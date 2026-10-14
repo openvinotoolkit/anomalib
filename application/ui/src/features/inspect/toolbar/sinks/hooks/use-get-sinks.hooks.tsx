@@ -32,6 +32,7 @@ export const useGetSinks = () => {
 
                 return pagination.offset + sinksItemsLimit;
             },
+            initialPageParam: 0,
         }
     );
 

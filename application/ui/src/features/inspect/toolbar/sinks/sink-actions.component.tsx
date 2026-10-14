@@ -3,8 +3,8 @@
 
 import { useState } from 'react';
 
-import { ActionButton, Flex, Loading, Text } from '@geti/ui';
-import { Back } from '@geti/ui/icons';
+import { ActionButton, Flex, Loading, Text } from '@geti-ui/ui';
+import { Back } from '@geti-ui/ui/icons';
 import { isEmpty } from 'lodash-es';
 
 import { EditSinkForm } from './edit-sink-form.component';

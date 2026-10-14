@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-import { Button, Form } from '@geti/ui';
+import { Button, Form } from '@geti-ui/ui';
 
 import { useConnectSinkToPipeline } from '../../../../../hooks/use-pipeline.hook';
 import { useSinkAction } from '../hooks/use-sink-action.hook';

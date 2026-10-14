@@ -1,11 +1,12 @@
 // Copyright (C) 2025-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { generateShortUUID } from '../../../../../utils/short-uuid';
+import { v4 as uuid } from 'uuid';
+
 import { LocalFolderSinkConfig, SinkOutputFormats } from '../utils';
 
 export const getLocalFolderInitialConfig = (project_id: string): LocalFolderSinkConfig => ({
-    id: generateShortUUID(),
+    id: uuid(),
     name: 'Local folder sink',
     project_id,
     sink_type: 'folder',

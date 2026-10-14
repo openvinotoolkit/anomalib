@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { $api, getApiUrl } from '@anomalib-studio/api';
-import { Image, PhotoPlaceholder } from '@geti/ui';
+import { Image, PhotoPlaceholder } from '@geti-ui/ui';
 
 import { isNonEmptyString } from '../../utils';
 

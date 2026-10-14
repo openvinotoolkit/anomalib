@@ -2,7 +2,7 @@ import { ComponentProps, Suspense, useEffect, useRef } from 'react';
 
 import { SchemaJob as Job, SchemaJob, SchemaJobStatus } from '@anomalib-studio/api/spec';
 import { useProjectIdentifier } from '@anomalib-studio/hooks';
-import { Content, Flex, Heading, InlineAlert, IntelBrandedLoading, ProgressBar, Text } from '@geti/ui';
+import { Content, Flex, Heading, InlineAlert, IntelBrandedLoading, ProgressBar, Text } from '@geti-ui/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { isEqual } from 'lodash-es';
 
@@ -129,7 +129,9 @@ const TrainingInProgressList = () => {
 
     return (
         <Flex direction={'column'} gap={'size-50'} UNSAFE_style={{ overflowY: 'auto' }}>
-            {jobs?.map((job) => <TrainingInProgress job={job} key={job.id} />)}
+            {jobs?.map((job) => (
+                <TrainingInProgress job={job} key={job.id} />
+            ))}
         </Flex>
     );
 };

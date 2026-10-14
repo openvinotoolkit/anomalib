@@ -1,9 +1,10 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Test visualizer callback."""
 
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 
 from anomalib.data import MVTecAD
@@ -13,8 +14,9 @@ from anomalib.loggers import AnomalibTensorBoardLogger
 from .dummy_lightning_model import DummyModule
 
 
-def test_add_images(dataset_path: Path) -> None:
+def test_add_images(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> None:
     """Tests if tensorboard logs are generated."""
+    make_dummy_dataset("mvtecad")
     with tempfile.TemporaryDirectory() as dir_loc:
         logger = AnomalibTensorBoardLogger(name="tensorboard_logs", save_dir=dir_loc)
         model = DummyModule(dataset_path, evaluator=False)

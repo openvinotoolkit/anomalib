@@ -1,0 +1,30 @@
+.container {
+    width: 90%;
+    height: 90%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--background-inverse);
+
+    &:not(.disabled) {
+        cursor: pointer;
+    }
+}
+
+.playButton {
+    gap: var(--spectrum-global-dimension-size-400);
+    padding: var(--spectrum-global-dimension-size-200) var(--spectrum-global-dimension-size-300);
+    display: flex;
+    position: relative;
+    align-items: center;
+    border-radius: var(--spectrum-alias-border-radius-medium);
+    background: var(--energy-blue);
+    color: var(--background);
+}
+
+.disabled {
+    .playButton {
+        background: var(--spectrum-global-color-gray-400);
+    }
+}

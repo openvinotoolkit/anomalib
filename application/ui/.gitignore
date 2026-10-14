@@ -15,9 +15,6 @@ dist/
 !.vscode/extensions.json
 .idea
 
-# We clone our geti packages during the npm install phase
-packages/
-
 # Playwright
 /test-results/
 /playwright-report/

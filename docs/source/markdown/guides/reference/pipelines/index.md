@@ -78,6 +78,9 @@ Compute metrics across models using a grid-search.
 :caption: Pipelines
 :hidden:
 
+./base/pipeline
+./base/job
+./base/generator
 ./benchmark/index
 ./runners/index
 ```

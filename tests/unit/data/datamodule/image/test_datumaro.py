@@ -1,8 +1,9 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit tests - Datumaro Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -17,8 +18,9 @@ class TestDatumaro(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> Datumaro:
+    def datamodule(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> Datumaro:
         """Create and return a Datumaro datamodule."""
+        make_dummy_dataset("datumaro")
         datamodule_ = Datumaro(
             root=dataset_path / "datumaro",
             train_batch_size=4,

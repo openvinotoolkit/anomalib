@@ -74,3 +74,11 @@ terms are listed below.
 15. INP-Former model (anomalib.models.image.inp_former)
     Copyright (c) 2025 Wei Luo, https://github.com/luow23/INP-Former
     SPDX-License-Identifier: MIT
+
+16. MH-PatchCore model (anomalib.models.image.mh_patchcore)
+    Copyright (c) 2025 Niccolò Ferrari and Oligert Osmani, https://github.com/NickF93/MH-PatchCore
+    SPDX-License-Identifier: MIT
+
+17. FoundAD model (anomalib.models.image.foundad)
+    Copyright (c) 2026 FoundAD authors, https://github.com/ymxlzgy/FoundAD
+    SPDX-License-Identifier: MIT

@@ -31,7 +31,6 @@ Learn more about the internals of anomalib.
 :hidden:
 
 image_video
-transforms
 tiling
 synthetic
 ```

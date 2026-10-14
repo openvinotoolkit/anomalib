@@ -17,7 +17,7 @@ import {
     Tabs,
     Text,
     View,
-} from '@geti/ui';
+} from '@geti-ui/ui';
 
 import { ModelsList } from './models-list/models-list.component';
 import { SinkActions } from './sinks/sink-actions.component';

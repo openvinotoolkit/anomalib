@@ -1,4 +1,4 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Binning functions for metrics.
@@ -50,6 +50,7 @@ def thresholds_between_min_and_max(
         >>> thresholds
         tensor([0.1000, 0.5000, 0.9000])
     """
+    device = device if device is not None else preds.device
     return linspace(start=preds.min(), end=preds.max(), steps=num_thresholds, device=device)
 
 

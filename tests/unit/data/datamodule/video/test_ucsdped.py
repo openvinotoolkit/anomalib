@@ -1,8 +1,9 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - UCSDped Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -23,8 +24,13 @@ class TestUCSDped(_TestAnomalibVideoDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, clip_length_in_frames: int) -> UCSDped:
+    def datamodule(
+        dataset_path: Path,
+        make_dummy_dataset: Callable[[str], Path],
+        clip_length_in_frames: int,
+    ) -> UCSDped:
         """Create and return a UCSDped datamodule."""
+        make_dummy_dataset("ucsdped")
         datamodule_ = UCSDped(
             root=dataset_path / "ucsdped",
             category="dummy",

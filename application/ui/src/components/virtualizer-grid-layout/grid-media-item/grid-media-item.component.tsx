@@ -3,7 +3,7 @@
 
 import { ReactNode } from 'react';
 
-import { View } from '@geti/ui';
+import { View } from '@geti-ui/ui';
 import { clsx } from 'clsx';
 import { isFunction } from 'lodash-es';
 

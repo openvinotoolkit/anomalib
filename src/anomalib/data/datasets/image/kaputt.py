@@ -39,11 +39,12 @@ Reference:
     In IEEE/CVF International Conference on Computer Vision (ICCV).
 
 Dataset URL:
-    https://www.kaputt-dataset.com/
+    https://huggingface.co/datasets/amazon/kaputt
 """
 
 import logging
 from enum import Enum
+from functools import partial
 from pathlib import Path
 
 import pandas as pd
@@ -53,9 +54,25 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib.data.datasets.base import AnomalibDataset
 from anomalib.data.utils import LabelName, Split, validate_path
+from anomalib.data.utils.path import resolve_path_under_root
 from anomalib.utils.path import get_datasets_dir
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_relative_path(root: Path, subdir: Path, value: str) -> Path:
+    """Resolve ``value`` relative to ``subdir`` and confine the result to ``root``.
+
+    Args:
+        root: Top-level dataset root that the resolved path must remain under.
+        subdir: Subdirectory that ``value`` is relative to.
+        value: Relative path read from the dataset metadata.
+
+    Returns:
+        Validated absolute path under ``root``.
+    """
+    return resolve_path_under_root(root, subdir / value, should_exist=False)
+
 
 # Material categories in Kaputt dataset (based on item_material field)
 CATEGORIES = (
@@ -260,11 +277,13 @@ def make_kaputt_dataset(
             query_df = pd.read_parquet(query_parquet)
 
             image_col = f"query_{image_type.value}"  # "query_image" or "query_crop"
-            root_prefix = str(root / f"query-{image_type.value}") + "/"
-            mask_prefix = str(root / "query-mask") + "/"
+            image_subdir = root / f"query-{image_type.value}"
+            mask_subdir = root / "query-mask"
+            resolve_image = partial(_resolve_relative_path, root, image_subdir)
+            resolve_mask = partial(_resolve_relative_path, root, mask_subdir)
 
             samples = DataFrame()
-            samples["image_path"] = root_prefix + query_df[image_col]
+            samples["image_path"] = query_df[image_col].map(resolve_image).astype(str)
             samples["capture_id"] = query_df["capture_id"]
             samples["item_identifier"] = query_df["item_identifier"] if "item_identifier" in query_df.columns else ""
             samples["item_material"] = query_df["item_material"].fillna("")
@@ -288,10 +307,10 @@ def make_kaputt_dataset(
             samples.loc[samples["label_index"] == LabelName.ABNORMAL, "label"] = "abnormal"
 
             samples["mask_path"] = ""
-            samples.loc[
-                samples["label_index"] == LabelName.ABNORMAL,
-                "mask_path",
-            ] = mask_prefix + samples.loc[samples["defect"] != False, "query_mask"]  # noqa: E712
+            abnormal_mask = samples["label_index"] == LabelName.ABNORMAL
+            samples.loc[abnormal_mask, "mask_path"] = (
+                samples.loc[abnormal_mask, "query_mask"].map(resolve_mask).astype(str)
+            )
 
             samples = samples.drop(columns=["defect", "query_mask"])
 
@@ -303,10 +322,11 @@ def make_kaputt_dataset(
             if ref_parquet.exists():
                 ref_df = pd.read_parquet(ref_parquet)
                 ref_image_col = f"reference_{image_type.value}"
-                ref_prefix = str(root / f"reference-{image_type.value}") + "/"
+                reference_subdir = root / f"reference-{image_type.value}"
+                resolve_ref = partial(_resolve_relative_path, root, reference_subdir)
 
                 ref_samples = DataFrame()
-                ref_samples["image_path"] = ref_prefix + ref_df[ref_image_col]
+                ref_samples["image_path"] = ref_df[ref_image_col].map(resolve_ref).astype(str)
                 ref_samples["capture_id"] = ref_df["item_identifier"]
                 ref_samples["item_identifier"] = ref_df["item_identifier"]
                 ref_samples["item_material"] = ""

@@ -3,7 +3,7 @@
 
 import { ComponentProps, ReactNode, useRef } from 'react';
 
-import { AriaComponentsListBox, GridLayout, ListBoxItem, Loading, View, Virtualizer } from '@geti/ui';
+import { AriaComponentsListBox, AriaListBoxItem, GridLayout, Loading, View, Virtualizer } from '@geti-ui/ui';
 import { useLoadMore } from '@react-aria/utils';
 import { GridLayoutOptions } from 'react-aria-components';
 
@@ -13,8 +13,10 @@ import classes from './virtualizer-grid-layout.module.scss';
 
 type AriaComponentsListBoxProps = ComponentProps<typeof AriaComponentsListBox>;
 
-interface VirtualizerGridLayoutProps<T>
-    extends Pick<AriaComponentsListBoxProps, 'selectedKeys' | 'onSelectionChange' | 'disabledKeys'> {
+interface VirtualizerGridLayoutProps<T> extends Pick<
+    AriaComponentsListBoxProps,
+    'selectedKeys' | 'onSelectionChange' | 'disabledKeys'
+> {
     items?: T[];
     ariaLabel: string;
     scrollToIndex?: number;
@@ -68,19 +70,19 @@ export const VirtualizerGridLayout = <T extends { id?: string }>({
                     onSelectionChange={onSelectionChange}
                 >
                     {items.map((item, index) => (
-                        <ListBoxItem
+                        <AriaListBoxItem
                             id={item.id}
                             key={`${ariaLabel}-${item.id}-${index}`}
                             textValue={item.id}
                             className={classes.mediaItem}
                         >
                             {contentItem(item)}
-                        </ListBoxItem>
+                        </AriaListBoxItem>
                     ))}
                     {isLoadingMore && (
-                        <ListBoxItem id={'loader'} textValue={'loading'}>
+                        <AriaListBoxItem id={'loader'} textValue={'loading'}>
                             <Loading mode='overlay' />
-                        </ListBoxItem>
+                        </AriaListBoxItem>
                     )}
                 </AriaComponentsListBox>
             </Virtualizer>

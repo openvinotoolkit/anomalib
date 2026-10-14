@@ -1,10 +1,13 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit tests for WinCLIP utils."""
 
+from functools import partial
+
 import pytest
 import torch
+from tests.helpers.export import assert_exportable
 
 from anomalib.models.image.winclip.utils import (
     class_scores,
@@ -103,6 +106,24 @@ class TestHarmonicAggregation:
         output = harmonic_aggregation(window_scores, output_size, masks)
         assert output.shape == torch.Size([2, 3, 3])
 
+    @staticmethod
+    @pytest.mark.parametrize("kernel_size", [2, 3])
+    def test_matches_per_patch_reference(kernel_size: int) -> None:
+        """Vectorized aggregation matches a per-patch harmonic mean, including zero window scores."""
+        output_size = (15, 15)
+        masks = make_masks(output_size, kernel_size)
+        torch.manual_seed(0)
+        window_scores = torch.rand(3, masks.shape[1])
+        window_scores[0, 0] = 0.0
+
+        expected = []
+        for patch in range(output_size[0] * output_size[1]):
+            covering = torch.any(masks == patch, dim=0)
+            expected.append(covering.sum() / (1 / window_scores[:, covering]).sum(dim=1))
+        expected = torch.stack(expected, dim=1).reshape(3, *output_size).nan_to_num(posinf=0.0)
+
+        torch.testing.assert_close(harmonic_aggregation(window_scores, output_size, masks), expected)
+
 
 class TestVisualAssociationScore:
     """Unit tests for visual association score computation."""
@@ -165,3 +186,9 @@ class TestMakeMasks:
         """Test that an error is raised when the kernel size is larger than the grid size."""
         with pytest.raises(ValueError, match=r"Each dimension of the grid size must be greater than"):
             make_masks(grid_size, kernel_size)
+
+
+def test_harmonic_aggregation_is_exportable() -> None:
+    """``torch.export`` captures the aggregation without data-dependent guards and matches eager."""
+    masks = make_masks((15, 15), 2)
+    assert_exportable(partial(harmonic_aggregation, output_size=(15, 15), masks=masks), torch.rand(2, masks.shape[1]))

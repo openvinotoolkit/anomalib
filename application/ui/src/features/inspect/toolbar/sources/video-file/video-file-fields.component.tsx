@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { $api } from '@anomalib-studio/api';
 import { useProjectIdentifier } from '@anomalib-studio/hooks';
 import { Folder } from '@anomalib-studio/icons';
+import { toast } from '@anomalib-studio/toast';
 import {
     ActionButton,
     FileTrigger,
@@ -15,11 +16,10 @@ import {
     Picker,
     ProgressCircle,
     TextField,
-    toast,
     Tooltip,
     TooltipTrigger,
-} from '@geti/ui';
-import { Copy } from '@geti/ui/icons';
+} from '@geti-ui/ui';
+import { Copy } from '@geti-ui/ui/icons';
 
 import { VideoFileSourceConfig } from '../util';
 

@@ -61,7 +61,7 @@ jobs:
       contents: read # Required to checkout the repository
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -94,7 +94,7 @@ jobs:
 
           # Remove emoji from the beginning if present and create clean title for validation
           # Use Python for reliable emoji removal (more compatible than sed with Unicode)
-          CLEAN_TITLE=$(python3 -c "import re; title='$PR_TITLE'; print(re.sub(r'^[\s]*[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\U00002600-\U000027BF\U0001F900-\U0001F9FF]+[\s]*', '', title))")
+          CLEAN_TITLE=$(python3 -c "import os, re; title=os.environ['PR_TITLE']; print(re.sub(r'^[\s]*[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF\U00002600-\U000027BF\U0001F900-\U0001F9FF]+[\s]*', '', title))")
 
           echo "Clean title for validation: '$CLEAN_TITLE'"
 

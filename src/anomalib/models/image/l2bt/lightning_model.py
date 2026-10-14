@@ -43,7 +43,6 @@ from torchvision.transforms.v2 import Compose, InterpolationMode, Normalize, Res
 from anomalib import LearningType
 from anomalib.data.transforms import SquarePad
 from anomalib.models.components import AnomalibModule
-from anomalib.models.components.base import restore_frozen_encoder_weights
 from anomalib.pre_processing import PreProcessor
 
 from .torch_model import L2BTModel
@@ -154,19 +153,6 @@ class L2BT(AnomalibModule):
             blur_repeats_u=blur_repeats_u,
             topk_ratio=topk_ratio,
         )
-
-    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Make checkpoints trained before the timm-encoder migration loadable.
-
-        The frozen DINOv2 teacher encoder was migrated from a custom Vision Transformer to a
-        frozen :class:`TimmFeatureExtractor`. The legacy encoder weights are dropped and replaced
-        by the current timm encoder weights so the strict state-dict load still succeeds. See
-        :func:`~anomalib.models.components.base.restore_frozen_encoder_weights`.
-
-        Args:
-            checkpoint (dict[str, Any]): The checkpoint dictionary being loaded, modified in place.
-        """
-        restore_frozen_encoder_weights(self, checkpoint, encoder_key="teacher.fe")
 
     @property
     def learning_type(self) -> LearningType:

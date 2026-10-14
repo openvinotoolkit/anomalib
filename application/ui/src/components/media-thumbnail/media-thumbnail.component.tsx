@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 
-import { Skeleton } from '@geti/ui';
+import { Skeleton } from '@geti-ui/ui';
 
 import classes from './media-thumbnail.module.scss';
 
@@ -35,7 +35,7 @@ export const MediaThumbnail = ({ onDoubleClick, onClick, url, alt }: MediaThumbn
 
     return (
         <div onDoubleClick={onDoubleClick} onClick={onClick} style={{ height: '100%' }}>
-            {isLoading && <Skeleton width={'100%'} height={'100%'} UNSAFE_className={classes.loader} />}
+            {isLoading && <Skeleton width={'100%'} height={'100%'} className={classes.loader} />}
 
             <img src={`${url}?retry=${retry}`} alt={alt} onLoad={handleLoad} onError={handleError} />
         </div>

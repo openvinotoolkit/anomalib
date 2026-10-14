@@ -93,11 +93,13 @@ For detailed topic-specific policy, consult the `.agents/skills/` files referenc
 - Makes constructor/config surfaces opaque or incompatible with `jsonargparse`.
 - Adds a metric that does not align with the torchmetrics-based patterns in `src/anomalib/metrics/base.py`.
 - Adds a public model, metric, or CLI component without matching exports, docs, or config compatibility.
+- Resolves, joins, or copies dataset paths without strict confinement to the dataset or output root (see Priority 10).
 
 **Key architectural anchors:**
 
 - `src/anomalib/models/__init__.py` — model discovery and loading
 - `src/anomalib/data/dataclasses/generic.py` — `FieldDescriptor`, typed fields, batch/item patterns
+- `src/anomalib/data/utils/path.py` — path validation, confinement, and resolution helpers
 - `src/anomalib/callbacks/__init__.py` — callback registry
 - `src/anomalib/metrics/base.py` — metric base classes
 - `src/anomalib/cli/cli.py` — CLI entrypoints
@@ -261,6 +263,33 @@ Apply when a PR adds or modifies GitHub Actions workflows that invoke AI coding 
 
 ---
 
+## Priority 10 — Path Confinement and Data Ingestion Security (CRITICAL)
+
+> Skill references: `.agents/skills/models-data/SKILL.md`, `.agents/skills/anomalib-adding-a-datamodule/SKILL.md`
+
+All dataset contents, metadata files (CSV, JSON, Parquet, XML, TXT), annotation files, external archives, and user-provided paths must be treated as untrusted inputs. Without strict confinement, malicious path sequences (`..`, absolute paths, Windows drive letters, UNC shares) enable path traversal, leading to **arbitrary file read/exfiltration** (reading host files outside the dataset root into prepared datasets, models, or exports) or **arbitrary file write/overwrite** (writing outside the target directory).
+
+**Flag if a PR:**
+
+- Joins untrusted dataset metadata paths directly to a root via `/` or `os.path.join(...)` without confinement checks (e.g., `self.root / image_path`).
+- Fails to use `resolve_path_under_root(root, path, ...)` or `validate_path(path, base_dir=root, ...)` from `anomalib.data.utils.path` when resolving paths from dataset files or split definitions.
+- Reads, opens, or copies files (`shutil.copyfile`, `shutil.copy`, `open()`, `Path.read_text`, `cv2.imread`, `torch.load`) before verifying that the source path is strictly confined to the expected root directory; archive extraction must also validate every member's resolved destination under the extraction root and reject unsafe links before writing.
+- Constructs destination paths or output directories from untrusted row values (`category`, `split`, `label`, filename) without:
+  1. Validating categorical strings against explicit allowlists/enums (e.g., `VISA_CATEGORIES`, `Split`, `LabelName`).
+  2. Confining destination directories and files under the expected root (`validate_path(dst_path, base_dir=self.root, should_exist=False)`).
+  3. Using `Path(path).name` or sanitized basenames rather than unvalidated path slices or raw strings.
+- Creates directories (`mkdir()`, `makedirs()`) using unchecked paths or through potentially symlinked directories that resolve outside the dataset root (always verify directory confinement with `is_within_directory` or validate leaf directories with `base_dir=root` before creation).
+- Modifies output-generating callbacks, loggers, or visualizers (e.g., `callbacks/visualizer.py`, `save_image`) without sanitizing relative filenames to prevent escaping the output root (`..` or absolute paths must be stripped, falling back to safe basenames).
+- Adds or modifies dataset loaders, datamodules, or path utilities without including regression tests that explicitly assert rejection of out-of-root paths (e.g., testing `../` path traversal raises `ValueError`, following `tests/unit/data/utils/test_path_confinement.py`).
+
+**Key security utilities to expect:**
+
+- `resolve_path_under_root(root, path, ...)` — joins relative paths to `root`, validates absolute paths, and strictly enforces that the final resolved path lies within `root`.
+- `validate_path(path, base_dir=root, should_exist=...)` — checks path validity, existence, permissions, and validates directory confinement under `base_dir`.
+- `is_within_directory(base_dir, path)` — checks directory boundary containment, preventing symlink and path traversal escapes.
+
+---
+
 ## Do Not Flag
 
 - **Formatting** — Ruff and pre-commit handle this.
@@ -293,6 +322,19 @@ class MyModel(AnomalibModule):
 def process(image: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
     ...
 
+# Safe path resolution under dataset root — correct confinement pattern
+from anomalib.data.utils.path import resolve_path_under_root, validate_path
+
+# Resolve untrusted path from CSV/metadata safely
+img_src_path = resolve_path_under_root(self.root, image_path)
+
+# Confine output directory/file destination before writing
+img_dst_path = validate_path(
+    self.split_root / category / split / label / image_name,
+    base_dir=self.root,
+    should_exist=False,
+)
+
 # Copyright header — required on all source files (Python, TypeScript, etc.)
 # Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
@@ -314,17 +356,19 @@ def process(image: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tens
 
 For the full detailed policy on each topic, consult:
 
-| Topic                                      | Skill File                                           |
-| ------------------------------------------ | ---------------------------------------------------- |
-| Python style, typing, imports, API hygiene | `.agents/skills/python-style/SKILL.md`               |
-| Models, data, callbacks, metrics, CLI      | `.agents/skills/models-data/SKILL.md`                |
-| Docstrings (format and rules)              | `.agents/skills/python-docstrings/SKILL.md`          |
-| Documentation and changelog                | `.agents/skills/docs-changelog/SKILL.md`             |
-| Model README/docs sync                     | `.agents/skills/model-doc-sync/SKILL.md`             |
-| Testing expectations                       | `.agents/skills/testing/SKILL.md`                    |
-| PR workflow and quality gates              | `.agents/skills/pr-workflow/SKILL.md`                |
-| Third-party code attribution               | `.agents/skills/third-party-code/SKILL.md`           |
-| Benchmark refresh                          | `.agents/skills/benchmark-and-docs-refresh/SKILL.md` |
-| Sample image export                        | `.agents/skills/model-sample-image-export/SKILL.md`  |
-| FastAPI REST API design (Studio backend)   | `.agents/skills/fastapi-rest-api-design/SKILL.md`    |
-| CI/CD agentic actions security             | `.agents/skills/agentic-actions-auditor/SKILL.md`    |
+| Topic                                      | Skill File                                             |
+| ------------------------------------------ | ------------------------------------------------------ |
+| Python style, typing, imports, API hygiene | `.agents/skills/python-style/SKILL.md`                 |
+| Models, data, callbacks, metrics, CLI      | `.agents/skills/models-data/SKILL.md`                  |
+| Path confinement and data security         | `.agents/skills/models-data/SKILL.md`                  |
+| Adding a datamodule (confinement rules)    | `.agents/skills/anomalib-adding-a-datamodule/SKILL.md` |
+| Docstrings (format and rules)              | `.agents/skills/python-docstrings/SKILL.md`            |
+| Documentation and changelog                | `.agents/skills/docs-changelog/SKILL.md`               |
+| Model README/docs sync                     | `.agents/skills/model-doc-sync/SKILL.md`               |
+| Testing expectations                       | `.agents/skills/testing/SKILL.md`                      |
+| PR workflow and quality gates              | `.agents/skills/pr-workflow/SKILL.md`                  |
+| Third-party code attribution               | `.agents/skills/third-party-code/SKILL.md`             |
+| Benchmark refresh                          | `.agents/skills/benchmark-and-docs-refresh/SKILL.md`   |
+| Sample image export                        | `.agents/skills/model-sample-image-export/SKILL.md`    |
+| FastAPI REST API design (Studio backend)   | `.agents/skills/fastapi-rest-api-design/SKILL.md`      |
+| CI/CD agentic actions security             | `.agents/skills/agentic-actions-auditor/SKILL.md`      |

@@ -6,6 +6,7 @@
 import os
 from typing import Annotated
 from urllib.parse import unquote
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 
@@ -13,7 +14,6 @@ from api.dependencies import PaginationLimit, get_project_id
 from api.endpoints import API_PREFIX
 from pydantic_models import Video, VideoList
 from services import VideoService
-from utils.short_uuid import ShortUUID
 
 video_api_prefix_url = API_PREFIX + "/projects/{project_id}"
 router = APIRouter(
@@ -88,7 +88,7 @@ def validate_video_file(file: UploadFile = File(...)) -> UploadFile:
     },
 )
 async def upload_video(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     file: Annotated[UploadFile, Depends(validate_video_file)],
 ) -> Video:
     """Upload a video file for use as a video source.
@@ -120,7 +120,7 @@ async def upload_video(
     },
 )
 async def list_videos(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     limit: Annotated[int, Depends(PaginationLimit())],
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> VideoList:
@@ -141,7 +141,7 @@ async def list_videos(
     },
 )
 async def delete_video(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     filename: Annotated[str, Query(description="Filename of the video to delete")],
 ) -> None:
     """Delete an uploaded video by filename."""

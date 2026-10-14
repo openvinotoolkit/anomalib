@@ -9,12 +9,12 @@ from collections.abc import Generator
 from contextlib import ContextDecorator, contextmanager
 from types import TracebackType
 from typing import IO, Any, Self
+from uuid import UUID
 
 from loguru import logger
 
 from core.logging.handlers import InterceptHandler, LoggerStdoutWriter
 from core.logging.setup import global_log_config
-from utils.short_uuid import ShortUUID
 
 # Also logs the weights if they are being downloaded.
 _ML_LOGGER_NAMES = (
@@ -172,7 +172,7 @@ class CaptureOutput(ContextDecorator):
         self._stdout_wrapper.pop()
 
 
-def _validate_job_id(job_id: str | ShortUUID) -> str | ShortUUID:
+def _validate_job_id(job_id: str | UUID) -> str | UUID:
     """Validate job_id to prevent path traversal attacks.
 
     Args:
@@ -185,7 +185,7 @@ def _validate_job_id(job_id: str | ShortUUID) -> str | ShortUUID:
         ValueError: If job_id is not a valid UUID
     """
     try:
-        ShortUUID(str(job_id))
+        UUID(str(job_id))
     except ValueError as e:
         raise ValueError(
             f"Invalid job_id '{job_id}'. Only alphanumeric characters, hyphens, and underscores are allowed.",
@@ -193,7 +193,7 @@ def _validate_job_id(job_id: str | ShortUUID) -> str | ShortUUID:
     return job_id
 
 
-def get_job_logs_path(job_id: str | ShortUUID) -> str:
+def get_job_logs_path(job_id: str | UUID) -> str:
     """Get the path to the logs folder for a specific job.
 
     Args:
@@ -206,8 +206,8 @@ def get_job_logs_path(job_id: str | ShortUUID) -> str:
         ValueError: If job_id contains invalid characters
 
     Example:
-        >>> get_job_logs_path(job_id="foo-123")
-        'logs/jobs/foo-123'
+        >>> get_job_logs_path(job_id="544bb0ab-de53-4612-b785-3e42ae6e83c1")
+        'logs/jobs/544bb0ab-de53-4612-b785-3e42ae6e83c1'
     """
     job_id = _validate_job_id(job_id)
     jobs_folder = os.path.join(global_log_config.log_folder, "jobs")
@@ -219,7 +219,7 @@ def get_job_logs_path(job_id: str | ShortUUID) -> str:
 
 
 @contextmanager
-def job_logging_ctx(job_id: str | ShortUUID) -> Generator[str]:
+def job_logging_ctx(job_id: str | UUID) -> Generator[str]:
     """Add a temporary log sink for a specific job.
 
     Captures all logs emitted during the context to logs/jobs/{job_id}.log.

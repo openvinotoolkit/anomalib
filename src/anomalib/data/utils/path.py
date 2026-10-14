@@ -1,4 +1,4 @@
-# Copyright (C) 2022-2025 Intel Corporation
+# Copyright (C) 2022-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Path utilities for handling file paths in anomalib.
@@ -10,6 +10,7 @@ This module provides utilities for:
 - Converting between path types
 - Handling file extensions
 - Managing directory types for anomaly detection
+- Confining paths under an allowed base directory
 
 Example:
     >>> from anomalib.data.utils.path import validate_path
@@ -31,6 +32,27 @@ from pathlib import Path
 from torchvision.datasets.folder import IMG_EXTENSIONS
 
 logger = logging.getLogger(__name__)
+
+
+def is_within_directory(directory: Path, target: Path) -> bool:
+    """Check if a target path is located within a given directory.
+
+    Both paths are resolved (following symlinks) before comparison, so a
+    dataset root that is itself a symlink to another folder or drive is
+    allowed, while escape symlinks or ``..`` segments that resolve outside
+    ``directory`` are rejected.
+
+    Args:
+        directory: Path of the parent directory
+        target: Path to check
+
+    Returns:
+        ``True`` if target is within directory, ``False`` otherwise
+    """
+    abs_directory = directory.resolve()
+    abs_target = target.resolve()
+
+    return abs_target.is_relative_to(abs_directory)
 
 
 class DirType(str, Enum):
@@ -200,11 +222,12 @@ def validate_path(
     should_exist: bool = True,
     extensions: tuple[str, ...] | None = None,
 ) -> Path:
-    """Validate path for existence, permissions and extension.
+    """Validate path for existence, permissions, extension and confinement.
 
     Args:
         path: Path to validate
-        base_dir: Base directory to restrict file access
+        base_dir: If provided, restrict access to paths that resolve under
+            this directory. When ``None``, no confinement check is applied.
         should_exist: If ``True``, verify path exists
         extensions: Allowed file extensions
 
@@ -213,7 +236,8 @@ def validate_path(
 
     Raises:
         TypeError: If path is invalid type
-        ValueError: If path is too long or has invalid characters/extension
+        ValueError: If path is too long, has invalid characters/extension, or
+            resolves outside ``base_dir``
         FileNotFoundError: If path doesn't exist when required
         PermissionError: If path lacks required permissions
 
@@ -236,9 +260,15 @@ def validate_path(
         msg = f"Path contains non-printable characters: {path}"
         raise ValueError(msg)
 
-    # Sanitize paths
+    # Sanitize path (follows symlinks)
     path = Path(path).resolve()
-    base_dir = Path(base_dir).resolve() if base_dir else Path.home()
+
+    # Confine to base_dir when requested
+    if base_dir is not None:
+        resolved_base = Path(base_dir).resolve()
+        if not is_within_directory(resolved_base, path):
+            msg = "Access denied: Path is outside the allowed directory"
+            raise ValueError(msg)
 
     # In case path ``should_exist``, the path is valid, and should be
     # checked for read and execute permissions.
@@ -259,6 +289,42 @@ def validate_path(
         raise ValueError(msg)
 
     return path
+
+
+def resolve_path_under_root(
+    root: str | Path,
+    path: str | Path,
+    *,
+    should_exist: bool = True,
+    extensions: tuple[str, ...] | None = None,
+) -> Path:
+    """Resolve ``path`` under ``root`` and confine the result to ``root``.
+
+    Relative paths are joined with ``root``. Absolute paths are kept as-is but
+    must still resolve under ``root`` (so ``Path(root, absolute)`` cannot bypass
+    confinement on POSIX).
+
+    Args:
+        root: Dataset or output root that paths must remain under
+        path: Path relative to ``root``, or an absolute path under ``root``
+        should_exist: If ``True``, verify the resolved path exists
+        extensions: Allowed file extensions
+
+    Returns:
+        Validated absolute path under ``root``
+
+    Raises:
+        ValueError: If ``path`` resolves outside ``root``
+    """
+    root_path = Path(root)
+    path = Path(path)
+    candidate = path if path.is_absolute() else root_path / path
+    return validate_path(
+        candidate,
+        base_dir=root_path,
+        should_exist=should_exist,
+        extensions=extensions,
+    )
 
 
 def validate_and_resolve_path(

@@ -16,6 +16,9 @@ configured, loaded, or connected to data, callbacks, metrics, or CLI/config entr
 
 - a model does not fit the established `AnomalibModule`-based architecture;
 - structured data is replaced with ad hoc dictionaries where anomalib already has typed item/batch dataclasses;
+- dataset-supplied paths or metadata are joined or opened without confinement checks (`resolve_path_under_root`, `validate_path(..., base_dir=...)`);
+- file outputs or split directories are created without verifying confinement against the dataset/output root;
+- metadata fields (`category`, `split`, `label`) from CSV/JSON/Parquet files are used in path construction without allowlist/enum validation;
 - callback or engine behavior bypasses existing Lightning or anomalib extension points;
 - public metrics, models, or CLI components are added without matching exports, docs, or config compatibility;
 - user-facing constructor/config surfaces become opaque or harder to serialize.
@@ -33,6 +36,17 @@ configured, loaded, or connected to data, callbacks, metrics, or CLI/config entr
 - Changes to shared dataclasses should preserve validation and batching behavior.
 - `src/anomalib/data/dataclasses/generic.py` is the main reference for `FieldDescriptor`, typed fields, update behavior, and batch/item patterns.
 - If a dataclass surface changes, review both runtime behavior and the corresponding public documentation.
+
+## Path validation, confinement, and data security
+
+- Treat all dataset content and metadata (CSV, Parquet, JSON, TXT, annotations, archives) as untrusted.
+- Never join dataset paths directly to a root using `root / path` or `os.path.join(root, path)` without confinement checks. Path traversal (`../`, absolute paths, Windows drive/UNC paths) enables arbitrary file disclosure or arbitrary file writes.
+- Use `resolve_path_under_root(root, path)` or `validate_path(path, base_dir=root)` from `anomalib.data.utils.path`.
+- When preparing datasets or copying files (e.g. `shutil.copyfile`, `cv2.imwrite`), confine both the source path and destination path to the expected root.
+- Validate categorical path components (`category`, `split`, `label`) against trusted allowlists or enums before using them to construct filesystem paths.
+- Ensure intermediate output directories are validated against `root` before calling `mkdir()` to prevent symlink traversal attacks outside the root.
+- In saving/visualization utilities, strip path traversal sequences and fall back to safe basenames (`Path(filename).name`) if the relative path escapes the output root.
+- Require path confinement regression tests for all new or modified loaders and datamodules (mirroring `tests/unit/data/utils/test_path_confinement.py`).
 
 ## Callbacks and engine integration
 
@@ -56,6 +70,7 @@ configured, loaded, or connected to data, callbacks, metrics, or CLI/config entr
 
 - `src/anomalib/models/__init__.py`
 - `src/anomalib/data/dataclasses/generic.py`
+- `src/anomalib/data/utils/path.py`
 - `src/anomalib/callbacks/__init__.py`
 - `src/anomalib/metrics/base.py`
 - `src/anomalib/cli/cli.py`
@@ -64,6 +79,8 @@ configured, loaded, or connected to data, callbacks, metrics, or CLI/config entr
 
 - Does the change fit anomalib's module, data, and callback architecture?
 - Is structured data still flowing through the established dataclass/batch system?
+- Are all dataset-supplied file paths strictly confined to their expected root directory?
+- Are categorical folder names validated against trusted allowlists before constructing filesystem paths?
 - Will this remain usable from config files and CLI entrypoints?
 - Are public exports, docs, and integration points updated alongside the code?
 
@@ -71,6 +88,7 @@ configured, loaded, or connected to data, callbacks, metrics, or CLI/config entr
 
 - Check model architecture fit.
 - Check typed data flow.
+- Check path validation and root confinement for all dataset ingestion, file reads, and file writes.
 - Check callback and metric integration.
 - Check CLI/config compatibility.
 - Check exports and docs for new public surfaces.

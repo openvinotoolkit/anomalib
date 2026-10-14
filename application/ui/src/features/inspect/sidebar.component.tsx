@@ -4,8 +4,8 @@
  */
 
 import { Dataset as DatasetIcon, Models as ModelsIcon } from '@anomalib-studio/icons';
-import { Flex, Grid, ToggleButton, View } from '@geti/ui';
-import { useSearchParams } from 'react-router-dom';
+import { Flex, Grid, ToggleButton, View } from '@geti-ui/ui';
+import { useSearchParams } from 'react-router';
 
 import { Dataset } from './dataset/dataset.component';
 import { FeedbackButton } from './feedback';

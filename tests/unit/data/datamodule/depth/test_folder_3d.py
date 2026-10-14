@@ -1,8 +1,9 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - Folder3D Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -17,8 +18,9 @@ class TestFolder3D(_TestAnomalibDepthDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> Folder3D:
+    def datamodule(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> Folder3D:
         """Create and return a Folder 3D datamodule."""
+        make_dummy_dataset("mvtec_3d")
         datamodule_ = Folder3D(
             name="dummy",
             root=dataset_path / "mvtec_3d/dummy",

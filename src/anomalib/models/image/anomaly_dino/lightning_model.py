@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """AnomalyDINO: Boosting Patch-based Few-shot Anomaly Detection with DINOv2.
@@ -56,7 +56,6 @@ from anomalib import LearningType, PrecisionType
 from anomalib.data import Batch
 from anomalib.metrics import Evaluator
 from anomalib.models.components import AnomalibModule, MemoryBankMixin
-from anomalib.models.components.base import restore_frozen_encoder_weights
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
 from anomalib.visualization import Visualizer
@@ -188,20 +187,6 @@ class AnomalyDINO(MemoryBankMixin, AnomalibModule):
                 f"Supported types are: {PrecisionType.FLOAT16}, {PrecisionType.FLOAT32}."
             )
             raise ValueError(msg)
-
-    def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Make checkpoints trained before the timm-encoder migration loadable.
-
-        The frozen DINOv2 encoder was migrated from a custom Vision Transformer to a frozen
-        :class:`TimmFeatureExtractor`. The legacy encoder weights are dropped and replaced by the
-        current timm encoder weights so the strict state-dict load still succeeds; the stored
-        memory bank and other non-encoder state are left untouched. See
-        :func:`~anomalib.models.components.base.restore_frozen_encoder_weights`.
-
-        Args:
-            checkpoint (dict[str, Any]): The checkpoint dictionary being loaded, modified in place.
-        """
-        restore_frozen_encoder_weights(self, checkpoint, encoder_key="feature_encoder")
 
     @classmethod
     def configure_pre_processor(

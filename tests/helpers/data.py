@@ -1,7 +1,11 @@
 # Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
-"""Test Helpers - Dataset."""
+"""Test helpers for datasets.
+
+Generator defaults preserve their public test API. Shared fixtures pass 64x64
+shapes explicitly to keep the test suite lightweight.
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2023-2025 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Test tiled ensemble training and prediction."""
@@ -12,7 +12,7 @@ from anomalib.pipelines.tiled_ensemble import EvalTiledEnsemble, TrainTiledEnsem
 
 
 @pytest.fixture(scope="session")
-def get_mock_environment(dataset_path: Path, project_path: Path) -> Path:
+def get_mock_environment(mvtecad_path: Path, project_path: Path) -> Path:
     """Return mock directory for testing with datapath setup to dummy data."""
     ens_temp_dir = project_path / "ens_tmp"
     ens_temp_dir.mkdir(exist_ok=True)
@@ -22,7 +22,7 @@ def get_mock_environment(dataset_path: Path, project_path: Path) -> Path:
 
     # use separate project temp dir to avoid messing with other tests
     config["default_root_dir"] = str(ens_temp_dir)
-    config["data"]["init_args"]["root"] = str(dataset_path / "mvtecad")
+    config["data"]["init_args"]["root"] = str(mvtecad_path)
 
     with (Path(ens_temp_dir) / "tiled_ensemble.yaml").open("w", encoding="utf-8") as file:
         yaml.safe_dump(config, file)

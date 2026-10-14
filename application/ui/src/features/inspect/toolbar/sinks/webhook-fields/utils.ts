@@ -1,7 +1,8 @@
 // Copyright (C) 2025-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { generateShortUUID } from '../../../../../utils/short-uuid';
+import { v4 as uuid } from 'uuid';
+
 import { getObjectFromFormData, SinkOutputFormats, WebhookHttpMethod, WebhookSinkConfig } from '../utils';
 
 export type Pair = Record<Fields, string>;
@@ -16,7 +17,7 @@ export const getPairsFromObject = (obj: Record<string, string>): Pair[] => {
 };
 
 export const getWebhookInitialConfig = (project_id: string): WebhookSinkConfig => ({
-    id: generateShortUUID(),
+    id: uuid(),
     name: 'Webhook sink',
     timeout: 10,
     project_id,

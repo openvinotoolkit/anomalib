@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { useUnwrapDOMRef } from 'packages/ui';
+import { useUnwrapDOMRef } from '@geti-ui/ui';
 
 interface UseListEndOptions {
     onEndReached: () => void;

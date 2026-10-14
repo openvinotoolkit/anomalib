@@ -33,6 +33,7 @@ Learn more about how to use the PostProcessor class.
 :caption: Model Tutorials
 :hidden:
 
+./anomalib_module
 ./feature_extractors
 ./pre_processor
 ./post_processor

@@ -26,6 +26,7 @@ export const useGetProjects = () => {
 
                 return pagination.offset + projectsItemsLimit;
             },
+            initialPageParam: 0,
         }
     );
 

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from multiprocessing.synchronize import Condition
+from uuid import UUID
 
 from loguru import logger
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -12,7 +13,6 @@ from repositories import PipelineRepository
 from services import ActivePipelineConflictError, ActivePipelineService, ResourceNotFoundError
 from services.exceptions import ResourceType
 from services.model_service import ModelService
-from utils.short_uuid import ShortUUID
 
 MSG_ERR_DELETE_RUNNING_PIPELINE = "Cannot delete a running pipeline."
 
@@ -40,7 +40,7 @@ class PipelineService:
         await self._notify_sink_changed()
 
     @staticmethod
-    async def get_pipeline_by_id(project_id: ShortUUID, session: AsyncSession | None = None) -> Pipeline:
+    async def get_pipeline_by_id(project_id: UUID, session: AsyncSession | None = None) -> Pipeline:
         """Retrieve a pipeline by project ID."""
         if session is None:
             async with get_async_db_session_ctx() as db_session:
@@ -53,7 +53,7 @@ class PipelineService:
             raise ResourceNotFoundError(resource_type=ResourceType.PIPELINE, resource_id=str(project_id))
         return pipeline
 
-    async def update_pipeline(self, project_id: ShortUUID, partial_config: dict) -> Pipeline:
+    async def update_pipeline(self, project_id: UUID, partial_config: dict) -> Pipeline:
         """Update an existing pipeline."""
         async with get_async_db_session_ctx() as session:
             pipeline = await self.get_pipeline_by_id(project_id, session)
@@ -91,7 +91,7 @@ class PipelineService:
         async with get_async_db_session_ctx() as session:
             return await PipelineRepository(session).get_active_pipeline()
 
-    async def activate_pipeline(self, project_id: ShortUUID, set_running: bool = False) -> Pipeline:
+    async def activate_pipeline(self, project_id: UUID, set_running: bool = False) -> Pipeline:
         """Activate a pipeline. If set_running is True, set the pipeline status to RUNNING."""
         active_pipeline = await self.get_active_pipeline()
         if active_pipeline and active_pipeline.project_id != project_id:
@@ -115,9 +115,7 @@ class PipelineService:
         return await self.update_pipeline(project_id, {"status": new_status})
 
     @classmethod
-    async def delete_project_pipelines_db(
-        cls, session: AsyncSession, project_id: ShortUUID, commit: bool = False
-    ) -> None:
+    async def delete_project_pipelines_db(cls, session: AsyncSession, project_id: UUID, commit: bool = False) -> None:
         """Delete all pipelines associated with a project from the database."""
         repo = PipelineRepository(session)
         await repo.delete_all(commit=commit, extra_filters={"project_id": str(project_id)})

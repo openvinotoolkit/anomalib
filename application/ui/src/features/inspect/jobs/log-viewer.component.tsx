@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { Flex, Text, View } from '@geti/ui';
+import { Flex, Text, View } from '@geti-ui/ui';
 
 import { LogEntryComponent } from './log-entry.component';
 import { LogFiltersComponent } from './log-filters.component';

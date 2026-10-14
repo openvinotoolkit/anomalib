@@ -4,6 +4,7 @@
 """Endpoints for managing pipeline sinks"""
 
 from typing import Annotated
+from uuid import UUID
 
 import yaml
 from fastapi import APIRouter, Body, Depends, File, Query, UploadFile, status
@@ -15,7 +16,6 @@ from api.dependencies import PaginationLimit, get_configuration_service, get_pro
 from pydantic_models import Sink, SinkType
 from pydantic_models.sink import SinkAdapter, SinkCreate, SinkCreateAdapter, SinkList
 from services import ConfigurationService, ResourceAlreadyExistsError, ResourceInUseError, ResourceNotFoundError
-from utils.short_uuid import ShortUUID
 
 router = APIRouter(prefix="/api/projects/{project_id}/sinks", tags=["Sinks"])
 
@@ -81,7 +81,7 @@ UPDATE_SINK_BODY_EXAMPLES = {
     },
 )
 async def create_sink(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     sink_config: Annotated[
         SinkCreate,
         Body(description=CREATE_SINK_BODY_DESCRIPTION, openapi_examples=CREATE_SINK_BODY_EXAMPLES),
@@ -114,7 +114,7 @@ async def create_sink(
     },
 )
 async def list_sinks(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     configuration_service: Annotated[ConfigurationService, Depends(get_configuration_service)],
     limit: Annotated[int, Depends(PaginationLimit())],
     offset: Annotated[int, Query(ge=0)] = 0,
@@ -136,8 +136,8 @@ async def list_sinks(
     },
 )
 async def get_sink(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
-    sink_id: Annotated[ShortUUID, Depends(get_sink_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
+    sink_id: Annotated[UUID, Depends(get_sink_id)],
     configuration_service: Annotated[ConfigurationService, Depends(get_configuration_service)],
 ) -> Sink:
     """Get info about a sink"""
@@ -156,8 +156,8 @@ async def get_sink(
     },
 )
 async def update_sink(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
-    sink_id: Annotated[ShortUUID, Depends(get_sink_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
+    sink_id: Annotated[UUID, Depends(get_sink_id)],
     sink_config: Annotated[
         dict,
         Body(
@@ -191,8 +191,8 @@ async def update_sink(
     },
 )
 async def export_sink(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
-    sink_id: Annotated[ShortUUID, Depends(get_sink_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
+    sink_id: Annotated[UUID, Depends(get_sink_id)],
     configuration_service: Annotated[ConfigurationService, Depends(get_configuration_service)],
 ) -> Response:
     """Export a sink to file"""
@@ -221,7 +221,7 @@ async def export_sink(
     },
 )
 async def import_sink(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     yaml_file: Annotated[UploadFile, File(description="YAML file containing the sink configuration")],
     configuration_service: Annotated[ConfigurationService, Depends(get_configuration_service)],
 ) -> Sink:
@@ -257,8 +257,8 @@ async def import_sink(
     },
 )
 async def delete_sink(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
-    sink_id: Annotated[ShortUUID, Depends(get_sink_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
+    sink_id: Annotated[UUID, Depends(get_sink_id)],
     configuration_service: Annotated[ConfigurationService, Depends(get_configuration_service)],
 ) -> None:
     """Remove a sink"""

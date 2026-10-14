@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Folder } from '@anomalib-studio/icons';
-import { Flex, Switch, TextField } from '@geti/ui';
+import { Flex, Switch, TextField } from '@geti-ui/ui';
 
 import { ImagesFolderSourceConfig } from '../util';
 

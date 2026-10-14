@@ -22,6 +22,7 @@ const test = testBase.extend<Fixtures>({
                             name: 'Project #12',
                         },
                     ],
+                    pagination: { offset: 0, limit: 20, count: 1, total: 1 },
                 });
             }),
             http.get('/api/projects/{project_id}', ({ response }) => {

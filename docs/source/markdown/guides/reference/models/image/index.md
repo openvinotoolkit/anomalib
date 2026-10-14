@@ -103,6 +103,13 @@ Exploring Intrinsic Normal Prototypes within a Single Image for Universal Anomal
 FastFlow: Unsupervised Anomaly Detection and Localization via 2D Normalizing Flows
 :::
 
+:::{grid-item-card} {material-regular}`model_training;1.5em` FoundAD
+:link: ./foundad
+:link-type: doc
+
+Foundation Visual Encoders Are Secretly Few-Shot Anomaly Detectors
+:::
+
 :::{grid-item-card} {material-regular}`model_training;1.5em` FRE
 :link: ./fre
 :link-type: doc
@@ -138,6 +145,13 @@ Anomaly Detection Across Domains by Attending to Distorted Features
 Learning to Be a Transformer to Pinpoint Anomalies
 :::
 
+:::{grid-item-card} {material-regular}`model_training;1.5em` MH-PatchCore
+:link: ./mh_patchcore
+:link-type: doc
+
+Covariance-Aware and Streaming-Compatible Industrial Anomaly Detection
+:::
+
 :::{grid-item-card} {material-regular}`model_training;1.5em` PaDiM
 :link: ./padim
 :link-type: doc
@@ -157,6 +171,13 @@ Towards Total Recall in Industrial Anomaly Detection
 :link-type: doc
 
 PatchFlow: Leveraging a Flow-Based Model with Patch Features
+:::
+
+:::{grid-item-card} {material-regular}`model_training;1.5em` RAD
+:link: ./rad
+:link-type: doc
+
+RAD: Is Task-Specific Training Necessary for Anomaly Detection?
 :::
 
 :::{grid-item-card} {material-regular}`model_training;1.5em` Reverse Distillation
@@ -201,6 +222,13 @@ UniNet: A Contrastive Learning-guided Unified Framework with Feature Selection f
 VLM-AD: Vision-Language Model for Anomaly Detection
 :::
 
+:::{grid-item-card} {material-regular}`model_training;1.5em` SuperADD
+:link: ./super_add
+:link-type: doc
+
+SuperADD: Token-level Anomaly Detection with Vision Transformers
+:::
+
 :::{grid-item-card} {material-regular}`model_training;1.5em` WinCLIP
 :link: ./winclip
 :link-type: doc
@@ -210,7 +238,7 @@ WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
 ::::
 
 ```{toctree}
-:caption: Data
+:caption: Image Models
 :hidden:
 
 ./anomalyvfm
@@ -226,17 +254,21 @@ WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
 ./dsr
 ./efficient_ad
 ./fastflow
+./foundad
 ./fre
 ./ganomaly
 ./glass
 ./general_ad
 ./inp_former
 ./l2bt
+./mh_patchcore
 ./padim
 ./patchcore
 ./patchflow
+./rad
 ./reverse_distillation
 ./stfpm
+./super_add
 ./supersimplenet
 ./uflow
 ./uninet

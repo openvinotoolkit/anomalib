@@ -3,6 +3,7 @@
 
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
 
 import pytest
 from fastapi import status
@@ -17,13 +18,12 @@ from pydantic_models.sink import FolderSinkConfig
 from pydantic_models.source import VideoFileSourceConfig
 from services import ActivePipelineConflictError, PipelineService
 from services.pipeline_metrics_service import PipelineMetricsService
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
 def fxt_pipeline() -> Pipeline:
     return Pipeline(
-        project_id=ShortUUID.generate(),
+        project_id=uuid4(),
         status=PipelineStatus.IDLE,
     )
 
@@ -67,7 +67,7 @@ class TestPipelineEndpoints:
         fxt_pipeline_service.get_pipeline_by_id.assert_called_once_with(fxt_pipeline.project_id)
 
     def test_update_pipeline_success(self, fxt_pipeline, fxt_pipeline_service, fxt_client):
-        project_id, sink_id = fxt_pipeline.project_id, str(ShortUUID.generate())
+        project_id, sink_id = fxt_pipeline.project_id, str(uuid4())
         fxt_pipeline_service.update_pipeline.return_value = fxt_pipeline
 
         response = fxt_client.patch(f"/api/projects/{project_id}/pipeline", json={"sink_id": sink_id})
@@ -159,17 +159,17 @@ class TestPipelineEndpoints:
         fxt_client,
     ):
         """Test enabling a pipeline when another pipeline from a different project is already active."""
-        other_project_id = ShortUUID.generate()
+        other_project_id = uuid4()
         # Create a valid RUNNING pipeline with required fields
         source = VideoFileSourceConfig(
-            id=ShortUUID.generate(),
+            id=uuid4(),
             project_id=other_project_id,
             source_type="video_file",
             name="Test Source",
             video_path="/path/to/video.mp4",
         )
         sink = FolderSinkConfig(
-            id=ShortUUID.generate(),
+            id=uuid4(),
             project_id=other_project_id,
             sink_type="folder",
             name="Test Sink",
@@ -177,14 +177,15 @@ class TestPipelineEndpoints:
             output_formats=["image_original"],
             rate_limit=0.2,
         )
+        model_id = uuid4()
         model = Model(
-            id=ShortUUID.generate(),
+            id=model_id,
             project_id=other_project_id,
-            name="Test Model",
+            name=f"Test Model ({str(model_id).split('-')[0]})",
             architecture="padim",
             format="openvino",
-            train_job_id=ShortUUID.generate(),
-            dataset_snapshot_id=ShortUUID.generate(),
+            train_job_id=uuid4(),
+            dataset_snapshot_id=uuid4(),
         )
         active_pipeline = Pipeline(
             project_id=other_project_id,
@@ -213,14 +214,14 @@ class TestPipelineEndpoints:
         """Test enabling a pipeline when the same pipeline is already active (re-enabling)."""
         # Create a valid RUNNING pipeline with required fields
         source = VideoFileSourceConfig(
-            id=ShortUUID.generate(),
+            id=uuid4(),
             project_id=fxt_pipeline.project_id,
             source_type="video_file",
             name="Test Source",
             video_path="/path/to/video.mp4",
         )
         sink = FolderSinkConfig(
-            id=ShortUUID.generate(),
+            id=uuid4(),
             project_id=fxt_pipeline.project_id,
             sink_type="folder",
             name="Test Sink",
@@ -228,14 +229,15 @@ class TestPipelineEndpoints:
             output_formats=["image_original"],
             rate_limit=0.2,
         )
+        model_id = uuid4()
         model = Model(
-            id=ShortUUID.generate(),
+            id=model_id,
             project_id=fxt_pipeline.project_id,
-            name="Test Model",
+            name=f"Test Model ({str(model_id).split('-')[0]})",
             architecture="padim",
             format="openvino",
-            train_job_id=ShortUUID.generate(),
-            dataset_snapshot_id=ShortUUID.generate(),
+            train_job_id=uuid4(),
+            dataset_snapshot_id=uuid4(),
         )
         active_pipeline = Pipeline(
             project_id=fxt_pipeline.project_id,
@@ -244,7 +246,7 @@ class TestPipelineEndpoints:
             model=model,
             source_id=source.id,
             sink_id=sink.id,
-            model_id=model.id,
+            model_id=model_id,
             status=PipelineStatus.RUNNING,
         )
         # activate_pipeline internally calls get_active_pipeline and update_pipeline

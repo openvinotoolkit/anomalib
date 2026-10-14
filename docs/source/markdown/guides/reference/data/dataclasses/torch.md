@@ -105,5 +105,5 @@ The module includes several categories of dataclasses:
 
 ## See Also
 
-- {doc}`../index`
-- {doc}`../numpy`
+- {doc}`./index`
+- {doc}`./numpy`

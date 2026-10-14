@@ -1,0 +1,67 @@
+.toast {
+    box-shadow: 0px 0px var(--spectrum-global-dimension-size-500) calc(var(--spectrum-global-dimension-size-125) * (-1))
+        var(--background);
+    background-color: var(--backgroundColor);
+    color: var(--textColor);
+    padding: var(--spectrum-global-dimension-size-100) var(--spectrum-global-dimension-size-100)
+        var(--spectrum-global-dimension-size-100) var(--spectrum-global-dimension-size-150);
+    border-radius: var(--spectrum-alias-border-radius-regular);
+}
+
+.toaster {
+    width: clamp(320px, 100%, 640px);
+}
+
+.toastContainer {
+    width: inherit;
+}
+
+.toastDivider {
+    background-color: hsl(from var(--backgroundColor) h s calc(l - 10));
+    opacity: 25%;
+}
+
+.closeButton,
+.actionButtons > button {
+    color: var(--textColor);
+
+    &[class*='is-hovered'] {
+        background-color: hsl(from var(--backgroundColor) h s calc(l - 10)) !important;
+        border-color: hsl(from var(--backgroundColor) h s calc(l - 20)) !important;
+        color: var(--textColor);
+    }
+}
+
+.icon {
+    fill: var(--iconColor);
+}
+
+.info {
+    --backgroundColor: var(--energy-blue-shade);
+    --textColor: var(--spectrum-global-color-gray-900);
+    --iconColor: var(--spectrum-global-color-gray-900);
+}
+
+.warning {
+    --backgroundColor: var(--brand-daisy);
+    --textColor: var(--spectrum-global-color-gray-50);
+    --iconColor: var(--spectrum-global-color-gray-50);
+}
+
+.error {
+    --backgroundColor: var(--brand-coral-coral-shade1);
+    --textColor: var(--spectrum-global-color-gray-900);
+    --iconColor: var(--spectrum-global-color-gray-900);
+}
+
+.success {
+    --backgroundColor: var(--brand-moss);
+    --textColor: var(--spectrum-global-color-gray-900);
+    --iconColor: var(--spectrum-global-color-gray-900);
+}
+
+.neutral {
+    --backgroundColor: var(--spectrum-global-color-gray-400);
+    --textColor: var(--spectrum-global-color-gray-900);
+    --iconColor: var(--spectrum-global-color-gray-900);
+}

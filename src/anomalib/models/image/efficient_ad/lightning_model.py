@@ -37,6 +37,7 @@ See Also:
 """
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -118,6 +119,11 @@ class EfficientAd(AnomalibModule):
         ... )
 
     """
+
+    @classmethod
+    def checkpoint_safe_globals(cls) -> Sequence[Any]:
+        """Allowlist ``EfficientAdModelSize`` for ``weights_only`` checkpoint loads."""
+        return (EfficientAdModelSize,)
 
     def __init__(
         self,

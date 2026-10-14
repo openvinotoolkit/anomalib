@@ -2,8 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 import asyncio
 import os
-import pathlib
+import shutil
+from pathlib import Path
 from typing import Any
+from uuid import UUID, uuid4
 
 from anomalib.data import Folder
 from anomalib.data.utils import ValSplitMode
@@ -14,6 +16,7 @@ from anomalib.loggers import AnomalibTensorBoardLogger
 from anomalib.metrics import AUROC, F1Score
 from anomalib.metrics.evaluator import Evaluator
 from anomalib.models import get_model
+from anomalib.utils.path import resolve_versioned_path
 from lightning.pytorch.callbacks import EarlyStopping
 from loguru import logger
 from pydantic import ValidationError
@@ -26,8 +29,10 @@ from services import ModelService
 from services.dataset_snapshot_service import DatasetSnapshotService
 from services.job_service import JobService
 from services.system_service import SystemService
+from settings import Settings, get_settings
 from utils.callbacks import AnomalibStudioProgressCallback, ProgressSyncParams
-from utils.short_uuid import ShortUUID
+
+settings: Settings = get_settings()
 
 
 class TrainingService:
@@ -76,13 +81,13 @@ class TrainingService:
                 job_id=job.id, status=JobStatus.FAILED, message=f"Failed to validate training job payload: {e}"
             )
             return None
-        model_id = ShortUUID.generate()
-        model_name_suffix = f" ({str(model_id)})"
+        model_id = uuid4()
+        model_name_suffix = f" ({str(model_id).split('-')[0]})"
         truncated_model_name = payload.model_name[: (255 - len(model_name_suffix))]
         model_name = f"{truncated_model_name}{model_name_suffix}"
         device_type = payload.device.type if payload.device else None
         device_index = payload.device.index if payload.device else None
-        snapshot_id = ShortUUID(payload.dataset_snapshot_id) if payload.dataset_snapshot_id else None
+        snapshot_id = UUID(payload.dataset_snapshot_id) if payload.dataset_snapshot_id else None
         max_epochs: int = payload.max_epochs if payload.max_epochs is not None else 200
 
         synchronization_task: asyncio.Task[None] | None = None
@@ -176,8 +181,19 @@ class TrainingService:
                 await DatasetSnapshotService.delete_snapshot_if_unused(snapshot_id=snapshot_id, project_id=project_id)
 
     @staticmethod
+    def _move_artifact(src_dir: Path, dest_dir: Path, file_name: str) -> None:
+        src_path = src_dir / file_name
+        if not src_path.exists():
+            raise FileNotFoundError(f"Expected model file not found: {src_path}")
+        if not dest_dir.exists():
+            dest_dir.mkdir(exist_ok=True, parents=True)
+        dest_path = dest_dir / file_name
+        logger.info(f"Moving model file {src_path} to {dest_path}")
+        shutil.move(str(src_path), str(dest_path))
+
+    @staticmethod
     @CaptureOutput()
-    def _train_model(
+    def _train_model(  # noqa: PLR0915, PLR0912
         model: Model,
         synchronization_parameters: ProgressSyncParams,
         dataset_root: str,
@@ -251,47 +267,70 @@ class TrainingService:
         else:
             kwargs["accelerator"] = training_device
 
-        engine = Engine(
-            default_root_dir=model.export_path,
-            logger=[tensorboard],
-            devices=[device_index] if device_index is not None else 1,  # Single GPU training for now
-            max_epochs=max_epochs,
-            callbacks=[
-                AnomalibStudioProgressCallback(synchronization_parameters),
-                EarlyStopping(monitor="pixel_AUROC", mode="max", patience=5),
-            ],
-            **kwargs,
-        )
+        work_dir = settings.data_dir / f"train-workspace-{model.id}"
 
-        # Execute training and export
-        export_format = ExportType.OPENVINO
-        engine.fit(model=anomalib_model, datamodule=datamodule)
+        try:
+            engine = Engine(
+                default_root_dir=work_dir,
+                logger=[tensorboard],
+                devices=[device_index] if device_index is not None else 1,  # Single GPU training for now
+                max_epochs=max_epochs,
+                callbacks=[
+                    AnomalibStudioProgressCallback(synchronization_parameters),
+                    EarlyStopping(monitor="pixel_AUROC", mode="max", patience=5),
+                ],
+                **kwargs,
+            )
 
-        # Find and set threshold metric
-        for callback in engine.trainer.callbacks:  # type: ignore[attr-defined]
-            if threshold := getattr(callback, "normalized_pixel_threshold", None):
-                logger.debug(f"Found pixel threshold set to: {threshold}")
-                model.threshold = threshold.item()
-                break
+            # Execute training and export
+            export_format = ExportType.OPENVINO
+            engine.fit(model=anomalib_model, datamodule=datamodule)
 
-        if isinstance(getattr(anomalib_model.model, "backbone", None), str):
-            model.backbone = anomalib_model.model.backbone  # type: ignore[assignment] # backbone is str here
+            # Find and set threshold metric
+            for callback in engine.trainer.callbacks:  # type: ignore[attr-defined]
+                if threshold := getattr(callback, "normalized_pixel_threshold", None):
+                    logger.debug(f"Found pixel threshold set to: {threshold}")
+                    model.threshold = threshold.item()
+                    break
 
-        if synchronization_parameters.cancel_training_event.is_set():
-            return None
+            if isinstance(getattr(anomalib_model.model, "backbone", None), str):
+                model.backbone = anomalib_model.model.backbone  # type: ignore[assignment] # backbone is str here
 
-        synchronization_parameters.message = "exporting model"
+            if synchronization_parameters.cancel_training_event.is_set():
+                return None
 
-        export_path = engine.export(
-            model=anomalib_model,
-            export_type=export_format,
-            export_root=model_binary_repo.model_folder_path,
-        )
-        logger.info(f"Exporting model to {export_path}")
+            synchronization_parameters.message = "exporting model"
 
-        model.is_ready = True
-        model.size = TrainingService._compute_export_size(model.export_path)
-        return model
+            engine.export(
+                model=anomalib_model,
+                export_type=export_format,
+            )
+
+            if model.export_path is None:
+                raise ValueError("export_path must be set before exporting artifacts")
+            if not Path(model.export_path).exists():
+                Path(model.export_path).mkdir(exist_ok=True, parents=True)
+            weights_path = resolve_versioned_path(work_dir / anomalib_model.name / name / "latest" / "weights")
+
+            for file_name in ["model.xml", "model.bin"]:
+                TrainingService._move_artifact(
+                    src_dir=weights_path / "openvino", dest_dir=Path(model.export_path), file_name=file_name
+                )
+            TrainingService._move_artifact(
+                src_dir=weights_path / "lightning",
+                dest_dir=Path(model.export_path) / "checkpoint",
+                file_name="model.ckpt",
+            )
+
+            model.is_ready = True
+            model.size = TrainingService._compute_export_size(model.export_path)
+            return model
+        finally:
+            if work_dir.exists():
+                try:
+                    shutil.rmtree(work_dir)
+                except OSError as exc:
+                    logger.warning(f"Failed to delete training workspace {work_dir}: {exc}")
 
     @staticmethod
     async def _handle_job_cancellation(job_service: JobService, job: Job, model: Model) -> None:
@@ -312,7 +351,7 @@ class TrainingService:
             return None
 
         try:
-            path_obj = pathlib.Path(path)
+            path_obj = Path(path)
             if path_obj.is_file():
                 return path_obj.stat().st_size
             if not path_obj.is_dir():
@@ -326,10 +365,10 @@ class TrainingService:
             for root, _, files in os.walk(path, followlinks=False):
                 for file_name in files:
                     file_path = os.path.join(root, file_name)
-                    if pathlib.Path(file_path).is_symlink():
+                    if Path(file_path).is_symlink():
                         continue
                     try:
-                        yield pathlib.Path(file_path).stat().st_size
+                        yield Path(file_path).stat().st_size
                     except OSError:
                         continue
 
@@ -339,7 +378,7 @@ class TrainingService:
     async def _sync_progress_with_db(
         cls,
         job_service: JobService,
-        job_id: ShortUUID,
+        job_id: UUID,
         synchronization_parameters: ProgressSyncParams,
     ) -> None:
         try:

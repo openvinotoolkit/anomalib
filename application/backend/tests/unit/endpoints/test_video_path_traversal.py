@@ -10,17 +10,17 @@ VideoService.upload_video().
 
 import io
 from unittest.mock import AsyncMock, patch
+from uuid import uuid4
 
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
 from main import app
-from utils.short_uuid import ShortUUID
 
 client = TestClient(app, raise_server_exceptions=False)
 
-PROJECT_ID = str(ShortUUID.generate())
+PROJECT_ID = str(uuid4())
 
 
 # ---------------------------------------------------------------------------

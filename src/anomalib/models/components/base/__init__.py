@@ -1,4 +1,4 @@
-# Copyright (C) 2022-2025 Intel Corporation
+# Copyright (C) 2022-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Base classes for all anomaly components.
@@ -21,7 +21,6 @@ Example:
 """
 
 from .anomalib_module import AnomalibModule
-from .backward_compat import restore_frozen_encoder_weights
 from .buffer_list import BufferListMixin
 from .dynamic_buffer import DynamicBufferMixin
 from .memory_bank_module import MemoryBankMixin
@@ -31,5 +30,4 @@ __all__ = [
     "BufferListMixin",
     "DynamicBufferMixin",
     "MemoryBankMixin",
-    "restore_frozen_encoder_weights",
 ]

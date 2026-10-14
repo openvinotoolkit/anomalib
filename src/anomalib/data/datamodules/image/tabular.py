@@ -31,6 +31,15 @@ from anomalib.data.datamodules.base.image import AnomalibDataModule
 from anomalib.data.datasets.image.tabular import TabularDataset
 from anomalib.data.utils import Split, TestSplitMode, ValSplitMode
 
+# Allowlist of file formats supported by ``Tabular.from_file``.
+#
+# This is intentionally a minimal, explicit allowlist rather than a
+# passthrough to any ``pd.read_*`` method. Formats such as ``pickle`` and
+# ``hdf`` are excluded because loading them can execute arbitrary code
+# embedded in the file during deserialization. Additional safe, data-only
+# formats can be added in the future as needed.
+SUPPORTED_FILE_FORMATS = ("csv", "json", "parquet")
+
 
 class Tabular(AnomalibDataModule):
     """Tabular DataModule.
@@ -179,15 +188,27 @@ class Tabular(AnomalibDataModule):
                 especially when logging/saving.
             file_path (str | Path): Path to tabular file containing the datset
                 information.
-            file_format (str): File format supported by a pd.read_* method, such
-                as ``csv``, ``parquet`` or ``json``.
-                Defaults to ``None`` (inferred from file suffix).
+            file_format (str | None): File format of the tabular file. Must be one of
+                ``csv``, ``json`` or ``parquet`` (case-insensitive).
+                Defaults to ``None`` (inferred from the file suffix).
             pd_kwargs (dict | None): Keyword argument dictionary for the pd.read_* method.
                 Defaults to ``None``.
             kwargs (dict): Additional keyword arguments for the Tabular Datamodule class.
 
         Returns:
             Tabular: Tabular Datamodule
+
+        Raises:
+            FileNotFoundError: If ``file_path`` does not point to an existing file.
+            ValueError: If ``file_format`` is not specified and cannot be inferred from
+                the file name, or if it is not one of the supported formats.
+
+        Note:
+            Only the ``csv``, ``json`` and ``parquet`` formats are supported. Other
+            ``pandas`` readers, such as ``pickle`` or ``hdf``, are intentionally not
+            supported because loading them can execute arbitrary code embedded in the
+            file during deserialization. To load data from such a format, read it into
+            a ``DataFrame`` yourself and pass it to the ``Tabular`` constructor instead.
 
         Example:
             Prepare a tabular file (such as ``samples.csv`` or ``samples.parquet``) with the
@@ -223,14 +244,20 @@ class Tabular(AnomalibDataModule):
             raise FileNotFoundError(msg)
 
         # Infer file_format and check if supported
-        file_format = file_format or Path(file_path).suffix[1:]
+        file_format = (file_format or Path(file_path).suffix[1:]).lower()
         if not file_format:
             msg = f"File format not specified and could not be inferred from file name: '{Path(file_path).name}'"
             raise ValueError(msg)
-        read_func = getattr(pd, f"read_{file_format}", None)
-        if read_func is None:
-            msg = f"Unsupported file format: '{file_format}'"
+        if file_format not in SUPPORTED_FILE_FORMATS:
+            msg = (
+                f"Unsupported file format: '{file_format}'. "
+                f"Supported formats are: {', '.join(SUPPORTED_FILE_FORMATS)}. "
+                "Formats such as 'pickle' and 'hdf' are not supported because loading "
+                "them can execute arbitrary code. To use such a file, load it yourself "
+                "and pass the resulting DataFrame to the Tabular constructor instead."
+            )
             raise ValueError(msg)
+        read_func = getattr(pd, f"read_{file_format}")
 
         # Read the file and return Tabular dataset
         pd_kwargs = pd_kwargs or {}

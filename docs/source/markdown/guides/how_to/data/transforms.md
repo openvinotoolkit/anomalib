@@ -245,9 +245,9 @@ datamodule = MVTecAD()
 engine = Engine()
 engine.fit(model, datamodule=datamodule)
 
-# Correct: Pass the transform to the datamodule as `train_augmentation`.
+# Correct: Pass the transform to the datamodule as `train_augmentations`.
 augmentations = RandomHorizontalFlip(p=0.5)
-datamodule = MVTecAD(train_augmentation=augmentations)
+datamodule = MVTecAD(train_augmentations=augmentations)
 
 model = Padim()
 

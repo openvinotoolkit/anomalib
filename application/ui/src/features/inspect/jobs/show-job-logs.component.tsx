@@ -14,8 +14,8 @@ import {
     Heading,
     Icon,
     Loading,
-} from '@geti/ui';
-import { LogsIcon } from '@geti/ui/icons';
+} from '@geti-ui/ui';
+import { LogsIcon } from '@geti-ui/ui/icons';
 import { queryOptions, experimental_streamedQuery as streamedQuery, useQuery } from '@tanstack/react-query';
 import { fetchSSE } from 'src/api/fetch-sse';
 
@@ -26,8 +26,8 @@ const JobLogsDialogContent = ({ jobId }: { jobId: string }) => {
     const query = useQuery(
         queryOptions({
             queryKey: ['get', '/api/jobs/{job_id}/logs', jobId],
-            queryFn: streamedQuery({
-                queryFn: () => fetchSSE<LogEntry>(`/api/jobs/${jobId}/logs`),
+            queryFn: streamedQuery<LogEntry>({
+                streamFn: () => fetchSSE<LogEntry>(`/api/jobs/${jobId}/logs`),
             }),
             staleTime: Infinity,
         })
@@ -35,9 +35,8 @@ const JobLogsDialogContent = ({ jobId }: { jobId: string }) => {
 
     // Filter out any malformed log entries and ensure we have valid LogEntry objects
     const validLogs = useMemo(() => {
-        if (!query.data) return [];
-
-        return query.data.filter((entry): entry is LogEntry => {
+        const entries = query.data ?? [];
+        return entries.filter((entry): entry is LogEntry => {
             return (
                 entry !== null &&
                 typeof entry === 'object' &&

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Query, status
 from sse_starlette import EventSourceResponse
@@ -11,7 +12,6 @@ from api.endpoints import API_PREFIX
 from pydantic_models import JobList
 from pydantic_models.job import JobCancelled, JobSubmitted, TrainJobPayload
 from services import JobService
-from utils.short_uuid import ShortUUID
 
 job_api_prefix_url = API_PREFIX + "/jobs"
 job_router = APIRouter(
@@ -41,7 +41,7 @@ async def submit_train_job(
 
 @job_router.get("/{job_id}/logs")
 async def get_job_logs(
-    job_id: Annotated[ShortUUID, Depends(get_job_id)],
+    job_id: Annotated[UUID, Depends(get_job_id)],
     job_service: Annotated[JobService, Depends(get_job_service)],
 ) -> EventSourceResponse:
     """Endpoint to get the logs of a job by its ID"""
@@ -50,7 +50,7 @@ async def get_job_logs(
 
 @job_router.get("/{job_id}/progress")
 async def get_job_progress(
-    job_id: Annotated[ShortUUID, Depends(get_job_id)],
+    job_id: Annotated[UUID, Depends(get_job_id)],
     job_service: Annotated[JobService, Depends(get_job_service)],
 ) -> EventSourceResponse:
     """Endpoint to get the progress of a job by its ID"""
@@ -59,7 +59,7 @@ async def get_job_progress(
 
 @job_router.post("/{job_id}:cancel", status_code=status.HTTP_202_ACCEPTED)
 async def cancel_job(
-    job_id: Annotated[ShortUUID, Depends(get_job_id)],
+    job_id: Annotated[UUID, Depends(get_job_id)],
     job_service: Annotated[JobService, Depends(get_job_service)],
 ) -> JobCancelled:
     """Endpoint to cancel a job by its ID"""
@@ -68,7 +68,7 @@ async def cancel_job(
 
 @job_router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_job(
-    job_id: Annotated[ShortUUID, Depends(get_job_id)],
+    job_id: Annotated[UUID, Depends(get_job_id)],
     job_service: Annotated[JobService, Depends(get_job_service)],
 ) -> None:
     """Delete a failed or canceled job by its ID."""

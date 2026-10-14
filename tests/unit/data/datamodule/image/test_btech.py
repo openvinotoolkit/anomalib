@@ -1,8 +1,9 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - BTech Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -17,8 +18,9 @@ class TestBTech(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> BTech:
+    def datamodule(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> BTech:
         """Create and return a BTech datamodule."""
+        make_dummy_dataset("btech")
         datamodule_ = BTech(
             root=dataset_path / "btech",
             category="dummy",

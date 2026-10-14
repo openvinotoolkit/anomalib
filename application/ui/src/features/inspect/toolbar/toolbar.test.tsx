@@ -1,7 +1,7 @@
-import { ThemeProvider } from '@geti/ui/theme';
+import { ThemeProvider } from '@geti-ui/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { SchemaPipeline } from 'src/api/openapi-spec';
 import { http } from 'src/api/utils';
 import { server } from 'src/msw-node-setup';
@@ -37,13 +37,13 @@ describe('Toolbar', () => {
                     model: {
                         id: '1',
                         name: 'test-model (1)',
-                        architecture: 'padim',
                         format: 'onnx',
                         project_id: '123',
                         threshold: 0.5,
                         is_ready: true,
                         train_job_id: 'train-job-1',
                         dataset_snapshot_id: '',
+                        architecture: 'PatchCore',
                     },
                 },
             });

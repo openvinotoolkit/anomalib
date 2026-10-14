@@ -7,11 +7,15 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 """
 
-# Copyright (C) 2022-2025 Intel Corporation
+# Copyright (C) 2022-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import shutil
 import sys
 from pathlib import Path
+from typing import Any
+
+from docutils.parsers.rst import Directive, directives  # type: ignore[import-untyped]
 
 # Define paths
 project_root = Path(__file__).parent.parent.parent
@@ -26,6 +30,7 @@ project = "Anomalib"
 copyright = "Intel Corporation"  # noqa: A001
 author = "Intel Corporation"
 
+
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -34,13 +39,16 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx_design",
     "myst_parser",
-    "nbsphinx",
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosectionlabel",
 ]
+
+# Enable nbsphinx only if pandoc is available in the environment
+if shutil.which("pandoc"):
+    extensions.append("nbsphinx")
 
 # MyST configuration
 myst_enable_extensions = [
@@ -59,7 +67,7 @@ myst_enable_eval_rst = True
 
 # Notebook handling
 nbsphinx_allow_errors = True
-nbsphinx_execute = "auto"  # Execute notebooks during build
+nbsphinx_execute = "never"  # Pre-rendered notebook build in RTD without dynamic re-execution
 nbsphinx_timeout = 300  # Timeout in seconds
 
 # Templates and patterns
@@ -74,7 +82,10 @@ exclude_patterns: list[str] = [
     "**/*.egg-info",
     "**/build",
     "**/dist",
-    "examples/notebooks/**",
+    "examples/configs/README.md",
+    "examples/notebooks/**README.md",
+    "examples/notebooks/**.ipynb",
+    "examples/notebooks/*/**.ipynb",
 ]
 
 # Automatic exclusion of prompts from the copies
@@ -83,6 +94,17 @@ copybutton_exclude = ".linenos, .gp, .go"
 
 # Enable section anchors for cross-referencing
 autosectionlabel_prefix_document = True
+
+# Suppress specific non-critical warnings
+suppress_warnings = [
+    "sphinx_autodoc_typehints.forward_reference",
+    "sphinx_autodoc_typehints.guarded_import",
+    "design.grid",
+    "ref.python",
+    "autosectionlabel.*",
+    "docutils",
+    "myst.header",
+]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -101,8 +123,20 @@ html_theme_options = {
 html_context = {"examples_path": str(examples_path)}
 
 # External documentation references
-intersphinx_mapping = {
-    "python": ("https://docs.python.org/3", None),
-    "torch": ("https://pytorch.org/docs/stable", None),
-    "lightning": ("https://lightning.ai/docs/pytorch/stable/", None),
-}
+intersphinx_mapping: dict[str, tuple[str, None]] = {}
+
+autodoc_warningiserror = False
+
+
+class _DummyDirective(Directive):
+    """Ignore unsupported status directives found in third-party docstrings."""
+
+    has_content = True
+
+    @staticmethod
+    def run() -> list[Any]:
+        """Return no nodes for the unsupported directive."""
+        return []
+
+
+directives.register_directive("betastatus", _DummyDirective)

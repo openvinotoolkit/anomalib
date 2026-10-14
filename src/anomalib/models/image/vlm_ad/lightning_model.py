@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Vision Language Model (VLM) based Anomaly Detection.
@@ -34,6 +34,8 @@ See Also:
 """
 
 import logging
+from collections.abc import Sequence
+from typing import Any
 
 import torch
 from torch.utils.data import DataLoader
@@ -100,6 +102,11 @@ class VlmAd(AnomalibModule):
     Raises:
         ValueError: If an unsupported VLM model is specified.
     """
+
+    @classmethod
+    def checkpoint_safe_globals(cls) -> Sequence[Any]:
+        """Allowlist ``ModelName`` for ``weights_only`` checkpoint loads."""
+        return (ModelName,)
 
     def __init__(
         self,

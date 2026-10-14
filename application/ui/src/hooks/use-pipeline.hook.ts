@@ -1,7 +1,8 @@
 // Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { toast } from '@geti/ui';
+import { toast } from '@anomalib-studio/toast';
+import { isString } from 'lodash-es';
 
 import { $api } from '../api/client';
 import { useProjectIdentifier } from './use-project-identifier.hook';
@@ -65,12 +66,12 @@ export const useRunPipeline = ({ onSuccess }: { onSuccess?: () => void }) => {
 
 export const useActivatePipeline = ({ onSuccess }: { onSuccess?: () => void }) => {
     const { projectId } = useProjectIdentifier();
-
     return $api.useMutation('post', '/api/projects/{project_id}/pipeline:activate', {
         onSuccess,
         onError: (error) => {
             if (error) {
-                toast({ type: 'error', message: String(error.detail) });
+                const message = isString(error.detail) ? String(error.detail) : String(error);
+                toast({ type: 'error', message });
             }
         },
         meta: {
@@ -82,8 +83,36 @@ export const useActivatePipeline = ({ onSuccess }: { onSuccess?: () => void }) =
     });
 };
 
+export const useActivateAndRunPipeline = ({ onSuccess }: { onSuccess?: () => void } = {}) => {
+    const { projectId } = useProjectIdentifier();
+    const activatePipeline = useActivatePipeline({});
+    const runPipeline = useRunPipeline({ onSuccess });
+
+    const mutateAsync = async () => {
+        const params = { params: { path: { project_id: projectId } } };
+
+        await activatePipeline.mutateAsync(params);
+        return runPipeline.mutateAsync(params);
+    };
+
+    return {
+        mutateAsync,
+        isPending: activatePipeline.isPending || runPipeline.isPending,
+        isError: activatePipeline.isError || runPipeline.isError,
+        error: activatePipeline.error ?? runPipeline.error,
+        activatePipeline,
+        runPipeline,
+    };
+};
+
 export const useDisablePipeline = (project_id: string) => {
     return $api.useMutation('post', '/api/projects/{project_id}/pipeline:disable', {
+        onError: (error) => {
+            if (error) {
+                const message = isString(error.detail) ? String(error.detail) : String(error);
+                toast({ type: 'error', message });
+            }
+        },
         meta: {
             invalidates: [
                 ['get', '/api/projects/{project_id}/pipeline', { params: { path: { project_id } } }],

@@ -42,6 +42,13 @@ Datumaro format datamodule (compatible with Intel Geti™).
 Custom folder-based datamodule for organizing your own image dataset.
 :::
 
+:::{grid-item-card} Kaputt
+:link: kaputt
+:link-type: doc
+
+Kaputt datamodule for industrial anomalies.
+:::
+
 :::{grid-item-card} Kolektor
 :link: kolektor
 :link-type: doc
@@ -49,11 +56,53 @@ Custom folder-based datamodule for organizing your own image dataset.
 Kolektor Surface-Defect dataset datamodule.
 :::
 
-:::{grid-item-card} MVTecAD
-:link: mvtec
+:::{grid-item-card} MPDD
+:link: mpdd
 :link-type: doc
 
-MVTecAD AD dataset datamodule for unsupervised anomaly detection.
+Manufacturing Parts Defect Detection datamodule.
+:::
+
+:::{grid-item-card} MVTecAD
+:link: mvtecad
+:link-type: doc
+
+MVTec AD dataset datamodule for unsupervised anomaly detection.
+:::
+
+:::{grid-item-card} MVTecAD2
+:link: mvtecad2
+:link-type: doc
+
+MVTec AD 2 dataset datamodule for anomaly detection.
+:::
+
+:::{grid-item-card} MVTecLOCO
+:link: mvtecloco
+:link-type: doc
+
+MVTec LOCO dataset datamodule for logical and structural anomalies.
+:::
+
+:::{grid-item-card} RealIAD
+:link: realiad
+:link-type: doc
+
+Real-IAD dataset datamodule for industrial anomaly detection.
+:::
+
+:::{grid-item-card} Tabular
+:link: tabular
+:link-type: doc
+
+Custom tabular datamodule for datasets with image paths and labels in tabular format.
+:::
+
+:::{grid-item-card} VAD
+:link: vad
+:link-type: doc
+
+Valeo Anomaly Detection dataset datamodule for automotive scenes.
 :::
 
 :::{grid-item-card} Visa
@@ -73,7 +122,14 @@ bmad
 btech
 datumaro
 folder
+kaputt
 kolektor
-mvtec
+mpdd
+mvtecad
+mvtecad2
+mvtecloco
+realiad
+tabular
+vad
 visa
 ```

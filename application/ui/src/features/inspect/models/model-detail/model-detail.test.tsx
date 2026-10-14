@@ -1,34 +1,31 @@
 // Copyright (C) 2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ReactNode } from 'react';
-
 import { fetchClient } from '@anomalib-studio/api';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { getMockedModelData } from 'mocks/mock-model';
 import { getMockedPagination } from 'mocks/mock-pagination';
 import { getMockedPipeline } from 'mocks/mock-pipeline';
 import { getMockedProject } from 'mocks/mock-project';
 import { StatusBarProvider } from 'src/features/inspect/footer/status-bar/status-bar-context';
-import { TestProviders } from 'src/providers';
 import { queryClient } from 'src/query-client/query-client';
 
+import { render } from '../../../../../tests/utils';
 import { ModelDetail } from './model-detail.component';
 
 const projectId = 'test-project-id';
 
-vi.mock('src/hooks/use-project-identifier.hook', () => ({
-    useProjectIdentifier: () => ({ projectId }),
-}));
-
 const mockedProject = getMockedProject();
 const mockedPipeline = getMockedPipeline();
 
-const TestWrapper = ({ children }: { children: ReactNode }) => (
-    <TestProviders routerProps={{ initialEntries: [`/projects/${projectId}`] }}>
-        <StatusBarProvider>{children}</StatusBarProvider>
-    </TestProviders>
-);
+const renderModelDetail = (model: ReturnType<typeof getMockedModelData>, isActiveModel: boolean, onBack = vi.fn()) => {
+    return render(
+        <StatusBarProvider>
+            <ModelDetail model={model} isActiveModel={isActiveModel} onBack={onBack} />
+        </StatusBarProvider>,
+        { queryClient, route: `/projects/${projectId}/inspect` }
+    );
+};
 
 describe('ModelDetail', () => {
     beforeAll(() => {
@@ -53,11 +50,7 @@ describe('ModelDetail', () => {
     describe('Model Information', () => {
         it('displays model details and information grid', () => {
             const model = getMockedModelData();
-            render(
-                <TestWrapper>
-                    <ModelDetail model={model} isActiveModel={false} onBack={vi.fn()} />
-                </TestWrapper>
-            );
+            renderModelDetail(model, false);
 
             expect(screen.getAllByText('PatchCore').length).toBeGreaterThan(0);
             expect(screen.getByText('Training Date')).toBeInTheDocument();
@@ -68,22 +61,14 @@ describe('ModelDetail', () => {
 
         it('displays Active badge when isActiveModel is true', () => {
             const model = getMockedModelData();
-            render(
-                <TestWrapper>
-                    <ModelDetail model={model} isActiveModel={true} onBack={vi.fn()} />
-                </TestWrapper>
-            );
+            renderModelDetail(model, true);
 
             expect(screen.getByText('Active')).toBeInTheDocument();
         });
 
         it('does not display Active badge when isActiveModel is false', () => {
             const model = getMockedModelData();
-            render(
-                <TestWrapper>
-                    <ModelDetail model={model} isActiveModel={false} onBack={vi.fn()} />
-                </TestWrapper>
-            );
+            renderModelDetail(model, false);
 
             expect(screen.queryByText('Active')).not.toBeInTheDocument();
         });
@@ -94,11 +79,7 @@ describe('ModelDetail', () => {
             const model = getMockedModelData();
             const onBack = vi.fn();
 
-            render(
-                <TestWrapper>
-                    <ModelDetail model={model} isActiveModel={false} onBack={onBack} />
-                </TestWrapper>
-            );
+            renderModelDetail(model, false, onBack);
 
             const backButton = screen.getByText('Back to Models');
             expect(backButton).toBeInTheDocument();
@@ -115,11 +96,7 @@ describe('ModelDetail', () => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 .mockResolvedValue({ data: new Blob(), error: undefined } as any);
 
-            render(
-                <TestWrapper>
-                    <ModelDetail model={model} isActiveModel={false} onBack={vi.fn()} />
-                </TestWrapper>
-            );
+            renderModelDetail(model, false);
 
             expect(screen.getByRole('radiogroup', { name: 'Select export format' })).toBeInTheDocument();
             fireEvent.click(screen.getByLabelText('Select compression type'));

@@ -1,36 +1,36 @@
 # Loggers
 
-```{grid} 2
+::::{grid} 2
 :gutter: 2
 
-:::{card} Comet Logger
+:::{grid-item-card} Comet Logger
 :link: comet-logger
 :link-type: ref
 
 Monitor your experiments with Comet's comprehensive ML platform.
 :::
 
-:::{card} Wandb Logger
+:::{grid-item-card} Wandb Logger
 :link: wandb-logger
 :link-type: ref
 
 Track and visualize your ML experiments with Weights & Biases.
 :::
 
-:::{card} Tensorboard Logger
+:::{grid-item-card} Tensorboard Logger
 :link: tensorboard-logger
 :link-type: ref
 
 Visualize your training metrics with TensorBoard.
 :::
 
-:::{card} MLFlow Logger
+:::{grid-item-card} MLFlow Logger
 :link: mlflow-logger
 :link-type: ref
 
 Track and manage your ML lifecycle with MLflow.
 :::
-```
+::::
 
 (comet-logger)=
 

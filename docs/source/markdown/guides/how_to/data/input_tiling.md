@@ -4,7 +4,7 @@ This tutorial will show you how to tile the input to a model, using the {py:clas
 
 ```{warning}
 This tutorial assumes that you have already installed anomalib.
-If not, please refer to the [Installation](../../../../index.md#installation) section.
+If not, please refer to the {ref}`Installation <installation>` section.
 ```
 
 ```{warning}

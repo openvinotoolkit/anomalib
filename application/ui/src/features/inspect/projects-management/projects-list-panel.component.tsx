@@ -16,7 +16,7 @@ import {
     Header,
     Heading,
     View,
-} from '@geti/ui';
+} from '@geti-ui/ui';
 
 import { AddProjectButton } from './add-project-button/add-project-button.component';
 import { useGetProjects } from './hooks/use-get-project.hooks';

@@ -1,5 +1,5 @@
 import { usePatchPipeline, usePipeline, useProjectIdentifier } from '@anomalib-studio/hooks';
-import { Flex, Switch } from '@geti/ui';
+import { Flex, Switch } from '@geti-ui/ui';
 
 import classes from './anomaly-map.module.scss';
 

@@ -1,4 +1,4 @@
-import { Checkbox, CheckboxGroup } from '@geti/ui';
+import { Checkbox, CheckboxGroup } from '@geti-ui/ui';
 
 import { OutputFormat, SinkOutputFormats } from '../utils';
 

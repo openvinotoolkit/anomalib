@@ -1,0 +1,21 @@
+model:
+  class_path: anomalib.models.FoundAD
+  init_args:
+    encoder_name: dinov2_vit_base_14
+    pred_depth: 6
+    pred_emb_dim: 384
+    n_layer: 3
+    top_k: 10
+    dropout: 0.2
+    lr: 0.001
+    weight_decay: 0.0001
+    color_jitter: 0.5
+
+trainer:
+  max_epochs: 2000
+  callbacks:
+    - class_path: lightning.pytorch.callbacks.EarlyStopping
+      init_args:
+        patience: 20
+        monitor: image_AUROC
+        mode: max

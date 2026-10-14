@@ -2,24 +2,24 @@
 # SPDX-License-Identifier: Apache-2.0
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pandas as pd
 import pytest
 
 from pydantic_models import DatasetSnapshot, Media
 from services.dataset_snapshot_service import DatasetSnapshotService
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
 def fxt_project_id():
-    return ShortUUID.generate()
+    return uuid4()
 
 
 @pytest.fixture
 def fxt_media(fxt_project_id):
     return Media(
-        id=ShortUUID.generate(),
+        id=uuid4(),
         project_id=fxt_project_id,
         filename="test.jpg",
         size=100,
@@ -32,7 +32,7 @@ def fxt_media(fxt_project_id):
 @pytest.fixture
 def fxt_snapshot(fxt_project_id):
     return DatasetSnapshot(
-        id=ShortUUID.generate(),
+        id=uuid4(),
         project_id=fxt_project_id,
         filename="snapshot.parquet",
         count=1,  # Add missing required field
@@ -96,7 +96,7 @@ def test_use_snapshot_as_folder(fxt_project_id):
     """Test context manager for using snapshot as folder."""
 
     async def _test():
-        snapshot_id = ShortUUID.generate()
+        snapshot_id = uuid4()
 
         with (
             patch("services.dataset_snapshot_service.DatasetSnapshotBinaryRepository") as mock_bin_repo_cls,

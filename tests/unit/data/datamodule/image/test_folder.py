@@ -1,4 +1,4 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - Folder Datamodule."""
@@ -20,7 +20,7 @@ class TestFolder(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> Folder:
+    def datamodule(mvtecad_path: Path) -> Folder:
         """Create and return a Folder datamodule."""
         # expects a relative directory to the root.
         mask_dir = "ground_truth/bad"
@@ -28,7 +28,7 @@ class TestFolder(_TestAnomalibImageDatamodule):
         # Create and prepare the dataset
         datamodule_ = Folder(
             name="dummy",
-            root=dataset_path / "mvtecad" / "dummy",
+            root=mvtecad_path / "dummy",
             normal_dir="train/good",
             abnormal_dir="test/bad",
             normal_test_dir="test/good",

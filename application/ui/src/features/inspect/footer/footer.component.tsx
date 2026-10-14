@@ -4,7 +4,7 @@
 import { Suspense, useEffect } from 'react';
 
 import { usePatchPipeline, usePipeline, useProjectIdentifier } from '@anomalib-studio/hooks';
-import { Loading, View } from '@geti/ui';
+import { Loading, View } from '@geti-ui/ui';
 import { isEmpty } from 'lodash-es';
 
 import { useCompletedModels } from '../../../hooks/use-completed-models.hook';

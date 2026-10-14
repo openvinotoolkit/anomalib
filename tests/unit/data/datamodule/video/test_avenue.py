@@ -1,8 +1,9 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - Avenue Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -23,8 +24,13 @@ class TestAvenue(_TestAnomalibVideoDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, clip_length_in_frames: int) -> Avenue:
+    def datamodule(
+        dataset_path: Path,
+        make_dummy_dataset: Callable[[str], Path],
+        clip_length_in_frames: int,
+    ) -> Avenue:
         """Create and return a Avenue datamodule."""
+        make_dummy_dataset("avenue")
         datamodule_ = Avenue(
             root=dataset_path / "avenue",
             gt_dir=dataset_path / "avenue" / "ground_truth_demo",

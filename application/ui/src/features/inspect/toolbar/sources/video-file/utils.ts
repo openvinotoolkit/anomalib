@@ -1,8 +1,9 @@
-import { generateShortUUID } from '../../../../../utils/short-uuid';
+import { v4 as uuid } from 'uuid';
+
 import { VideoFileSourceConfig } from '../util';
 
 export const getVideoFileInitialConfig = (projectId: string): VideoFileSourceConfig => ({
-    id: generateShortUUID(),
+    id: uuid(),
     name: 'Video file source',
     video_path: '',
     project_id: projectId,

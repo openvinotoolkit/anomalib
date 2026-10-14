@@ -67,7 +67,6 @@ export const StatusBarProvider = ({ children }: StatusBarProviderProps) => {
 
     useEffect(() => {
         return () => {
-            // eslint-disable-next-line react-hooks/exhaustive-deps
             autoRemoveTimers.current.forEach((timer) => clearTimeout(timer));
         };
     }, []);

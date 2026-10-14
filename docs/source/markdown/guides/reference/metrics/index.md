@@ -10,28 +10,28 @@ Anomalib provides a comprehensive set of metrics for evaluating anomaly detectio
 :gutter: 2
 
 :::{grid-item-card} AUROC
-:link: anomalib.metrics.AUROC
+:link: auroc
 :link-type: doc
 
 Area Under the Receiver Operating Characteristic curve. Measures the model's ability to distinguish between normal and anomalous samples.
 :::
 
 :::{grid-item-card} AUPR
-:link: anomalib.metrics.AUPR
+:link: aupr
 :link-type: doc
 
 Area Under the Precision-Recall curve. Particularly useful for imbalanced datasets.
 :::
 
 :::{grid-item-card} AUPRO
-:link: anomalib.metrics.AUPRO
+:link: aupro
 :link-type: doc
 
 Area Under the Per-Region Overlap curve. Evaluates pixel-level anomaly localization performance.
 :::
 
 :::{grid-item-card} AUPIMO
-:link: anomalib.metrics.AUPIMO
+:link: aupimo
 :link-type: doc
 
 Area Under the Per-Image Missed Overlap curve. Advanced metric for evaluating localization quality.
@@ -45,14 +45,14 @@ Area Under the Per-Image Missed Overlap curve. Advanced metric for evaluating lo
 :gutter: 2
 
 :::{grid-item-card} F1Score
-:link: anomalib.metrics.F1Score
+:link: f1_score
 :link-type: doc
 
 Standard F1 score for binary classification. Harmonic mean of precision and recall.
 :::
 
 :::{grid-item-card} F1Max
-:link: anomalib.metrics.F1Max
+:link: f1_score
 :link-type: doc
 
 Maximum F1 score across all possible thresholds. Useful for finding optimal operating points.
@@ -66,14 +66,14 @@ Maximum F1 score across all possible thresholds. Useful for finding optimal oper
 :gutter: 2
 
 :::{grid-item-card} F1AdaptiveThreshold
-:link: anomalib.metrics.F1AdaptiveThreshold
+:link: threshold
 :link-type: doc
 
 Automatically determines the optimal threshold by maximizing F1 score.
 :::
 
 :::{grid-item-card} ManualThreshold
-:link: anomalib.metrics.ManualThreshold
+:link: threshold
 :link-type: doc
 
 Uses a manually specified threshold for classification.
@@ -87,42 +87,42 @@ Uses a manually specified threshold for classification.
 :gutter: 2
 
 :::{grid-item-card} PRO
-:link: anomalib.metrics.PRO
+:link: pro
 :link-type: doc
 
 Per-Region Overlap score for evaluating pixel-level localization.
 :::
 
 :::{grid-item-card} PIMO
-:link: anomalib.metrics.PIMO
+:link: pimo
 :link-type: doc
 
 Per-Image Missed Overlap for assessing localization errors.
 :::
 
 :::{grid-item-card} PGn
-:link: anomalib.metrics.PGn
+:link: pg_pb
 :link-type: doc
 
 Presorted Good with n% bad samples missed. Measures false negative rate at specific operating points.
 :::
 
 :::{grid-item-card} PBn
-:link: anomalib.metrics.PBn
+:link: pg_pb
 :link-type: doc
 
 Presorted Bad with n% good samples misclassified. Measures false positive rate at specific operating points.
 :::
 
 :::{grid-item-card} MinMax
-:link: anomalib.metrics.MinMax
+:link: min_max
 :link-type: doc
 
 Normalizes anomaly scores to [0, 1] range using min-max scaling.
 :::
 
 :::{grid-item-card} AnomalyScoreDistribution
-:link: anomalib.metrics.AnomalyScoreDistribution
+:link: anomaly_score_distribution
 :link-type: doc
 
 Analyzes and tracks the distribution of anomaly scores for model diagnostics.
@@ -136,21 +136,21 @@ Analyzes and tracks the distribution of anomaly scores for model diagnostics.
 :gutter: 2
 
 :::{grid-item-card} AnomalibMetric
-:link: anomalib.metrics.AnomalibMetric
+:link: base
 :link-type: doc
 
 Base class for all Anomalib metrics. Extends TorchMetrics with field-based updates.
 :::
 
 :::{grid-item-card} Evaluator
-:link: anomalib.metrics.Evaluator
+:link: evaluator
 :link-type: doc
 
 Orchestrates multiple metrics for comprehensive model evaluation.
 :::
 
 :::{grid-item-card} BinaryPrecisionRecallCurve
-:link: anomalib.metrics.BinaryPrecisionRecallCurve
+:link: precision_recall_curve
 :link-type: doc
 
 Computes precision-recall curves for binary classification tasks.
@@ -160,9 +160,30 @@ Computes precision-recall curves for binary classification tasks.
 
 ## API Reference
 
+```{toctree}
+:caption: Metric Reference
+:hidden:
+
+auroc
+aupr
+aupro
+aupimo
+f1_score
+threshold
+pro
+pimo
+pg_pb
+min_max
+anomaly_score_distribution
+base
+evaluator
+precision_recall_curve
+```
+
 ```{eval-rst}
 .. automodule:: anomalib.metrics
    :members: AUROC, AUPR, AUPRO, AUPIMO, F1Score, F1Max, F1AdaptiveThreshold, ManualThreshold, PRO, PIMO, PGn, PBn, MinMax, AnomalyScoreDistribution, AnomalibMetric, Evaluator, BinaryPrecisionRecallCurve, create_anomalib_metric
    :undoc-members:
    :show-inheritance:
+   :no-index:
 ```

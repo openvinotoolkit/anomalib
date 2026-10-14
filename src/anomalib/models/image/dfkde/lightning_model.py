@@ -1,4 +1,4 @@
-# Copyright (C) 2022-2025 Intel Corporation
+# Copyright (C) 2022-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """DFKDE: Deep Feature Kernel Density Estimation.
@@ -83,6 +83,11 @@ class Dfkde(MemoryBankMixin, AnomalibModule):
         ...     feature_scaling_method=FeatureScalingMethod.SCALE
         ... )
     """
+
+    @classmethod
+    def checkpoint_safe_globals(cls) -> Sequence[Any]:
+        """Allowlist ``FeatureScalingMethod`` for ``weights_only`` checkpoint loads."""
+        return (FeatureScalingMethod,)
 
     def __init__(
         self,

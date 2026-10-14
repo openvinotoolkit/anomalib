@@ -9,10 +9,10 @@ factories). Checkpoints trained against those versions pickled references to tho
 so ``torch.load`` raises ``ModuleNotFoundError`` before the weights are even read.
 
 This module re-registers the removed import paths in :data:`sys.modules` with lightweight
-placeholder modules, so old checkpoints unpickle successfully. The placeholders only need to make
-the pickled *references* resolve - the actual (frozen) encoder weights are reloaded from ``timm``
-and the legacy ones are dropped by each model's ``on_load_checkpoint`` hook (see
-:func:`anomalib.models.components.base.restore_frozen_encoder_weights`).
+placeholder modules so pickled *references* can resolve during ``torch.load``. Loading
+checkpoints trained before the timm-encoder migration is no longer supported as of
+anomalib 2.7.0 (legacy encoder weight restoration was removed); retrain or export under
+a current release instead.
 
 It is imported for its side effect from :mod:`anomalib.models`, so the aliases are installed before
 any checkpoint is loaded.

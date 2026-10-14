@@ -1,4 +1,4 @@
-import { DialogContainer, Flex, Heading, Selection, Size, View } from '@geti/ui';
+import { DialogContainer, Flex, Heading, Selection, Size, View } from '@geti-ui/ui';
 import { isNil } from 'lodash-es';
 import isEmpty from 'lodash-es/isEmpty';
 import { MediaThumbnail } from 'src/components/media-thumbnail/media-thumbnail.component';

@@ -3,11 +3,12 @@
 
 import { $api } from '@anomalib-studio/api';
 import { useProjectIdentifier } from '@anomalib-studio/hooks';
-import { Button, FileTrigger, toast } from '@geti/ui';
+import { toast } from '@anomalib-studio/toast';
+import { Button, FileTrigger } from '@geti-ui/ui';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { useUploadStatus } from '../footer/status-bar/adapters/use-upload-status';
-import { TrainModelButton } from '../train-model/train-model-button.component';
+import { TrainModelButton } from '../train-model/train-model-button/train-model-button.component';
 import { REQUIRED_NUMBER_OF_NORMAL_IMAGES_TO_TRIGGER_TRAINING } from './utils';
 
 export const UploadImages = () => {
@@ -29,7 +30,6 @@ export const UploadImages = () => {
 
             return captureImageMutation.mutateAsync({
                 params: { path: { project_id: projectId } },
-                // @ts-expect-error There is an incorrect type in OpenAPI
                 body: formData,
             });
         });

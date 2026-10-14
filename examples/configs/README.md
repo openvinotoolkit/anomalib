@@ -1,50 +1,69 @@
-# Configurations
+# Example Configurations
 
-With the new CLI, you can use multiple configurations for calling `fit`, `validate`, `test`, and `predict`.
+With the Anomalib CLI, you can combine model and data configurations for `train`, `fit`, `validate`, `test`, and `predict`.
 
-The configurations in this folder are organized as follows.
+The configurations in this directory provide baseline YAML templates:
 
-```bash
+```text
 configs/
-├── data
-│   ├── avenue.yaml
+├── data/
+│   ├── adam_3d.yaml
 │   ├── autovi.yaml
+│   ├── avenue.yaml
 │   ├── bmad.yaml
 │   ├── btech.yaml
-│   ├── folder_3d.yaml
+│   ├── datumaro.yaml
 │   ├── folder.yaml
-│   ├── inference.yaml
+│   ├── kaputt.yaml
 │   ├── kolektor.yaml
-│   ├── mvtec_3d.yaml
+│   ├── mpdd.yaml
 │   ├── mvtec.yaml
-│   ├── shanghaitec.yaml
+│   ├── mvtec_3d.yaml
+│   ├── mvtec_loco.yaml
+│   ├── mvtecad2.yaml
+│   ├── realiad.yaml
+│   ├── shanghaitech.yaml
+│   ├── tabular.yaml
 │   ├── ucsd_ped.yaml
+│   ├── vad.yaml
 │   └── visa.yaml
-└── model
+└── model/
     ├── ai_vad.yaml
     ├── anomaly_dino.yaml
+    ├── anomalyvfm.yaml
     ├── cfa.yaml
     ├── cflow.yaml
+    ├── cfm.yaml
     ├── csflow.yaml
     ├── dfkde.yaml
     ├── dfm.yaml
+    ├── dinomaly.yaml
     ├── draem.yaml
+    ├── dsr.yaml
     ├── efficient_ad.yaml
     ├── fastflow.yaml
+    ├── fre.yaml
     ├── ganomaly.yaml
+    ├── glass.yaml
+    ├── inp_former.yaml
+    ├── l2bt.yaml
     ├── padim.yaml
     ├── patchcore.yaml
+    ├── patchflow/
     ├── reverse_distillation.yaml
-    └── stfpm.yaml
-
+    ├── stfpm.yaml
+    ├── uflow.yaml
+    └── uninet.yaml
 ```
 
 ## Examples
 
+Train a model with combined config files:
+
 ```bash
-anomalib fit -c configs/model/padim.yaml --data configs/data/mvtec.yaml
+anomalib train -c examples/configs/model/padim.yaml --data examples/configs/data/mvtec.yaml
 ```
 
 ```bash
-anomalib fit -c configs/model/stfpm.yaml --data configs/data/visa.yaml
+anomalib train -c examples/configs/model/stfpm.yaml --data examples/configs/data/visa.yaml
 ```

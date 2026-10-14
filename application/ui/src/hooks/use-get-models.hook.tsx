@@ -33,6 +33,7 @@ export const useGetModels = () => {
 
                 return pagination.offset + modelItemsLimit;
             },
+            initialPageParam: 0,
         }
     );
 

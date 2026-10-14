@@ -1,27 +1,32 @@
-import { render, screen } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { HttpResponse } from 'msw';
+import { toast as sonnerToast } from 'sonner';
 import { http } from 'src/api/utils';
 import { server } from 'src/msw-node-setup';
-import { TestProviders } from 'src/providers';
 
+import { render } from '../../../../../../tests/utils';
 import { SourceMenu, SourceMenuProps } from './source-menu.component';
 
-vi.mock('@anomalib-studio/hooks', () => ({ useProjectIdentifier: () => ({ projectId: '123' }) }));
-
 describe('SourceMenu', () => {
+    beforeEach(() => {
+        cleanup();
+    });
+
     const renderApp = ({
         id = 'id-test',
         name = 'name test',
         isConnected = false,
         onEdit = vi.fn(),
     }: Partial<SourceMenuProps>) => {
-        render(
-            <TestProviders>
-                <SourceMenu id={id} name={name} isConnected={isConnected} onEdit={onEdit} />
-            </TestProviders>
-        );
+        render(<SourceMenu id={id} name={name} isConnected={isConnected} onEdit={onEdit} />, {
+            route: '/projects/123/inspect',
+        });
     };
+
+    beforeEach(async () => {
+        sonnerToast.dismiss();
+    });
 
     it('edit', async () => {
         const mockedOnEdit = vi.fn();
@@ -60,9 +65,7 @@ describe('SourceMenu', () => {
             await userEvent.click(screen.getByRole('button', { name: /source menu/i }));
             await userEvent.click(screen.getByRole('menuitem', { name: /Remove/i }));
 
-            await expect(await screen.findByLabelText('toast')).toHaveTextContent(
-                `${name} has been removed successfully!`
-            );
+            expect(await screen.findByText(`${name} has been removed successfully!`)).toBeInTheDocument();
             expect(pipelinePatchSpy).not.toHaveBeenCalled();
         });
 
@@ -89,9 +92,7 @@ describe('SourceMenu', () => {
             await userEvent.click(screen.getByRole('button', { name: /source menu/i }));
             await userEvent.click(screen.getByRole('menuitem', { name: /Connect/i }));
 
-            await expect(await screen.findByLabelText('toast')).toHaveTextContent(
-                `Successfully connected to "${name}"`
-            );
+            expect(await screen.findByText(`Successfully connected to "${name}"`)).toBeInTheDocument();
         });
 
         it('error', async () => {
@@ -102,7 +103,7 @@ describe('SourceMenu', () => {
             await userEvent.click(screen.getByRole('button', { name: /source menu/i }));
             await userEvent.click(screen.getByRole('menuitem', { name: /Connect/i }));
 
-            await expect(await screen.findByLabelText('toast')).toHaveTextContent(`Failed to connect to "${name}"`);
+            expect(await screen.findByText(`Failed to connect to "${name}".`)).toBeInTheDocument();
         });
     });
 });

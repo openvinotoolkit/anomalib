@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Dataloader for Datumaro format.
@@ -38,6 +38,7 @@ from torchvision.transforms.v2 import Transform
 
 from anomalib.data.datasets.base import AnomalibDataset
 from anomalib.data.utils import LabelName, Split
+from anomalib.data.utils.path import validate_path
 
 
 def make_datumaro_dataset(
@@ -68,7 +69,11 @@ def make_datumaro_dataset(
         1  path/...   Normal           0  Split.TRAIN
         2  path/...   Normal           0  Split.TRAIN
     """
-    annotation_file = Path(root) / "annotations" / "default.json"
+    root = Path(root)
+    annotation_file = validate_path(
+        root / "annotations" / "default.json",
+        base_dir=root,
+    )
     with annotation_file.open() as f:
         annotations = json.load(f)
 
@@ -77,7 +82,12 @@ def make_datumaro_dataset(
 
     samples = []
     for item in annotations["items"]:
-        image_path = Path(root) / "images" / "default" / item["image"]["path"]
+        # Join under images/default, then confine to the dataset root
+        image_path = validate_path(
+            root / "images" / "default" / item["image"]["path"],
+            base_dir=root,
+            should_exist=False,
+        )
         label_index = item["annotations"][0]["label_id"]
         label = categories[label_index]
         samples.append({

@@ -41,4 +41,4 @@ Let's deep dive into each dataset supported in anomalib and check their function
 
 ## Installation Instructions
 
-If you have not installed all required dependencies, follow the [Installation Guide](https://open-edge-platform.github.io/anomalib/getting_started/installation/index.html).
+If you have not installed all required dependencies, follow the [Installation Guide](https://anomalib.readthedocs.io/en/latest/markdown/get_started/anomalib.html#installation).

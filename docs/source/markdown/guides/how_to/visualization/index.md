@@ -22,10 +22,3 @@ Learn how to visualize the results of your model.
 
 ./visualize_image
 ```
-
-```{toctree}
-:caption: Visualization
-:hidden:
-
-./visualize_image
-```

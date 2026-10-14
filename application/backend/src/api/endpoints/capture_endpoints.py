@@ -3,6 +3,7 @@
 import asyncio
 import queue
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
@@ -11,7 +12,6 @@ from api.endpoints import API_PREFIX
 from core import Scheduler
 from pydantic_models import Media
 from services.media_service import MediaService
-from utils.short_uuid import ShortUUID
 
 capture_api_prefix_url = API_PREFIX + "/projects/{project_id}"
 router = APIRouter(
@@ -32,7 +32,7 @@ router = APIRouter(
 )
 async def capture(
     media_service: Annotated[MediaService, Depends(get_media_service)],
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     scheduler: Annotated[Scheduler, Depends(get_scheduler)],
     background_tasks: BackgroundTasks,
 ) -> Media:

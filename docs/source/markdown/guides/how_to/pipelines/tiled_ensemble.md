@@ -39,6 +39,8 @@ python tools/tiled_ensemble/eval.py \
 
 Ensure that `root` points to the directory containing the training results, typically `results/padim/mvtec/bottle/runX`.
 
+(ensemble-configuration)=
+
 ## Ensemble configuration
 
 Tiled ensemble is configured using `ens_config.yaml` file in the `tools/tiled_ensemble` directory.

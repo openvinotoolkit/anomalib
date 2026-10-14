@@ -1,7 +1,7 @@
 import { Fragment, useState } from 'react';
 
-import { ActionButton, Content, ContextualHelp, dimensionValue, Flex, Grid, Text } from '@geti/ui';
-import { Add, Delete } from '@geti/ui/icons';
+import { ActionButton, Content, ContextualHelp, dimensionValue, Flex, Grid, Text } from '@geti-ui/ui';
+import { Add, Delete } from '@geti-ui/ui/icons';
 import { isEmpty } from 'lodash-es';
 
 import { RequiredTextField } from '../../../../../components/required-text-field/required-text-field.component';

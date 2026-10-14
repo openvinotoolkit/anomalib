@@ -1,11 +1,12 @@
 # Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+from uuid import UUID
+
 from db.schema import PipelineDB
 from pydantic_models import Pipeline, PipelineStatus
 from repositories.mappers import ModelMapper, SinkMapper, SourceMapper
 from repositories.mappers.base_mapper_interface import IBaseMapper
-from utils.short_uuid import ShortUUID
 
 
 class PipelineMapper(IBaseMapper):
@@ -15,13 +16,13 @@ class PipelineMapper(IBaseMapper):
     def from_schema(pipeline_db: PipelineDB) -> Pipeline:
         """Convert Pipeline db schema to Pipeline pydantic model."""
         return Pipeline(
-            project_id=ShortUUID(pipeline_db.project_id),
+            project_id=UUID(pipeline_db.project_id),
             source=SourceMapper.from_schema(pipeline_db.source) if pipeline_db.source else None,
             sink=SinkMapper.from_schema(pipeline_db.sink) if pipeline_db.sink else None,
             model=ModelMapper.from_schema(pipeline_db.model) if pipeline_db.model else None,
-            sink_id=ShortUUID(pipeline_db.sink_id) if pipeline_db.sink_id else None,
-            model_id=ShortUUID(pipeline_db.model_id) if pipeline_db.model_id else None,
-            source_id=ShortUUID(pipeline_db.source_id) if pipeline_db.source_id else None,
+            sink_id=UUID(pipeline_db.sink_id) if pipeline_db.sink_id else None,
+            model_id=UUID(pipeline_db.model_id) if pipeline_db.model_id else None,
+            source_id=UUID(pipeline_db.source_id) if pipeline_db.source_id else None,
             status=PipelineStatus.from_bool(pipeline_db.is_running, pipeline_db.is_active),
             inference_device=pipeline_db.inference_device.upper(),
             overlay=pipeline_db.overlay,

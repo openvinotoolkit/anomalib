@@ -70,7 +70,14 @@ clip = [
     #   'aten::_native_multi_head_attention' to ONNX opset version 14 is not supported
     "open-clip-torch>=2.23.0,<2.26.1",
 ]
-vlm = ["ollama>=0.4.0", "openai", "python-dotenv", "transformers"]
+vlm = [
+    "ollama>=0.4.0",
+    "openai",
+    "python-dotenv",
+    # Floor stops resolvers backtracking to transformers 4.12 (no huggingface-hub cap),
+    # whose tokenizers 0.10.3 has no wheels and fails to build from source.
+    "transformers>=4.40",
+]
 video = ["av>=10.0.0", "requests"]
 loggers = [
     "comet-ml>=3.31.7",
@@ -108,34 +115,33 @@ test = [
     "commitizen",
 ]
 # PyTorch dependency groups
-# NOTE: Minimum torch>=2.6.0 required due to Critical CVE-2025-32434
-#   (torch.load weights_only=True RCE, patched in 2.6.0)
+# NOTE: Minimum torch>=2.10.0 required as of anomalib 2.7.0 (dynamo ONNX exporter;
+#   also covers CVE-2025-32434 / torch.load weights_only and related fixes).
 cpu = [
-    "torch>=2.6.0",
+    "torch>=2.10.0",
     "torchcodec",
-    "torchvision>=0.21.0",
+    "torchvision>=0.25.0",
 ]
 cu126 = [
-    "torch>=2.6.0 ; sys_platform == 'linux' or sys_platform == 'win32'",
+    "torch>=2.10.0 ; sys_platform == 'linux' or sys_platform == 'win32'",
     "torchcodec ; sys_platform == 'linux' or sys_platform == 'win32'",
-    "torchvision>=0.21.0 ; sys_platform == 'linux' or sys_platform == 'win32'",
+    "torchvision>=0.25.0 ; sys_platform == 'linux' or sys_platform == 'win32'",
 ]
 cu130 = [
-    "torch>=2.9.0 ; sys_platform == 'linux' or sys_platform == 'win32'",
+    "torch>=2.10.0 ; sys_platform == 'linux' or sys_platform == 'win32'",
     "torchcodec>=0.9.0 ; sys_platform == 'linux' or sys_platform == 'win32'",
-    "torchvision>=0.24.0 ; sys_platform == 'linux' or sys_platform == 'win32'",
+    "torchvision>=0.25.0 ; sys_platform == 'linux' or sys_platform == 'win32'",
 ]
 rocm = [
-    # FIXME: bump to >=2.10.0 once torch+rocm6.3 wheel is published (CVE-2025-3001 fix)
-    "torch>=2.9.1 ; sys_platform == 'linux'",
+    "torch>=2.13.0 ; sys_platform == 'linux'",
     "torchcodec ; sys_platform == 'linux'",
-    "torchvision>=0.22.0 ; sys_platform == 'linux'",
-    "pytorch-triton-rocm ; sys_platform == 'linux'",
+    "torchvision>=0.28.0 ; sys_platform == 'linux'",
+    "triton-rocm ; sys_platform == 'linux'",  # explicit source needed so uv resolves from rocm7.2 index, not PyPI
 ]
 xpu = [
-    "torch>=2.10.0 ; sys_platform == 'linux' or sys_platform == 'win32'", # CVE-2025-3001 fixed in 2.10.0; last tested with 2.9.1+xpu
+    "torch>=2.10.0 ; sys_platform == 'linux' or sys_platform == 'win32'", # CVE-2025-3001 fixed in 2.10.0
     "torchcodec ; sys_platform == 'linux' or sys_platform == 'win32'",
-    "torchvision>=0.24.0 ; sys_platform == 'linux' or sys_platform == 'win32'",
+    "torchvision>=0.25.0 ; sys_platform == 'linux' or sys_platform == 'win32'",
     "pytorch-triton-xpu ; sys_platform == 'linux' or sys_platform == 'win32'",
     "triton-xpu ; sys_platform == 'linux' or sys_platform == 'win32'",
 ]
@@ -205,8 +211,8 @@ url = "https://download.pytorch.org/whl/cu130"
 explicit = true
 
 [[tool.uv.index]]
-name = "pytorch-rocm63"
-url = "https://download.pytorch.org/whl/rocm6.3"
+name = "pytorch-rocm72"
+url = "https://download.pytorch.org/whl/rocm7.2"
 explicit = true
 
 [[tool.uv.index]]
@@ -220,14 +226,14 @@ torch = [
     { index = "pytorch-cpu", extra = "cpu" },
     { index = "pytorch-cu126", extra = "cu126" },
     { index = "pytorch-cu130", extra = "cu130" },
-    { index = "pytorch-rocm63", extra = "rocm" },
+    { index = "pytorch-rocm72", extra = "rocm" },
     { index = "pytorch-xpu", extra = "xpu" },
 ]
 torchvision = [
     { index = "pytorch-cpu", extra = "cpu" },
     { index = "pytorch-cu126", extra = "cu126" },
     { index = "pytorch-cu130", extra = "cu130" },
-    { index = "pytorch-rocm63", extra = "rocm" },
+    { index = "pytorch-rocm72", extra = "rocm" },
     { index = "pytorch-xpu", extra = "xpu" },
 ]
 torchcodec = [
@@ -235,8 +241,8 @@ torchcodec = [
     { index = "pytorch-cu126", extra = "cu126" },
     { index = "pytorch-cu130", extra = "cu130" },
 ]
-pytorch-triton-rocm = [
-    { index = "pytorch-rocm63", extra = "rocm" },
+triton-rocm = [
+    { index = "pytorch-rocm72", extra = "rocm" },
 ]
 pytorch-triton-xpu = [
     { index = "pytorch-xpu", extra = "xpu" },

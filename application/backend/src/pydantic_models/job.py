@@ -4,13 +4,13 @@ import re
 from datetime import datetime
 from enum import StrEnum
 from typing import Any
+from uuid import UUID
 
 from loguru import logger
 from pydantic import BaseModel, Field, ValidationInfo, computed_field, field_serializer, field_validator
 
 from pydantic_models.base import BaseIDModel, Pagination
 from pydantic_models.system import DeviceType
-from utils.short_uuid import ShortUUID
 
 
 class JobType(StrEnum):
@@ -27,7 +27,7 @@ class JobStatus(StrEnum):
 
 
 class Job(BaseIDModel):
-    project_id: ShortUUID
+    project_id: UUID
     type: JobType = JobType.TRAINING
     progress: int = Field(default=0, ge=0, le=100, description="Progress percentage from 0 to 100")
     status: JobStatus = JobStatus.PENDING
@@ -37,7 +37,7 @@ class Job(BaseIDModel):
     end_time: datetime | None = None
 
     @field_serializer("project_id")
-    def serialize_project_id(self, project_id: ShortUUID, _info: Any) -> str:
+    def serialize_project_id(self, project_id: UUID, _info: Any) -> str:
         return str(project_id)
 
     @property
@@ -55,11 +55,11 @@ class JobList(BaseModel):
 
 
 class JobSubmitted(BaseModel):
-    job_id: ShortUUID
+    job_id: UUID
 
 
 class JobCancelled(BaseModel):
-    job_id: ShortUUID
+    job_id: UUID
 
     @computed_field
     def message(self) -> str:
@@ -102,7 +102,7 @@ MODEL_NAME_PATTERN = re.compile(r"^[a-z0-9_]+$")
 
 
 class TrainJobPayload(BaseModel):
-    project_id: ShortUUID = Field(exclude=True)
+    project_id: UUID = Field(exclude=True)
     model_name: str
     device: TrainingDevice | None = Field(default=None)
     dataset_snapshot_id: str | None = Field(default=None)  # used because UUID is not JSON serializable

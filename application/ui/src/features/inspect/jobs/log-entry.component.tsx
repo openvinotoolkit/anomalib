@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { Flex, Text, Tooltip, TooltipTrigger, View } from '@geti/ui';
+import { Flex, Text, Tooltip, TooltipTrigger, View } from '@geti-ui/ui';
 
 import { LOG_LEVEL_COLORS, LogEntry as LogEntryType, LogLevelName } from './log-types';
 

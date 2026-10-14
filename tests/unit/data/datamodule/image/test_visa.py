@@ -1,8 +1,9 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - Visa Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -17,8 +18,9 @@ class TestVisa(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> Visa:
+    def datamodule(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> Visa:
         """Create and return a Avenue datamodule."""
+        make_dummy_dataset("visa")
         datamodule_ = Visa(
             root=dataset_path,
             category="dummy",

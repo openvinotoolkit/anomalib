@@ -2,12 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 import os
 from enum import StrEnum
+from uuid import UUID
 
 from anomalib.deploy import CompressionType, ExportType
 from pydantic import BaseModel, Field, model_validator
 
 from pydantic_models.base import BaseIDNameModel, Pagination
-from utils.short_uuid import ShortUUID
 
 
 class PredictionLabel(StrEnum):
@@ -26,12 +26,12 @@ class Model(BaseIDNameModel):
         max_length=64, description="Model architecture identifier used to resolve the anomalib model (e.g. 'padim')"
     )
     format: ExportType = ExportType.OPENVINO
-    project_id: ShortUUID
+    project_id: UUID
     threshold: float = Field(default=0.5, ge=0.0, le=1.0, description="Confidence threshold for the model")
     is_ready: bool = Field(default=False, description="Indicates if the model is ready for use")
     export_path: str | None = None
-    dataset_snapshot_id: ShortUUID = Field(description="ID of the dataset snapshot used for training")
-    train_job_id: ShortUUID = Field(description="ID of the training job for this model")
+    dataset_snapshot_id: UUID = Field(description="ID of the dataset snapshot used for training")
+    train_job_id: UUID = Field(description="ID of the training job for this model")
     size: int | None = Field(default=None, ge=0, description="Total size in bytes of exported model artifacts")
     backbone: str | None = Field(default=None, description="Name of the backbone/feature extractor used by the model")
 

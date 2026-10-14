@@ -1,6 +1,7 @@
 # Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
@@ -10,7 +11,6 @@ from api.endpoints import API_PREFIX
 from pydantic_models.dataset_snapshot import DatasetSnapshot, DatasetSnapshotList
 from repositories.binary_repo import DatasetSnapshotBinaryRepository
 from services.dataset_snapshot_service import DatasetSnapshotService
-from utils.short_uuid import ShortUUID
 
 router = APIRouter(
     prefix=API_PREFIX + "/projects/{project_id}",
@@ -26,7 +26,7 @@ router = APIRouter(
     response_model_exclude_none=True,
 )
 async def get_snapshot_list(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     limit: Annotated[int, Depends(PaginationLimit())],
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> DatasetSnapshotList:
@@ -39,8 +39,8 @@ async def get_snapshot_list(
     response_model_exclude_none=True,
 )
 async def get_snapshot(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
-    snapshot_id: ShortUUID,
+    project_id: Annotated[UUID, Depends(get_project_id)],
+    snapshot_id: UUID,
 ) -> DatasetSnapshot:
     """Endpoint to get snapshot file by ID"""
     return await DatasetSnapshotService.get_snapshot(project_id=project_id, snapshot_id=snapshot_id)
@@ -55,8 +55,8 @@ async def get_snapshot(
     },
 )
 async def get_snapshot_file(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
-    snapshot_id: Annotated[ShortUUID, Depends(get_snapshot_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
+    snapshot_id: Annotated[UUID, Depends(get_snapshot_id)],
 ) -> FileResponse:
     """Endpoint to get snapshot file by ID"""
     try:

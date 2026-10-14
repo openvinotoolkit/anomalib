@@ -1,5 +1,5 @@
 import { NotFoundIcon } from '@anomalib-studio/icons';
-import { Flex, Text } from '@geti/ui';
+import { Flex, Text } from '@geti-ui/ui';
 
 import styles from './source-sink-message.module.scss';
 

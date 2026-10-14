@@ -30,6 +30,7 @@ export const useGetSources = () => {
 
                 return pagination.offset + sourcesItemsLimit;
             },
+            initialPageParam: 0,
         }
     );
 

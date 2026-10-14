@@ -1,7 +1,7 @@
 import { Suspense, useState } from 'react';
 
 import { LinkExpired } from '@anomalib-studio/icons';
-import { Button, DialogContainer, Flex, Loading, Text } from '@geti/ui';
+import { Button, DialogContainer, Flex, Loading, Text } from '@geti-ui/ui';
 
 import { ConfirmationDialog } from './confirmation-dialog.component';
 

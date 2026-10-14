@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 
 import { API_BASE_URL } from '@anomalib-studio/api';
-import { Flex, TextField, View } from '@geti/ui';
+import { Flex, TextField, View } from '@geti-ui/ui';
 
 import { OutputFormats } from '../output-formats/output-formats.component';
 import { RateLimitField } from '../rate-limit-field/rate-limit-field.component';

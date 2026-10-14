@@ -27,7 +27,6 @@ export const useMediaItemInference = (selectedMediaItem: MediaItem) => {
                       }
 
                       const response = await fetchClient.POST(`/api/projects/{project_id}/models/{model_id}:predict`, {
-                          // @ts-expect-error There is an incorrect type in OpenAPI
                           body: formData,
                           params: { path: { project_id: selectedMediaItem.project_id, model_id: selectedModelId } },
                       });

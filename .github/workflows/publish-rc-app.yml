@@ -18,7 +18,7 @@ jobs:
       rc_version: "${{ steps.validate.outputs.rc_version }}"
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -163,7 +163,7 @@ jobs:
 
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -173,7 +173,7 @@ jobs:
           persist-credentials: false
 
       - name: Log in to Container Registry
-        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -188,7 +188,7 @@ jobs:
             type=raw,value=${{ needs.validate.outputs.rc_version }}
 
       - name: Build and push Docker image
-        uses: ./.github/actions/docker-build
+        uses: open-edge-platform/anomalib/.github/actions/docker-build@ec87c2162f08572b47eb1fea55ed819fd1a39b08
         with:
           device: ${{ matrix.device }}
           push: "true"
@@ -197,7 +197,7 @@ jobs:
           use-cache: "false" # Disable cache for RC builds (security and reproducibility)
 
       - name: Sign Docker image
-        uses: open-edge-platform/geti-ci/actions/sign-image@7d25e47329bbfcde4ee51ab3581aea8613e245e2
+        uses: open-edge-platform/geti-ci/actions/sign-image@3690cbcc173cf90e0e0999b4822c3f8ebab9c137 # sign-image/v0.1.2
         with:
           image-uri: ${{ steps.meta.outputs.tags }}
 

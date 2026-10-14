@@ -33,13 +33,16 @@ Image Models:
     - DSR (:class:`anomalib.models.image.Dsr`)
     - EfficientAd (:class:`anomalib.models.image.EfficientAd`)
     - FastFlow (:class:`anomalib.models.image.Fastflow`)
+    - FoundAD (:class:`anomalib.models.image.FoundAD`)
     - FRE (:class:`anomalib.models.image.Fre`)
     - GANomaly (:class:`anomalib.models.image.Ganomaly`)
     - GeneralAD (:class:`anomalib.models.image.GeneralAD`)
     - L2BT (:class:`anomalib.models.image.L2BT`)
+    - MH-PatchCore (:class:`anomalib.models.image.MHPatchcore`)
     - PaDiM (:class:`anomalib.models.image.Padim`)
     - PatchCore (:class:`anomalib.models.image.Patchcore`)
     - PatchFlow (:class:`anomalib.models.image.Patchflow`)
+    - RAD (:class:`anomalib.models.image.Rad`)
     - Reverse Distillation (:class:`anomalib.models.image.ReverseDistillation`)
     - STFPM (:class:`anomalib.models.image.Stfpm`)
     - SuperSimpleNet (:class:`anomalib.models.image.Supersimplenet`)
@@ -79,14 +82,17 @@ from .image import (
     Dsr,
     EfficientAd,
     Fastflow,
+    FoundAD,
     Fre,
     Ganomaly,
     GeneralAD,
     Glass,
     InpFormer,
+    MHPatchcore,
     Padim,
     Patchcore,
     Patchflow,
+    Rad,
     ReverseDistillation,
     Stfpm,
     SuperADD,
@@ -126,6 +132,7 @@ __all__ = [
     "Dsr",
     "EfficientAd",
     "Fastflow",
+    "FoundAD",
     "Fre",
     "Fuvas",
     "Ganomaly",
@@ -133,9 +140,11 @@ __all__ = [
     "Glass",
     "InpFormer",
     "L2BT",
+    "MHPatchcore",
     "Padim",
     "Patchcore",
     "Patchflow",
+    "Rad",
     "ReverseDistillation",
     "Stfpm",
     "SuperADD",
@@ -172,27 +181,27 @@ def list_models(case: str = "snake") -> set[str]:
         >>> models = list_models(case="snake")
         >>> print(sorted(list(models)))  # doctest: +NORMALIZE_WHITESPACE
         ['ai_vad', 'anomaly_d_i_n_o', 'cfa', 'cflow', 'csflow', 'dfkde', 'dfm',
-         'dinomaly', 'draem', 'dsr', 'efficient_ad', 'fastflow', 'fre', 'fuvas',
-         'ganomaly', 'general_a_d', 'l2_b_t', 'padim', 'patchcore', 'patchflow',
-         'reverse_distillation', 'stfpm', 'supersimplenet', 'uflow', 'uni_net',
+         'dinomaly', 'draem', 'dsr', 'efficient_ad', 'fastflow', 'found_a_d', 'fre', 'fuvas',
+         'ganomaly', 'general_a_d', 'l2_b_t', 'm_h_patchcore', 'padim', 'patchcore', 'patchflow',
+         'rad', 'reverse_distillation', 'stfpm', 'supersimplenet', 'uflow', 'uni_net',
          'vlm_ad', 'win_clip']
 
         >>> # Get models in original PascalCase format
         >>> models = list_models(case="pascal")
         >>> print(sorted(list(models)))  # doctest: +NORMALIZE_WHITESPACE
         ['AiVad', 'AnomalyDINO', 'Cfa', 'Cflow', 'Csflow', 'Dfkde', 'Dfm',
-         'Dinomaly', 'Draem', 'Dsr', 'EfficientAd', 'Fastflow', 'Fre', 'Fuvas',
-         'Ganomaly', 'GeneralAD', 'L2BT', 'Padim', 'Patchcore', 'Patchflow',
-         'ReverseDistillation', 'Stfpm', 'Supersimplenet', 'Uflow', 'UniNet',
+         'Dinomaly', 'Draem', 'Dsr', 'EfficientAd', 'Fastflow', 'FoundAD', 'Fre', 'Fuvas',
+         'Ganomaly', 'GeneralAD', 'L2BT', 'MHPatchcore', 'Padim', 'Patchcore', 'Patchflow',
+         'Rad', 'ReverseDistillation', 'Stfpm', 'Supersimplenet', 'Uflow', 'UniNet',
          'VlmAd', 'WinClip']
 
         >>> # Get models in title case format
         >>> models = list_models(case="title")
         >>> print(sorted(list(models)))  # doctest: +NORMALIZE_WHITESPACE
         ['Ai Vad', 'Anomaly Dino', 'Cfa', 'Cflow', 'Csflow', 'Dfkde', 'Dfm',
-         'Dinomaly', 'Draem', 'Dsr', 'Efficient Ad', 'Fastflow', 'Fre', 'Fuvas',
-         'Ganomaly', 'General Ad', 'L2BT', 'Padim', 'Patchcore', 'Patchflow',
-         'Reverse Distillation', 'Stfpm', 'Supersimplenet', 'Uflow', 'Uni Net',
+         'Dinomaly', 'Draem', 'Dsr', 'Efficient Ad', 'Fastflow', 'Found Ad', 'Fre', 'Fuvas',
+         'Ganomaly', 'General Ad', 'L2BT', 'Mh Patchcore', 'Padim', 'Patchcore', 'Patchflow',
+         'Rad', 'Reverse Distillation', 'Stfpm', 'Supersimplenet', 'Uflow', 'Uni Net',
          'Vlm Ad', 'Win Clip']
 
     Note:

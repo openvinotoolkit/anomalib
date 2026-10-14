@@ -24,7 +24,7 @@ from lightning import LightningModule, Trainer
 from anomalib.data import Batch, InferenceBatch
 from anomalib.metrics import F1AdaptiveThreshold, MinMax
 
-from .base import PostProcessor
+from .post_processor import PostProcessor
 
 
 class OneClassPostProcessor(PostProcessor):

@@ -1,13 +1,12 @@
 // Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { DialogContainer } from '@geti/ui';
-import { ThemeProvider } from '@geti/ui/theme';
+import { DialogContainer, ThemeProvider } from '@geti-ui/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TRAINABLE_MODELS } from 'mocks/mock-trainable-models';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { http } from 'src/api/utils';
 import { server } from 'src/msw-node-setup';
 

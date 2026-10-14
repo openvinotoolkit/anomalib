@@ -73,7 +73,7 @@ class CFM(AnomalibModule):
             visualizer=visualizer,
         )
 
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["pre_processor", "post_processor", "evaluator", "visualizer"])
         self.lr = lr
 
         # Initialization of core model

@@ -281,7 +281,9 @@ class Tiler:
         Returns:
             torch.Tensor: Stack of random tiles
         """
-        return torch.vstack([T.RandomCrop(self.tile_size_h)(image) for i in range(self.random_tile_count)])
+        return torch.vstack(
+            [T.RandomCrop((self.tile_size_h, self.tile_size_w))(image) for _ in range(self.random_tile_count)],
+        )
 
     def __unfold(self, tensor: torch.Tensor) -> torch.Tensor:
         """Unfold tensor into tiles.

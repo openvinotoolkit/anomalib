@@ -215,6 +215,7 @@ Advanced users may want to define their own pre-processing pipeline. This can be
 
 ```python
 from anomalib.pre_processing import PreProcessor
+from anomalib.pre_processing.utils.spec import spec_to_transform, transform_to_spec
 from anomalib.pre_processing.utils.transform import get_exportable_transform
 from torchvision.transforms.v2 import Transform
 
@@ -227,16 +228,32 @@ class StageSpecificPreProcessor(PreProcessor):
         val_transform: Transform | None = None,
         test_transform: Transform | None = None,
     ):
+        super().__init__()
         self.train_transform = train_transform
         self.val_transform = val_transform
         self.test_transform = test_transform
         self.export_transform = get_exportable_transform(test_transform)
 
+    def checkpoint_config(self) -> dict:
+        """Persist per-stage transforms as plain data for weights_only reload."""
+        return {
+            "train_transform": transform_to_spec(self.train_transform),
+            "val_transform": transform_to_spec(self.val_transform),
+            "test_transform": transform_to_spec(self.test_transform),
+        }
+
+    def load_checkpoint_config(self, config: dict) -> None:
+        """Restore per-stage transforms previously saved by ``checkpoint_config``."""
+        self.train_transform = spec_to_transform(config.get("train_transform"))
+        self.val_transform = spec_to_transform(config.get("val_transform"))
+        self.test_transform = spec_to_transform(config.get("test_transform"))
+        self.export_transform = get_exportable_transform(self.test_transform)
+
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
         if self.train_transform:
             batch.image, batch.gt_mask = self.train_transform(batch.image, batch.gt_mask)
 
-    def on_val_batch_start(self, trainer, pl_module, batch, batch_idx):
+    def on_validation_batch_start(self, trainer, pl_module, batch, batch_idx):
         if self.val_transform:
             batch.image, batch.gt_mask = self.val_transform(batch.image, batch.gt_mask)
 
@@ -249,10 +266,10 @@ class StageSpecificPreProcessor(PreProcessor):
             batch.image, batch.gt_mask = self.test_transform(batch.image, batch.gt_mask)
 ```
 
-Now that we have defined a custom `PreProcessor` sublass, we can create an instance and pass some transforms for the different stages. Just like the standard `PreProcessor`, we can add the new `PreProcessor` to any Anomalib model to use its stage-specific transforms in the Anomalib workflow:
+Now that we have defined a custom `PreProcessor` subclass, we can create an instance and pass some transforms for the different stages. Just like the standard `PreProcessor`, we can add the new `PreProcessor` to any Anomalib model to use its stage-specific transforms in the Anomalib workflow:
 
 ```python
-from torchvision.transforms.v2 import Compose, Centercrop, RandomCrop, Resize
+from torchvision.transforms.v2 import Compose, CenterCrop, RandomCrop, Resize
 
 train_transform = Resize((224, 224))
 val_transform = Compose([
@@ -272,6 +289,23 @@ pre_processor = StageSpecificPreProcessor(
 )
 # add the custom pre-processor to an Anomalib model.
 model = MyModel(pre_processor=pre_processor)
+```
+
+```{important}
+`load_from_checkpoint` rebuilds the model from constructor defaults and safe
+plain-data configs. It does **not** recreate a custom `PreProcessor` subclass
+by class name. Pass the same subclass (or a fresh instance) when reloading.
+Override `checkpoint_config` / `load_checkpoint_config` as shown above so
+per-stage transforms are restored onto that instance. The same rule applies to
+non-default `Evaluator` and `Visualizer` objects — pass them explicitly; their
+configuration is not serialized into the checkpoint.
+```
+
+```python
+loaded = MyModel.load_from_checkpoint(
+    "model.ckpt",
+    pre_processor=StageSpecificPreProcessor(),
+)
 ```
 
 ```{note}
@@ -321,5 +355,5 @@ model = Padim(pre_processor=pre_processor)
 ```{seealso}
 For more information about transforms:
 - {doc}`Data Transforms Guide <../data/transforms>`
-- {doc}`AnomalibModule Documentation <../../reference/models/base>`
+- {doc}`AnomalibModule Guide <./anomalib_module>`
 ```

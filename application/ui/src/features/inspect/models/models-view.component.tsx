@@ -16,8 +16,8 @@ import {
     TableView,
     Text,
     View,
-} from '@geti/ui';
-import { NotFound } from '@geti/ui/icons';
+} from '@geti-ui/ui';
+import { NotFound } from '@geti-ui/ui/icons';
 import { sortBy } from 'lodash-es';
 import { useDateFormatter } from 'react-aria';
 

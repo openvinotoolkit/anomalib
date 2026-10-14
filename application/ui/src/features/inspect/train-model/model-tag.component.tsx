@@ -1,7 +1,7 @@
 // Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { Text, View } from '@geti/ui';
+import { Text, View } from '@geti-ui/ui';
 import { clsx } from 'clsx';
 
 import classes from './train-model.module.scss';

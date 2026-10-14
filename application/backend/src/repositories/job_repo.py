@@ -1,6 +1,7 @@
 # Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import Callable
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
@@ -9,7 +10,6 @@ from pydantic_models import Job
 from pydantic_models.job import JobStatus, JobType, TrainJobPayload
 from repositories.base import BaseRepository
 from repositories.mappers import JobMapper
-from utils.short_uuid import ShortUUID
 
 
 class JobRepository(BaseRepository):
@@ -24,7 +24,7 @@ class JobRepository(BaseRepository):
     def from_schema(self) -> Callable[[JobDB], Job]:
         return JobMapper.from_schema
 
-    async def is_job_duplicate(self, project_id: ShortUUID, payload: TrainJobPayload) -> bool:
+    async def is_job_duplicate(self, project_id: UUID, payload: TrainJobPayload) -> bool:
         # Convert payload to dict for comparison
         payload_dict = payload.model_dump()
 

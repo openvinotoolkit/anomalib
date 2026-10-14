@@ -1,7 +1,7 @@
 # Custom Data
 
 This tutorial will show you how to train anomalib models on your custom
-data. More specifically, we will show you how to use the [Folder](../../reference/data/image/folder.md)
+data. More specifically, we will show you how to use the [Folder](../../reference/data/datamodules/image/folder.md)
 dataset to train anomalib models on your custom data.
 
 ```{warning}
@@ -10,7 +10,7 @@ If not, please refer to the installation section.
 ```
 
 ```{note}
-We will use our [hazelnut_toy](https://github.com/open-edge-platform/anomalib/releases/download/hazelnut_toy_dataset/hazelnut_toy.zip) dataset to show the capabilities of the [Folder](../../reference/data/image/folder.md)
+We will use our [hazelnut_toy](https://github.com/open-edge-platform/anomalib/releases/download/hazelnut_toy_dataset/hazelnut_toy.zip) dataset to show the capabilities of the [Folder](../../reference/data/datamodules/image/folder.md)
 dataset, but you can use any dataset you want.
 ```
 
@@ -27,9 +27,9 @@ We will split this section into two tasks:
 - Classification with normal and abnormal images, and
 - Classification with only normal images.
 
-### With Normal and Abnormal Images
+### Classification with Normal and Abnormal Images
 
-We could use [Folder](../../reference/data/image/folder.md) datamodule to train
+We could use [Folder](../../reference/data/datamodules/image/folder.md) datamodule to train
 a model on this dataset. We could run the following python code to create the
 custom datamodule:
 
@@ -48,7 +48,7 @@ custom datamodule:
 As can be seen above, we only need to specify the ``task`` argument to ``classification``. We could have also use ``TaskType.CLASSIFICATION`` instead of ``classification``.
 ```
 
-The [Folder](../../reference/data/image/folder.md) datamodule will create training, validation, test and
+The [Folder](../../reference/data/datamodules/image/folder.md) datamodule will create training, validation, test and
 prediction datasets and dataloaders for us. We can access the datasets
 and dataloaders by following the same approach as in the segmentation
 task.
@@ -117,7 +117,7 @@ best threshold that separates normal and abnormal images.
 
 Anomalib provides synthetic anomaly generation capabilities to create abnormal
 images from normal images so we could check the performance. We could use the
-[Folder](../../reference/data/image/folder.md) datamodule to train a model on
+[Folder](../../reference/data/datamodules/image/folder.md) datamodule to train a model on
 this dataset.
 
 :::::{dropdown} Code Syntax
@@ -172,9 +172,9 @@ images. We also have masks for the abnormal images in the test set. We
 want to train an anomaly segmentation model that will be able to detect the
 abnormal regions in the test set.
 
-### With Normal and Abnormal Images
+### Classification with Normal and Abnormal Images
 
-We could use [Folder](../../reference/data/image/folder.md) datamodule to load the hazelnut dataset in a format that is readable by Anomalib's models.
+We could use [Folder](../../reference/data/datamodules/image/folder.md) datamodule to load the hazelnut dataset in a format that is readable by Anomalib's models.
 
 :::::{dropdown} Code Syntax
 ::::{tab-set}
@@ -187,7 +187,7 @@ We could run the following python code to create the custom datamodule:
 :language: python
 ```
 
-The [Folder](../../reference/data/image/folder.md) datamodule will create training, validation, test and
+The [Folder](../../reference/data/datamodules/image/folder.md) datamodule will create training, validation, test and
 prediction datasets and dataloaders for us. We can access the datasets
 and dataloaders using the following attributes:
 
@@ -246,7 +246,7 @@ This example demonstrates how to create a segmentation dataset with
 normal and abnormal images. We could expand this example to create a
 segmentation dataset with only normal images.
 
-### With Only Normal Images
+### Segmentation with Only Normal Images
 
 There are certain cases where we only have normal images in our dataset
 but would like to train a segmentation model. This could be done in two ways:
@@ -258,11 +258,11 @@ but would like to train a segmentation model. This could be done in two ways:
 
 For now we will focus on the second approach.
 
-#### With Validation and Testing via Synthetic Anomalies
+#### Segmentation Validation and Testing via Synthetic Anomalies
 
 We could use the synthetic anomaly generation feature again to create abnormal
 images from normal images. We could then use the
-[Folder](../../reference/data/image/folder.md) datamodule to train a model on
+[Folder](../../reference/data/datamodules/image/folder.md) datamodule to train a model on
 this dataset. Here is the python code to create the custom datamodule:
 
 :::::{dropdown} Code Syntax
@@ -279,7 +279,7 @@ We could run the following python code to create the custom datamodule:
 ```
 
 As can be seen from the code above, we only need to specify the
-`test_split_mode` argument to `SYNTHETIC`. The [Folder](../../reference/data/image/folder.md) datamodule will create training, validation, test and prediction datasets and
+`test_split_mode` argument to `SYNTHETIC`. The [Folder](../../reference/data/datamodules/image/folder.md) datamodule will create training, validation, test and prediction datasets and
 dataloaders for us.
 
 To check what individual samples from dataloaders look like, we can run

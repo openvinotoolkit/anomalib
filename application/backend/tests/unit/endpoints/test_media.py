@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from unittest.mock import MagicMock
+from uuid import uuid4
 
 import pytest
 from fastapi import status
@@ -12,13 +13,12 @@ from pydantic_models import Media, MediaList
 from pydantic_models.base import Pagination
 from services import MediaService, ResourceNotFoundError
 from services.exceptions import ResourceType
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
 def fxt_media(fxt_project):
     return Media(
-        id=ShortUUID.generate(),
+        id=uuid4(),
         project_id=fxt_project.id,
         filename="test_image.jpg",
         size=64,
@@ -36,7 +36,7 @@ def fxt_media_service() -> MagicMock:
 
 
 def test_get_media_list_empty(fxt_client, fxt_media_service):
-    project_id = ShortUUID.generate()
+    project_id = uuid4()
     fxt_media_service.get_media_list.return_value = MediaList(
         media=[],
         pagination=Pagination(offset=0, limit=20, count=0, total=0),
@@ -49,7 +49,7 @@ def test_get_media_list_empty(fxt_client, fxt_media_service):
 
 
 def test_get_media_list(fxt_client, fxt_media_service, fxt_media):
-    project_id = ShortUUID.generate()
+    project_id = uuid4()
     fxt_media_service.get_media_list.return_value = MediaList(
         media=[fxt_media],
         pagination=Pagination(offset=0, limit=20, count=1, total=1),
@@ -63,8 +63,8 @@ def test_get_media_list(fxt_client, fxt_media_service, fxt_media):
 
 def test_get_media_thumbnail_success(fxt_client, fxt_media_service, tmp_path):
     """Test successful thumbnail retrieval."""
-    project_id = ShortUUID.generate()
-    media_id = ShortUUID.generate()
+    project_id = uuid4()
+    media_id = uuid4()
     thumbnail_path = tmp_path / f"thumb_{media_id}.png"
     thumbnail_path.write_bytes(b"fake thumbnail content")
 
@@ -79,8 +79,8 @@ def test_get_media_thumbnail_success(fxt_client, fxt_media_service, tmp_path):
 
 def test_get_media_thumbnail_not_found(fxt_client, fxt_media_service):
     """Test thumbnail retrieval raises FileNotFoundError when media not found."""
-    project_id = ShortUUID.generate()
-    media_id = ShortUUID.generate()
+    project_id = uuid4()
+    media_id = uuid4()
 
     fxt_media_service.get_thumbnail_file_path.side_effect = FileNotFoundError("Media not found")
 
@@ -107,8 +107,8 @@ def test_delete_media_success(fxt_client, fxt_media_service, fxt_media):
 
 def test_delete_media_not_found(fxt_client, fxt_media_service):
     """Test media deletion when media not found."""
-    project_id = ShortUUID.generate()
-    media_id = ShortUUID.generate()
+    project_id = uuid4()
+    media_id = uuid4()
 
     fxt_media_service.delete_media.side_effect = ResourceNotFoundError(
         resource_type=ResourceType.MEDIA,
@@ -124,7 +124,7 @@ def test_delete_media_not_found(fxt_client, fxt_media_service):
 
 def test_delete_media_invalid_id(fxt_client, fxt_media_service):
     """Test media deletion with invalid media ID format."""
-    project_id = ShortUUID.generate()
+    project_id = uuid4()
 
     response = fxt_client.delete(f"/api/projects/{project_id}/images/invalid-id")
 

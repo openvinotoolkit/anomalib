@@ -1,6 +1,6 @@
 import { getApiUrl } from '@anomalib-studio/api';
 import { SchemaPredictionResponse } from '@anomalib-studio/api/spec';
-import { DimensionValue, Responsive, View } from '@geti/ui';
+import { DimensionValue, View } from '@geti-ui/ui';
 import { clsx } from 'clsx';
 import { motion } from 'motion/react';
 import { ZoomProvider } from 'src/components/zoom/zoom';
@@ -18,7 +18,7 @@ interface InferenceResultProps {
     inferenceResult: SchemaPredictionResponse | undefined;
 }
 
-const labelHeight: Responsive<DimensionValue> = 'size-350';
+const labelHeight: DimensionValue = 'size-350';
 
 export const InferenceResult = ({ selectedMediaItem, inferenceResult }: InferenceResultProps) => {
     const { inferenceOpacity } = useInference();

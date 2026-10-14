@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from io import BytesIO
 from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
 
 import pytest
 from fastapi import UploadFile
@@ -24,14 +25,13 @@ from pydantic_models import (
 )
 from pydantic_models.base import Pagination
 from pydantic_models.job import TrainJobPayload
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
 def fxt_project():
     """Fixture for a test project."""
     return Project(
-        id=ShortUUID.generate(),
+        id=uuid4(),
         name="Test Project",
     )
 
@@ -62,7 +62,7 @@ def fxt_job_payload(fxt_project):
 def fxt_media(fxt_project):
     """Fixture for a test media."""
     return Media(
-        id=ShortUUID.generate(),
+        id=uuid4(),
         project_id=fxt_project.id,
         filename="test_image.jpg",
         size=1024,
@@ -75,17 +75,17 @@ def fxt_media(fxt_project):
 @pytest.fixture
 def fxt_model(fxt_project):
     """Fixture for a test model."""
-    id = ShortUUID.generate()
+    id = uuid4()
     return Model(
         id=id,
         project_id=fxt_project.id,
-        name=f"padim ({id})",
+        name=f"padim ({str(id).split('-')[0]})",
         architecture="padim",
         format="openvino",
         is_ready=True,
         export_path="/path/to/model",
-        train_job_id=ShortUUID.generate(),
-        dataset_snapshot_id=ShortUUID.generate(),
+        train_job_id=uuid4(),
+        dataset_snapshot_id=uuid4(),
         size=0,
     )
 

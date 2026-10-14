@@ -42,11 +42,25 @@ Datumaro format datamodule (compatible with Intel Geti™).
 Custom folder-based datamodule for organizing your own image dataset.
 :::
 
+:::{grid-item-card} Kaputt
+:link: image/kaputt
+:link-type: doc
+
+Kaputt datamodule for industrial defect detection.
+:::
+
 :::{grid-item-card} Kolektor
 :link: image/kolektor
 :link-type: doc
 
 Kolektor Surface-Defect dataset datamodule.
+:::
+
+:::{grid-item-card} MPDD
+:link: image/mpdd
+:link-type: doc
+
+Manufacturing Parts Defect Detection datamodule.
 :::
 
 :::{grid-item-card} MVTecAD

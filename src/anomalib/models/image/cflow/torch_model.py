@@ -1,4 +1,4 @@
-# Copyright (C) 2022-2025 Intel Corporation
+# Copyright (C) 2022-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """PyTorch model for the CFLOW anomaly detection model.
@@ -173,15 +173,18 @@ class CflowModel(nn.Module):
             # It is assumed that during training that E / N is a whole number as no errors were discovered during
             # testing. In case it is observed in the future, we can use only this line and ensure that FIB is at
             # least 1 or set `drop_last` in the dataloader to drop the last non-full batch.
-            fiber_batches = embedding_length // self.fiber_batch_size + int(
-                embedding_length % self.fiber_batch_size > 0,
+            # Rows are decoded independently, so chunking only bounds memory. When exporting,
+            # decode all rows at once: each chunk would otherwise be unrolled into the graph.
+            fiber_batch_size = embedding_length if torch.compiler.is_compiling() else self.fiber_batch_size
+            fiber_batches = embedding_length // fiber_batch_size + int(
+                embedding_length % fiber_batch_size > 0,
             )
 
             for batch_num in range(fiber_batches):  # per-fiber processing
                 if batch_num < (fiber_batches - 1):
-                    idx = torch.arange(batch_num * self.fiber_batch_size, (batch_num + 1) * self.fiber_batch_size)
+                    idx = torch.arange(batch_num * fiber_batch_size, (batch_num + 1) * fiber_batch_size)
                 else:  # When non-full batch is encountered batch_num+1 * N will go out of bounds
-                    idx = torch.arange(batch_num * self.fiber_batch_size, embedding_length)
+                    idx = torch.arange(batch_num * fiber_batch_size, embedding_length)
                 c_p = c_r[idx]  # NxP
                 e_p = e_r[idx]  # NxC
                 # decoder returns the transformed variable z and the log Jacobian determinant

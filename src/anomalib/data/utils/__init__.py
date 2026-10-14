@@ -1,4 +1,4 @@
-# Copyright (C) 2022-2025 Intel Corporation
+# Copyright (C) 2022-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Helper utilities for data.
@@ -38,7 +38,9 @@ from .path import (
     DirType,
     _check_and_convert_path,
     _prepare_files_labels,
+    is_within_directory,
     resolve_path,
+    resolve_path_under_root,
     validate_and_resolve_path,
     validate_path,
 )
@@ -68,6 +70,8 @@ __all__ = [
     "_check_and_convert_path",
     "_prepare_files_labels",
     "resolve_path",
+    "resolve_path_under_root",
+    "is_within_directory",
     "validate_path",
     "validate_and_resolve_path",
 ]

@@ -112,12 +112,12 @@ actually possesses the layers from which the feature will be extracted.
 import torch
 from torchvision import models
 
-from anomalib.data import MVTec
+from anomalib.data import MVTecAD
 from anomalib.models import Padim
 from anomalib.engine import Engine
 
 # Initialize the datamodule, model, and engine
-datamodule = MVTec(num_workers=0)
+datamodule = MVTecAD(num_workers=0)
 
 # Specify custom model
 weights = torch.hub.load_state_dict_from_url("https://huggingface.co/mzweilin/robust-imagenet-models/resolve/main/wide_resnet50_2_l2_eps5.pth")
@@ -126,7 +126,7 @@ custom_backbone.load_state_dict(weights)
 
 # Specify backbone and layers
 model = Padim(backbone=custom_backbone, layers=["layer1", "layer3"])
-engine = Engine(image_metrics=["AUROC"], pixel_metrics=["AUROC"])
+engine = Engine()
 
 # Train the model
 engine.fit(datamodule=datamodule, model=model)

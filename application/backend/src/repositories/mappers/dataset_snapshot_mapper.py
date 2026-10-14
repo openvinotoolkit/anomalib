@@ -1,9 +1,10 @@
 # Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
+from uuid import UUID
+
 from db.schema import DatasetSnapshotDB
 from pydantic_models.dataset_snapshot import DatasetSnapshot
 from repositories.mappers.base_mapper_interface import IBaseMapper
-from utils.short_uuid import ShortUUID
 
 
 class DatasetSnapshotMapper(IBaseMapper[DatasetSnapshotDB, DatasetSnapshot]):
@@ -22,8 +23,8 @@ class DatasetSnapshotMapper(IBaseMapper[DatasetSnapshotDB, DatasetSnapshot]):
     @staticmethod
     def from_schema(schema: DatasetSnapshotDB) -> DatasetSnapshot:
         return DatasetSnapshot(
-            id=ShortUUID(schema.id),
-            project_id=ShortUUID(schema.project_id),
+            id=UUID(schema.id),
+            project_id=UUID(schema.project_id),
             filename=schema.filename,
             count=schema.count,
             created_at=schema.created_at,

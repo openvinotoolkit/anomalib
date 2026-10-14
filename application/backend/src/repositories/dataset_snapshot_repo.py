@@ -1,6 +1,7 @@
 # Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import Callable
+from uuid import UUID
 
 import sqlalchemy as sa
 from sqlalchemy.ext.asyncio.session import AsyncSession
@@ -9,13 +10,12 @@ from db.schema import DatasetSnapshotDB
 from pydantic_models.dataset_snapshot import DatasetSnapshot
 from repositories.base import ProjectBaseRepository
 from repositories.mappers.dataset_snapshot_mapper import DatasetSnapshotMapper
-from utils.short_uuid import ShortUUID
 
 
 class DatasetSnapshotRepository(ProjectBaseRepository[DatasetSnapshot, DatasetSnapshotDB]):
     """Repository for Dataset Snapshot operations."""
 
-    def __init__(self, db: AsyncSession, project_id: str | ShortUUID):
+    def __init__(self, db: AsyncSession, project_id: str | UUID):
         super().__init__(db, schema=DatasetSnapshotDB, project_id=project_id)
 
     @property

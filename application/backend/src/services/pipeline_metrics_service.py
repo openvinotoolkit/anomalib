@@ -3,11 +3,11 @@
 
 import statistics
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from exceptions import ResourceNotFoundException
 from pydantic_models import PipelineStatus
 from pydantic_models.metrics import InferenceMetrics, LatencyMetrics, PipelineMetrics, ThroughputMetrics, TimeWindow
-from utils.short_uuid import ShortUUID
 
 from .metrics_service import MetricsService
 from .pipeline_service import PipelineService
@@ -22,7 +22,7 @@ class PipelineMetricsService:
         self._pipeline_service: PipelineService = pipeline_service
         self._metrics_service: MetricsService = metrics_service
 
-    async def get_pipeline_metrics(self, pipeline_id: ShortUUID, time_window: int = 60) -> PipelineMetrics:
+    async def get_pipeline_metrics(self, pipeline_id: UUID, time_window: int = 60) -> PipelineMetrics:
         """Calculate metrics for a pipeline over a specified time window."""
         # First check if pipeline exists
         pipeline = await self._pipeline_service.get_pipeline_by_id(pipeline_id)

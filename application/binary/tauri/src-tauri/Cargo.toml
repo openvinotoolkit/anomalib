@@ -6,7 +6,7 @@ authors = ["Intel"]
 license = "Apache-2.0"
 repository = "https://github.com/open-edge-platform/anomalib"
 edition = "2021"
-rust-version = "1.77.2"
+rust-version = "1.90"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -21,7 +21,7 @@ tauri-build = { version = "2.6.1", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "~2.11.0", features = [] }
+tauri = { version = "~2.12.0", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-log = "2"

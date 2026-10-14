@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Test the PostProcessor class."""
@@ -24,7 +24,7 @@ class TestPostProcessor:
             (torch.tensor([-80, -60, -40, -20]), -100, 0, -50, torch.tensor([0.2, 0.4, 0.6, 0.8])),  # negative values
             (torch.tensor([20, 40, 60, 80]), 0, 100, -50, torch.tensor([1.0, 1.0, 1.0, 1.0])),  # threshold below range
             (torch.tensor([20, 40, 60, 80]), 0, 100, 150, torch.tensor([0.0, 0.0, 0.0, 0.0])),  # threshold above range
-            (torch.tensor([20, 40, 60, 80]), 50, 50, 50, torch.tensor([0.0, 0.0, 1.0, 1.0])),  # all same
+            (torch.tensor([20, 40, 50, 60, 80]), 50, 50, 50, torch.tensor([0.0, 0.0, 0.5, 1.0, 1.0])),  # all same
             (torch.tensor(60), 0, 100, 50, torch.tensor(0.6)),  # scalar tensor
             (torch.tensor([[20, 40], [60, 80]]), 0, 100, 50, torch.tensor([[0.2, 0.4], [0.6, 0.8]])),  # 2D tensor
         ],
@@ -47,6 +47,29 @@ class TestPostProcessor:
         assert torch.allclose(normalized, target)
 
     @staticmethod
+    def test_normalize_returns_predictions_when_stats_are_unset() -> None:
+        """Uninitialized normalization stats leave predictions unchanged."""
+        preds = torch.tensor([0.2, 0.8])
+        normalized = PostProcessor._normalize(  # noqa: SLF001
+            preds,
+            torch.tensor(float("nan")),
+            torch.tensor(float("nan")),
+            torch.tensor(float("nan")),
+        )
+        assert torch.equal(normalized, preds)
+
+    @staticmethod
+    def test_normalize_uses_midpoint_when_threshold_is_unset() -> None:
+        """An unset threshold defaults to midpoint of normalization range."""
+        normalized = PostProcessor._normalize(  # noqa: SLF001
+            torch.tensor([0.0, 1.0]),
+            torch.tensor(0.0),
+            torch.tensor(1.0),
+            torch.tensor(float("nan")),
+        )
+        assert torch.equal(normalized, torch.tensor([0.0, 1.0]))
+
+    @staticmethod
     @pytest.mark.parametrize(
         ("preds", "thresh", "target"),
         [
@@ -62,6 +85,13 @@ class TestPostProcessor:
         pre_processor = PostProcessor()
         binary_preds = pre_processor._apply_threshold(preds, torch.tensor(thresh))  # noqa: SLF001
         assert torch.allclose(binary_preds, target)
+
+    @staticmethod
+    def test_apply_threshold_returns_predictions_when_threshold_is_unset() -> None:
+        """An unset threshold leaves predictions unchanged outside export tracing."""
+        preds = torch.tensor([0.2, 0.8])
+        result = PostProcessor._apply_threshold(preds, torch.tensor(float("nan")))  # noqa: SLF001
+        assert torch.equal(result, preds)
 
     @staticmethod
     def test_thresholds_computed() -> None:

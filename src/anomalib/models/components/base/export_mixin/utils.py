@@ -5,49 +5,47 @@
 
 from __future__ import annotations
 
-import warnings
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import torch
+
 if TYPE_CHECKING:
     from anomalib.deploy.export import ExportType
+
+DEFAULT_EXPORT_SPATIAL_SIZE = (32, 32)
 
 
 def get_onnx_dynamo_flag(kwargs: dict[str, Any]) -> bool:
     """Return ONNX exporter dynamo flag.
 
-    Torch 2.9 switches ``torch.onnx.export`` to ``dynamo=True`` by default.
-    anomalib keeps the legacy exporter as the default because the dynamo path
-    requires ``onnxscript`` and is only needed when users opt in explicitly.
+    The dynamo-based exporter is required as of anomalib 2.7.0. Passing
+    ``dynamo=False`` raises because the legacy exporter path was removed.
 
     Args:
         kwargs (dict[str, Any]): Keyword arguments passed to ``torch.onnx.export``.
 
     Returns:
-        bool: Resolved dynamo flag.
+        bool: Always ``True`` after validating the requested flag.
 
     Raises:
         TypeError: If ``dynamo`` is not a ``bool`` or ``None``.
+        ValueError: If ``dynamo=False`` is requested.
     """
-    dynamo = kwargs.pop("dynamo", False)
+    dynamo = kwargs.pop("dynamo", True)
     if dynamo is None:
-        return False
+        return True
     if not isinstance(dynamo, bool):
         msg = f"`dynamo` must be a bool or None, got {type(dynamo).__name__}: {dynamo!r}"
         raise TypeError(msg)
-    return dynamo
-
-
-def warn_legacy_onnx_exporter_deprecation() -> None:
-    """Warn that the legacy ONNX exporter path is deprecated."""
-    warnings.warn(
-        "The legacy ONNX exporter path (`dynamo=False`) is deprecated and will be removed in anomalib 2.7.0. "
-        "Minimum required PyTorch version will increase to 2.10 in anomalib 2.7.0. Install `anomalib[openvino]` "
-        "and migrate to `dynamo=True`.",
-        FutureWarning,
-        stacklevel=2,
-    )
+    if not dynamo:
+        msg = (
+            "The legacy ONNX exporter path (`dynamo=False`) was removed in anomalib 2.7.0. "
+            "Install `anomalib[openvino]` (provides `onnxscript`) and use `dynamo=True` (the default)."
+        )
+        raise ValueError(msg)
+    return True
 
 
 def get_default_dynamic_axes(
@@ -55,7 +53,7 @@ def get_default_dynamic_axes(
     input_names: list[str],
     output_names: list[str],
 ) -> dict[str, dict[int, str]]:
-    """Build default dynamic axes for legacy ONNX export.
+    """Build default dynamic axes for ONNX export.
 
     Args:
         input_size (tuple[int, int] | None): Input image dimensions ``(H, W)``.
@@ -78,8 +76,11 @@ def get_dynamic_shapes_from_axes(
     dynamic_axes: dict[str, dict[int, str]] | None,
     input_names: list[str],
     output_names: list[str],
-) -> tuple[dict[int, str],] | None:
-    """Translate single-input ``dynamic_axes`` to dynamo ``dynamic_shapes``."""
+) -> tuple[dict[int, Any],] | None:
+    """Translate single-input ``dynamic_axes`` to dynamo ``dynamic_shapes``.
+
+    Dynamo expects ``torch.export.Dim`` objects; axes sharing a name share a ``Dim``.
+    """
     if not dynamic_axes:
         return None
 
@@ -87,7 +88,75 @@ def get_dynamic_shapes_from_axes(
     input_axes = dynamic_axes.get(input_name)
     if input_axes is None:
         input_axes = next((axes for name, axes in dynamic_axes.items() if name not in output_names), None)
-    return (dict(input_axes),) if input_axes else None
+    if not input_axes:
+        return None
+
+    dimensions = {name: torch.export.Dim(name) for name in input_axes.values()}
+    return ({axis: dimensions[name] for axis, name in input_axes.items()},)
+
+
+def get_example_input(
+    input_size: tuple[int, int] | None,
+    dynamic_shapes: object,
+) -> torch.Tensor:
+    """Build example image input matching static dimensions in ``dynamic_shapes``.
+
+    Dynamo specializes example dimensions of size 0 or 1. Use size 2 for symbolic
+    dimensions while honoring explicit static sizes, ``None``, and ``Dim.STATIC``.
+    Supports positional specs (tuple/list), named argument mappings, and a direct
+    axis-to-dimension mapping for this single-image input.
+
+    Args:
+        input_size (tuple[int, int] | None): Fixed ``(H, W)``, or ``None``.
+        dynamic_shapes (object): Dynamo shape specification passed through to ``torch.onnx.export``.
+            Only the specification for the single image input is used to select example sizes.
+
+    Returns:
+        torch.Tensor: Zero tensor of shape ``(B, 3, H, W)``.
+    """
+    height, width = input_size or DEFAULT_EXPORT_SPATIAL_SIZE
+    shape = [1, 3, height, width]
+
+    specification = dynamic_shapes
+    while True:
+        if isinstance(specification, Mapping):
+            if not specification or all(isinstance(axis, int) for axis in specification):
+                axes = {axis: dimension for axis, dimension in specification.items() if isinstance(axis, int)}
+                break
+            # This API exports one positional image tensor; named mappings wrap its spec.
+            if len(specification) == 1:
+                specification = next(iter(specification.values()))
+                continue
+            # Exporter reports unsupported multi-input specifications for this single-input API.
+            axes = {}
+            break
+        if isinstance(specification, Sequence) and not isinstance(specification, (str, bytes)):
+            if len(specification) == 1 and (
+                specification[0] is None or isinstance(specification[0], (Mapping, Sequence))
+            ):
+                specification = specification[0]
+                continue
+            # A sequence at the tensor-spec level describes dimensions by position.
+            axes = dict(enumerate(specification))
+            break
+        axes = {}
+        break
+
+    for axis, dimension in axes.items():
+        if dimension is None or dimension is torch.export.Dim.STATIC:
+            continue
+        if isinstance(dimension, int) and not isinstance(dimension, bool):
+            shape[axis] = dimension
+        elif dimension is torch.export.Dim.AUTO or dimension is torch.export.Dim.DYNAMIC:
+            shape[axis] = max(shape[axis], 2)
+        else:
+            try:
+                minimum, maximum = dimension.min, dimension.max
+            except AttributeError:
+                minimum, maximum = 0, None
+            size = max(2, minimum) if isinstance(minimum, int) else 2
+            shape[axis] = min(size, maximum) if isinstance(maximum, int) else size
+    return torch.zeros(shape)
 
 
 def validate_input_names(input_names: object) -> list[str]:
@@ -124,10 +193,7 @@ def raise_missing_onnxscript_error(cause: BaseException | None = None) -> None:
     Raises:
         ModuleNotFoundError: If ``onnxscript`` is not installed for dynamo export.
     """
-    msg = (
-        "ONNX export with `dynamo=True` requires the optional `onnxscript` dependency. "
-        "Install `anomalib[openvino]` or `onnxscript`, or export with `dynamo=False`."
-    )
+    msg = "ONNX export requires the optional `onnxscript` dependency. Install `anomalib[openvino]` or `onnxscript`."
     raise ModuleNotFoundError(msg, name="onnxscript") from cause
 
 

@@ -326,6 +326,10 @@ When analyzing a remote repository, add these elements to the report:
 - **Source attribution:** Each finding includes `Source: owner/repo/.github/workflows/{filename}`
 - **Summary:** Uses the same format as local analysis with repo context: "Analyzed N workflows, M AI action instances, P findings in owner/repo"
 
+## License & Attribution
+
+This skill's content is licensed under [Creative Commons Attribution-ShareAlike 4.0 International](LICENSE). See [README.md](README.md) for source and attribution details.
+
 ## Detailed References
 
 For complete documentation beyond this methodology overview:

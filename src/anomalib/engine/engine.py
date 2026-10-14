@@ -31,6 +31,7 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+from lightning.fabric.plugins.io.checkpoint_io import CheckpointIO
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import Logger
 from lightning.pytorch.trainer import Trainer
@@ -44,6 +45,7 @@ from anomalib.callbacks.rich_progress_bar import MaxStepsProgressCallback
 from anomalib.callbacks.timer import TimerCallback
 from anomalib.data import AnomalibDataModule, AnomalibDataset, PredictDataset
 from anomalib.deploy import CompressionType, ExportType
+from anomalib.engine.plugins import AnomalibCheckpointIO
 from anomalib.models import AnomalibModule
 from anomalib.utils.path import create_versioned_dir, resolve_versioned_path
 
@@ -305,9 +307,65 @@ class Engine:
         # Setup anomalib callbacks to be used with the trainer
         self._setup_anomalib_callbacks()
 
-        # Instantiate the trainer if it is not already instantiated
+        # Keep model-specific safe globals in sync, then instantiate the trainer
+        # if it is not already instantiated.
+        self._ensure_checkpoint_io_plugin(model)
         if self._trainer is None:
             self._trainer = Trainer(**self._cache.args)
+
+    def _ensure_checkpoint_io_plugin(self, model: AnomalibModule) -> None:
+        """Install or refresh ``AnomalibCheckpointIO`` with the model's safe globals.
+
+        When the user has not supplied a ``CheckpointIO`` (via ``plugins`` or a
+        strategy that already sets ``checkpoint_io``), installs
+        ``AnomalibCheckpointIO``. When an ``AnomalibCheckpointIO`` is already
+        present (in cache, on the strategy, or on a live trainer), updates its
+        ``extra_safe_globals`` from ``model.checkpoint_safe_globals()``.
+        """
+        extras = list(model.checkpoint_safe_globals())
+        strategy_io = self._strategy_checkpoint_io()
+        if strategy_io is not None:
+            # Lightning rejects CheckpointIO set on both strategy and plugins.
+            if isinstance(strategy_io, AnomalibCheckpointIO):
+                strategy_io.extra_safe_globals = extras
+            return
+
+        plugins = self._cache.args.get("plugins")
+        if plugins is None:
+            plugins_list: list[Any] = []
+        elif isinstance(plugins, Iterable) and not isinstance(plugins, (str, bytes)):
+            plugins_list = list(plugins)
+        else:
+            plugins_list = [plugins]
+
+        anomalib_io = next(
+            (plugin for plugin in plugins_list if isinstance(plugin, AnomalibCheckpointIO)),
+            None,
+        )
+        if anomalib_io is None and not any(isinstance(plugin, CheckpointIO) for plugin in plugins_list):
+            anomalib_io = AnomalibCheckpointIO(extra_safe_globals=extras)
+            plugins_list.append(anomalib_io)
+        elif anomalib_io is not None:
+            anomalib_io.extra_safe_globals = extras
+
+        self._cache.args["plugins"] = plugins_list
+
+        if self._trainer is not None:
+            live_io = self._trainer.strategy.checkpoint_io
+            if isinstance(live_io, AnomalibCheckpointIO):
+                live_io.extra_safe_globals = extras
+
+    def _strategy_checkpoint_io(self) -> CheckpointIO | None:
+        """Return a user-supplied ``CheckpointIO`` on the strategy, if any.
+
+        Lightning strategies expose a default ``checkpoint_io`` via a property
+        even when the caller did not pass one. Inspect the private
+        ``_checkpoint_io`` slot so we only treat an explicitly configured IO as
+        user-supplied (and avoid installing a conflicting plugin).
+        """
+        strategy = self._cache.args.get("strategy")
+        checkpoint_io = getattr(strategy, "_checkpoint_io", None)
+        return checkpoint_io if isinstance(checkpoint_io, CheckpointIO) else None
 
     def _setup_anomalib_callbacks(self) -> None:
         """Set up callbacks for the trainer."""
@@ -417,10 +475,9 @@ class Engine:
                 val_dataloaders,
                 datamodule=datamodule,
                 ckpt_path=ckpt_path,
-                weights_only=False,
             )
         else:
-            self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path, weights_only=False)
+            self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
 
     def validate(
         self,
@@ -468,7 +525,7 @@ class Engine:
             ckpt_path = Path(ckpt_path).resolve()
         if model:
             self._setup_trainer(model)
-        return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule, weights_only=False)
+        return self.trainer.validate(model, dataloaders, ckpt_path, verbose, datamodule)
 
     def test(
         self,
@@ -563,7 +620,7 @@ class Engine:
             logger.info("Running validation before testing to collect normalization metrics and/or thresholds.")
             self.trainer.validate(model, dataloaders, None, verbose=False, datamodule=datamodule)
 
-        results = self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule, weights_only=False)
+        results = self.trainer.test(model, dataloaders, ckpt_path, verbose, datamodule)
 
         # In barebones mode, PyTorch Lightning may return empty results dict despite having logged metrics.
         # Inject logged_metrics into results to ensure metrics are available in the return value.
@@ -683,10 +740,9 @@ class Engine:
                 ckpt_path=None,
                 verbose=False,
                 datamodule=datamodule,
-                weights_only=False,
             )
 
-        return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path, weights_only=False)
+        return self.trainer.predict(model, dataloaders, datamodule, return_predictions, ckpt_path)
 
     def train(
         self,
@@ -742,13 +798,12 @@ class Engine:
             # if the model is zero-shot or few-shot, we only need to run validate for normalization and thresholding
             self.trainer.validate(model, val_dataloaders, None, verbose=False, datamodule=datamodule)
         else:
-            self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path, weights_only=False)
+            self.trainer.fit(model, train_dataloaders, val_dataloaders, datamodule, ckpt_path)
         return self.trainer.test(
             model,
             test_dataloaders,
             ckpt_path=ckpt_path,
             datamodule=datamodule,
-            weights_only=False,
         )
 
     def export(
@@ -854,7 +909,7 @@ class Engine:
         self._setup_trainer(model)
         if ckpt_path:
             ckpt_path = Path(ckpt_path).resolve()
-            model = model.__class__.load_from_checkpoint(ckpt_path, weights_only=False)
+            model = model.__class__.load_from_checkpoint(ckpt_path)
 
         if export_root is None:
             export_root = Path(self.trainer.default_root_dir)

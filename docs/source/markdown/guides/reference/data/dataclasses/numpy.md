@@ -89,5 +89,5 @@ The module includes several categories of dataclasses:
 
 ## See Also
 
-- {doc}`../index`
-- {doc}`../torch`
+- {doc}`./index`
+- {doc}`./torch`

@@ -1,4 +1,4 @@
-# Copyright (C) 2022-2025 Intel Corporation
+# Copyright (C) 2022-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Anomaly Detection via Reverse Distillation from One-Class Embedding.
@@ -78,6 +78,11 @@ class ReverseDistillation(AnomalibModule):
         visualizer (Visualizer | bool, optional): Visualizer instance or flag to
             use default. Defaults to ``True``.
     """
+
+    @classmethod
+    def checkpoint_safe_globals(cls) -> Sequence[Any]:
+        """Allowlist ``AnomalyMapGenerationMode`` for ``weights_only`` checkpoint loads."""
+        return (AnomalyMapGenerationMode,)
 
     def __init__(
         self,

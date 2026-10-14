@@ -1,7 +1,7 @@
 // Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ActionButton, Text } from '@geti/ui';
+import { ActionButton, Text } from '@geti-ui/ui';
 import { clsx } from 'clsx';
 import { isNull } from 'lodash-es';
 

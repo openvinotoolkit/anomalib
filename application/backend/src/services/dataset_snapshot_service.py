@@ -5,6 +5,7 @@ import io
 import os
 import tempfile
 from contextlib import asynccontextmanager
+from uuid import UUID, uuid4
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -20,14 +21,13 @@ from pydantic_models.base import Pagination
 from pydantic_models.dataset_snapshot import DatasetSnapshotList
 from repositories import DatasetSnapshotRepository, MediaRepository, ProjectRepository
 from repositories.binary_repo import DatasetSnapshotBinaryRepository, ImageBinaryRepository
-from utils.short_uuid import ShortUUID
 
 
 class DatasetSnapshotService:
     @classmethod
-    async def create_snapshot(cls, project_id: ShortUUID) -> DatasetSnapshot:
+    async def create_snapshot(cls, project_id: UUID) -> DatasetSnapshot:
         """Create a new immutable dataset snapshot from current media."""
-        snapshot_id = ShortUUID.generate()
+        snapshot_id = uuid4()
         filename = f"{snapshot_id}.parquet"
 
         logger.info(f"Creating dataset snapshot {snapshot_id} for project {project_id}")
@@ -106,7 +106,7 @@ class DatasetSnapshotService:
             raise e
 
     @classmethod
-    async def get_or_create_snapshot(cls, project_id: ShortUUID, snapshot_id: ShortUUID | None) -> DatasetSnapshot:
+    async def get_or_create_snapshot(cls, project_id: UUID, snapshot_id: UUID | None) -> DatasetSnapshot:
         """Get existing snapshot or create a new one:
         - If snapshot_id is provided, fetch and return it.
         - If snapshot_id is None, create a new snapshot if necessary.
@@ -130,7 +130,7 @@ class DatasetSnapshotService:
         return await cls.create_snapshot(project_id=project_id)
 
     @classmethod
-    async def delete_snapshot_if_unused(cls, snapshot_id: ShortUUID, project_id: ShortUUID) -> None:
+    async def delete_snapshot_if_unused(cls, snapshot_id: UUID, project_id: UUID) -> None:
         """Delete snapshot only if no models reference it."""
         async with get_async_db_session_ctx() as session:
             # Check references
@@ -161,15 +161,13 @@ class DatasetSnapshotService:
                 logger.error(f"Error deleting snapshot file {snapshot.filename}: {e}")
 
     @classmethod
-    async def delete_project_snapshots_db(
-        cls, session: AsyncSession, project_id: ShortUUID, commit: bool = False
-    ) -> None:
+    async def delete_project_snapshots_db(cls, session: AsyncSession, project_id: UUID, commit: bool = False) -> None:
         """Delete all snapshots associated with a project from the database."""
         snapshot_repo = DatasetSnapshotRepository(session, project_id=project_id)
         await snapshot_repo.delete_all(commit=commit)
 
     @classmethod
-    async def cleanup_project_snapshot_files(cls, project_id: ShortUUID) -> None:
+    async def cleanup_project_snapshot_files(cls, project_id: UUID) -> None:
         """Cleanup snapshot files for a project."""
         try:
             # Cleanup project folder (removes all files at once)
@@ -218,7 +216,7 @@ class DatasetSnapshotService:
 
     @classmethod
     @asynccontextmanager
-    async def use_snapshot_as_folder(cls, snapshot_id: ShortUUID, project_id: ShortUUID):
+    async def use_snapshot_as_folder(cls, snapshot_id: UUID, project_id: UUID):
         """Context manager to use a snapshot as a temporary folder."""
         snapshot_bin_repo = DatasetSnapshotBinaryRepository(project_id=project_id)
         snapshot_path = snapshot_bin_repo.get_snapshot_path(snapshot_id)
@@ -228,7 +226,7 @@ class DatasetSnapshotService:
             yield temp_dir
 
     @staticmethod
-    async def list_snapshots(project_id: ShortUUID, limit: int, offset: int) -> DatasetSnapshotList:
+    async def list_snapshots(project_id: UUID, limit: int, offset: int) -> DatasetSnapshotList:
         """List all dataset snapshots for a project."""
         async with get_async_db_session_ctx() as session:
             repo = DatasetSnapshotRepository(session, project_id=project_id)
@@ -245,7 +243,7 @@ class DatasetSnapshotService:
         )
 
     @staticmethod
-    async def get_snapshot(project_id: ShortUUID, snapshot_id: ShortUUID) -> DatasetSnapshot:
+    async def get_snapshot(project_id: UUID, snapshot_id: UUID) -> DatasetSnapshot:
         """Get dataset snapshot by ID."""
         async with get_async_db_session_ctx() as session:
             snapshot_repo = DatasetSnapshotRepository(session, project_id=project_id)

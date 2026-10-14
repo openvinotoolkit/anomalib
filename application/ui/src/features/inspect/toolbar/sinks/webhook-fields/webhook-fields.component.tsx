@@ -1,4 +1,4 @@
-import { Flex, Item, NumberField, Picker, TextField } from '@geti/ui';
+import { Flex, Item, NumberField, Picker, TextField } from '@geti-ui/ui';
 
 import { OutputFormats } from '../output-formats/output-formats.component';
 import { RateLimitField } from '../rate-limit-field/rate-limit-field.component';

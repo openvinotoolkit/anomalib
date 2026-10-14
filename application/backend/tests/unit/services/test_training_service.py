@@ -1,8 +1,10 @@
 # Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 import asyncio
+from pathlib import Path
 from typing import Any
-from unittest.mock import ANY, AsyncMock, MagicMock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, call, patch
+from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
@@ -12,7 +14,6 @@ from pydantic_models.job import TrainJobPayload
 from repositories.binary_repo import ImageBinaryRepository, ModelBinaryRepository
 from services import TrainingService
 from utils.callbacks import ProgressSyncParams
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
@@ -70,6 +71,7 @@ def fxt_mock_anomalib_components():
         mock_folder_class.return_value = mock_folder
 
         mock_anomalib_model = MagicMock()
+        mock_anomalib_model.name = "Padim"
         mock_get_model.return_value = mock_anomalib_model
 
         mock_engine = MagicMock()
@@ -108,7 +110,7 @@ def fxt_mock_dataset_snapshot_service():
     with patch("services.training_service.DatasetSnapshotService") as mock_service:
         # Setup default return values
         mock_snapshot = MagicMock()
-        mock_snapshot.id = ShortUUID.generate()
+        mock_snapshot.id = uuid4()
         mock_service.create_snapshot = AsyncMock(return_value=mock_snapshot)
         # Fix: get_or_create_snapshot needs to be awaited
         mock_service.get_or_create_snapshot = AsyncMock(return_value=mock_snapshot)
@@ -179,7 +181,7 @@ class TestTrainingService:
             # payload and a name that embeds the generated model ID in the expected format.
             created_model = mock_to_thread.call_args.kwargs["model"]
             assert created_model.architecture == fxt_job.payload["model_name"]
-            assert created_model.name == f"{fxt_job.payload['model_name']} ({created_model.id})"
+            assert created_model.name == f"{fxt_job.payload['model_name']} ({str(created_model.id).split('-')[0]})"
 
     @pytest.mark.parametrize(
         "exception,expected_message",
@@ -283,7 +285,11 @@ class TestTrainingService:
         fxt_model_binary_repo.model_folder_path = "/path/to/model"
 
         # Call the method
-        with patch.object(TrainingService, "_compute_export_size", return_value=123):
+        with (
+            patch.object(TrainingService, "_compute_export_size", return_value=123),
+            patch.object(TrainingService, "_move_artifact") as mock_move_artifact,
+            patch("services.training_service.Path.mkdir"),
+        ):
             result = TrainingService._train_model(
                 fxt_model,
                 synchronization_parameters=ProgressSyncParams(),
@@ -304,7 +310,7 @@ class TestTrainingService:
         # Verify Engine was called with expected parameters
         fxt_mock_anomalib_components["engine_class"].assert_called_once()
         call_args = fxt_mock_anomalib_components["engine_class"].call_args
-        assert call_args[1]["default_root_dir"] == "/path/to/model"
+        assert call_args[1]["default_root_dir"] == Path("data") / f"train-workspace-{fxt_model.id}"
         assert "logger" in call_args[1]
         assert len(call_args[1]["logger"]) == 1  # tensorboard
         assert call_args[1]["max_epochs"] == 42
@@ -314,6 +320,48 @@ class TestTrainingService:
             datamodule=fxt_mock_anomalib_components["folder"],
         )
         fxt_mock_anomalib_components["engine"].export.assert_called_once()
+
+        mock_move_artifact.assert_has_calls([
+            call(
+                src_dir=(
+                    Path("data")
+                    / f"train-workspace-{fxt_model.id}"
+                    / "Padim"
+                    / f"{fxt_model.project_id}-padim"
+                    / "latest"
+                    / "weights"
+                    / "openvino"
+                ).resolve(),
+                dest_dir=Path("/path/to/model"),
+                file_name="model.xml",
+            ),
+            call(
+                src_dir=(
+                    Path("data")
+                    / f"train-workspace-{fxt_model.id}"
+                    / "Padim"
+                    / f"{fxt_model.project_id}-padim"
+                    / "latest"
+                    / "weights"
+                    / "openvino"
+                ).resolve(),
+                dest_dir=Path("/path/to/model"),
+                file_name="model.bin",
+            ),
+            call(
+                src_dir=(
+                    Path("data")
+                    / f"train-workspace-{fxt_model.id}"
+                    / "Padim"
+                    / f"{fxt_model.project_id}-padim"
+                    / "latest"
+                    / "weights"
+                    / "lightning"
+                ).resolve(),
+                dest_dir=Path("/path/to/model/checkpoint"),
+                file_name="model.ckpt",
+            ),
+        ])
 
     def test_train_pending_job_cancelled(
         self,

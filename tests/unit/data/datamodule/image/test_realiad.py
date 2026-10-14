@@ -1,8 +1,9 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - RealIAD Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -17,8 +18,9 @@ class TestRealIAD(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> RealIAD:
+    def datamodule(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> RealIAD:
         """Create and return a RealIAD datamodule."""
+        make_dummy_dataset("realiad")
         datamodule_ = RealIAD(
             root=dataset_path / "realiad",
             category="audiojack",

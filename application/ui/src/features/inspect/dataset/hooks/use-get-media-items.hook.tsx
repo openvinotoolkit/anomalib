@@ -30,6 +30,7 @@ export const useGetMediaItems = () => {
 
                 return pagination.offset + mediaItemsLimit;
             },
+            initialPageParam: 0,
         }
     );
 

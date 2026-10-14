@@ -4,8 +4,8 @@
 import { useRef, useState } from 'react';
 
 import { $api } from '@anomalib-studio/api';
-import { ActionButton, Flex, Item, Key, Loading, Picker, TextField } from '@geti/ui';
-import { Refresh } from '@geti/ui/icons';
+import { ActionButton, Flex, Item, Key, Loading, Picker, TextField } from '@geti-ui/ui';
+import { Refresh } from '@geti-ui/ui/icons';
 import { isEmpty } from 'lodash-es';
 
 import { UsbCameraSourceConfig } from '../util';

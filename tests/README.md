@@ -63,6 +63,21 @@ For verbose output:
 pytest -v
 ```
 
+### Parallel tests with `pytest-xdist`
+
+CI CPU jobs run with `--numprocesses=auto --dist=loadfile`. Locally:
+
+```bash
+# Fast parallel unit feedback (same settings as CI CPU)
+uv run pytest tests/unit -n auto --dist loadfile
+
+# Keep GPU / heavy integration sequential unless you know the machine can share the device
+uv run pytest tests/integration --numprocesses=0
+```
+
+`loadfile` keeps an entire test module on one worker so session-scoped fixtures and
+per-model fit caches stay coherent. Default local runs without `-n` stay sequential.
+
 ### Checking Test Coverage with `pytest-cov
 
 `pytest-cov` is a plugin for pytest that provides coverage reporting. You can

@@ -54,6 +54,7 @@ Note:
 """
 
 from .base import NumpyBatch, NumpyItem
+from .depth import NumpyDepthBatch, NumpyDepthItem
 from .image import NumpyImageBatch, NumpyImageItem
 from .video import NumpyVideoBatch, NumpyVideoItem
 
@@ -64,4 +65,6 @@ __all__ = [
     "NumpyImageItem",
     "NumpyVideoBatch",
     "NumpyVideoItem",
+    "NumpyDepthBatch",
+    "NumpyDepthItem",
 ]

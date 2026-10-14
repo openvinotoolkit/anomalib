@@ -1,4 +1,4 @@
-# Copyright (C) 2023-2025 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Test ensemble helper functions."""
@@ -8,16 +8,20 @@ from pathlib import Path
 import pytest
 from jsonargparse import Namespace
 from lightning.pytorch.callbacks import EarlyStopping
+from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib.pipelines.tiled_ensemble.components.utils import NormalizationStage
 from anomalib.pipelines.tiled_ensemble.components.utils.ensemble_tiling import EnsembleTiler, TileCollater
 from anomalib.pipelines.tiled_ensemble.components.utils.helper_functions import (
+    drop_resize_transform,
     get_ensemble_datamodule,
     get_ensemble_model,
     get_ensemble_tiler,
     get_threshold_values,
     parse_trainer_kwargs,
 )
+from anomalib.pre_processing import PreProcessor
+from anomalib.pre_processing.utils.spec import transform_to_spec
 
 
 class TestHelperFunctions:
@@ -110,3 +114,64 @@ class TestHelperFunctions:
             assert i_thresh == p_thresh == 0.5
         else:
             assert i_thresh == p_thresh == 0.1111
+
+
+class TestDropResizeTransform:
+    """Test drop_resize_transform, in isolation from any specific model.
+
+    Uses synthetic pre-processors instead of instantiating real models (e.g.
+    CFM, AiVad) whose constructors download pretrained weights, so this stays
+    fast and network-independent.
+    """
+
+    @staticmethod
+    def test_bare_resize_collapses_to_none() -> None:
+        """A pre-processor whose whole transform is a bare Resize collapses to None.
+
+        Regression test: this previously became an empty list (``[]``), which
+        raised ``TypeError`` from ``nn.Module.__setattr__`` immediately (since
+        ``pre_processor.transform`` already held a registered ``Resize``
+        submodule), and would separately have broken ``transform_to_spec``
+        during checkpointing had that assignment succeeded.
+        """
+        pre_processor = PreProcessor(transform=Resize((256, 256)))
+
+        drop_resize_transform(pre_processor)
+
+        assert pre_processor.transform is None
+        assert pre_processor.export_transform is None
+        # must not raise, and must produce a checkpoint-safe spec
+        assert transform_to_spec(pre_processor.transform) is None
+
+    @staticmethod
+    def test_no_transform_stays_none() -> None:
+        """A pre-processor with no transform stays None, not an empty list."""
+        pre_processor = PreProcessor(transform=None)
+
+        drop_resize_transform(pre_processor)
+
+        assert pre_processor.transform is None
+        assert transform_to_spec(pre_processor.transform) is None
+
+    @staticmethod
+    def test_resize_dropped_from_compose() -> None:
+        """Resize is dropped from a Compose, and the remaining transforms are kept."""
+        normalize = Normalize(mean=[0.5], std=[0.5])
+        pre_processor = PreProcessor(transform=Compose([Resize((256, 256)), normalize]))
+
+        drop_resize_transform(pre_processor)
+
+        assert isinstance(pre_processor.transform, Compose)
+        assert pre_processor.transform.transforms == [normalize]
+        # must not raise
+        transform_to_spec(pre_processor.transform)
+
+    @staticmethod
+    def test_non_resize_transform_is_kept() -> None:
+        """A transform that is neither Resize nor Compose is left untouched."""
+        normalize = Normalize(mean=[0.5], std=[0.5])
+        pre_processor = PreProcessor(transform=normalize)
+
+        drop_resize_transform(pre_processor)
+
+        assert pre_processor.transform is normalize

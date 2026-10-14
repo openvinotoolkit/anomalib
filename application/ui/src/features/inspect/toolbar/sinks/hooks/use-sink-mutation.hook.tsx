@@ -12,7 +12,6 @@ export const useSinkMutation = (isNewSink: boolean) => {
         },
     });
     const updateSink = $api.useMutation('patch', '/api/projects/{project_id}/sinks/{sink_id}', {
-        params: { path: { project_id: projectId } },
         meta: {
             invalidates: [['get', '/api/projects/{project_id}/sinks', { params: { path: { project_id: projectId } } }]],
         },

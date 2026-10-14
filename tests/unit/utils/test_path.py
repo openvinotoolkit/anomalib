@@ -14,6 +14,7 @@ from anomalib.utils.path import (
     create_versioned_dir,
     get_datasets_dir,
     get_pretrained_weights_dir,
+    paths_to_strings,
     resolve_versioned_path,
 )
 
@@ -218,3 +219,11 @@ class TestGetCacheSubdir:
         """Bare '..' is rejected with ValueError."""
         with pytest.raises(ValueError, match="Invalid cache subdirectory name"):
             _get_cache_subdir("..")
+
+
+def test_paths_to_strings_converts_nested_paths() -> None:
+    """Nested path values become strings without mutating input."""
+    value = {"root": Path("data"), "items": [Path("one"), (Path("two"),)]}
+    result = paths_to_strings(value)
+    assert result == {"root": "data", "items": ["one", ("two",)]}
+    assert value["root"] == Path("data")

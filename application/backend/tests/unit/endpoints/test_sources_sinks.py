@@ -4,6 +4,7 @@
 import io
 from enum import StrEnum
 from unittest.mock import MagicMock
+from uuid import uuid4
 
 import pytest
 import yaml
@@ -16,7 +17,6 @@ from pydantic_models.sink import FolderSinkConfig, MqttSinkConfig, OutputFormat,
 from pydantic_models.source import SourceList, SourceType, UsbCameraSourceConfig, VideoFileSourceConfig
 from services import ConfigurationService, ResourceAlreadyExistsError, ResourceInUseError, ResourceNotFoundError
 from services.exceptions import ResourceType
-from utils.short_uuid import ShortUUID
 
 
 class ConfigApiPath(StrEnum):
@@ -27,7 +27,7 @@ class ConfigApiPath(StrEnum):
 @pytest.fixture
 def fxt_folder_sink(fxt_project) -> FolderSinkConfig:
     return FolderSinkConfig(
-        id=ShortUUID.generate(),
+        id=uuid4(),
         project_id=fxt_project.id,
         sink_type=SinkType.FOLDER,
         name="Test Folder Sink",
@@ -40,7 +40,7 @@ def fxt_folder_sink(fxt_project) -> FolderSinkConfig:
 @pytest.fixture
 def fxt_usb_camera_source(fxt_project) -> UsbCameraSourceConfig:
     return UsbCameraSourceConfig(
-        id=ShortUUID.generate(),
+        id=uuid4(),
         project_id=fxt_project.id,
         source_type=SourceType.USB_CAMERA,
         name="Test USB Camera Source",
@@ -51,7 +51,7 @@ def fxt_usb_camera_source(fxt_project) -> UsbCameraSourceConfig:
 @pytest.fixture
 def fxt_video_source(fxt_project) -> VideoFileSourceConfig:
     return VideoFileSourceConfig(
-        id=ShortUUID.generate(),
+        id=uuid4(),
         project_id=fxt_project.id,
         source_type=SourceType.VIDEO_FILE,
         name="Test Folder Source",
@@ -62,7 +62,7 @@ def fxt_video_source(fxt_project) -> VideoFileSourceConfig:
 @pytest.fixture
 def fxt_mqtt_sink(fxt_project) -> MqttSinkConfig:
     return MqttSinkConfig(
-        id=ShortUUID.generate(),
+        id=uuid4(),
         project_id=fxt_project.id,
         sink_type=SinkType.MQTT,
         name="Test MQTT Sink",
@@ -230,7 +230,7 @@ class TestSourceAndSinkEndpoints:
         fxt_client,
         fxt_project,
     ):
-        config_id = ShortUUID.generate()
+        config_id = uuid4()
         getattr(fxt_config_service, get_method).side_effect = ResourceNotFoundError(resource_type, str(config_id))
 
         response = fxt_client.get(f"/api/projects/{fxt_project.id}/{api_path}/{config_id!s}")
@@ -289,7 +289,7 @@ class TestSourceAndSinkEndpoints:
         fxt_client,
         fxt_project,
     ):
-        config_id = str(ShortUUID.generate())
+        config_id = str(uuid4())
         getattr(fxt_config_service, update_method).side_effect = ResourceNotFoundError(resource_type, config_id)
 
         response = fxt_client.patch(f"/api/projects/{fxt_project.id}/{api_path}/{config_id}", json={"name": "Updated"})
@@ -380,7 +380,7 @@ class TestSourceAndSinkEndpoints:
         fxt_client,
         fxt_project,
     ):
-        config_id = str(ShortUUID.generate())
+        config_id = str(uuid4())
         getattr(fxt_config_service, delete_method).side_effect = ResourceNotFoundError(resource_type, config_id)
 
         response = fxt_client.delete(f"/api/projects/{fxt_project.id}/{api_path}/{config_id}")

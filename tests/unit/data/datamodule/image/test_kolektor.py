@@ -1,8 +1,9 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - Kolektor Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -17,8 +18,9 @@ class TestKolektor(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> Kolektor:
+    def datamodule(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> Kolektor:
         """Create and return a BTech datamodule."""
+        make_dummy_dataset("kolektor")
         datamodule_ = Kolektor(
             root=dataset_path / "kolektor",
             train_batch_size=4,

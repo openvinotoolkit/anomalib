@@ -134,8 +134,10 @@ class KCenterGreedy:
         selected_coreset_idxs: list[torch.Tensor] = [idx]
         for _ in tqdm(range(self.coreset_size - 1), desc="Selecting Coreset Indices."):
             self.update_distances(cluster_center=idx)
+            # Exclude selected centers even when all remaining distances are zero.
+            # Subsequent minimum updates preserve this sentinel.
+            self.min_distances.scatter_(0, idx.unsqueeze(0).unsqueeze(1), -torch.inf)
             idx = self.get_new_idx()
-            self.min_distances.scatter_(0, idx.unsqueeze(0).unsqueeze(1), 0.0)
             selected_coreset_idxs.append(idx)
 
         return torch.stack(selected_coreset_idxs).cpu().tolist()

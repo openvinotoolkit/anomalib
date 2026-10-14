@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 import asyncio
 from io import BytesIO
+from uuid import UUID, uuid4
 
 import numpy as np
 from loguru import logger
@@ -15,19 +16,18 @@ from repositories import MediaRepository, ProjectRepository
 from repositories.binary_repo import ImageBinaryRepository
 from services import ResourceNotFoundError
 from services.exceptions import ResourceType
-from utils.short_uuid import ShortUUID
 
 THUMBNAIL_SIZE = 256  # Max width/height for thumbnails in pixels
 
 
 class MediaService:
     @staticmethod
-    def _get_thumbnail_filename(media_id: ShortUUID) -> str:
+    def _get_thumbnail_filename(media_id: UUID) -> str:
         """Generate thumbnail filename for a given media ID."""
         return f"thumb_{media_id}.png"
 
     @staticmethod
-    async def get_media_list(project_id: ShortUUID, limit: int, offset: int) -> MediaList:
+    async def get_media_list(project_id: UUID, limit: int, offset: int) -> MediaList:
         async with get_async_db_session_ctx() as session:
             repo = MediaRepository(session, project_id=project_id)
             total = await repo.get_all_count()
@@ -43,13 +43,13 @@ class MediaService:
         )
 
     @staticmethod
-    async def get_media_by_id(project_id: ShortUUID, media_id: ShortUUID) -> Media | None:
+    async def get_media_by_id(project_id: UUID, media_id: UUID) -> Media | None:
         async with get_async_db_session_ctx() as session:
             repo = MediaRepository(session, project_id=project_id)
             return await repo.get_by_id(media_id)
 
     @classmethod
-    async def get_media_file_path(cls, project_id: ShortUUID, media_id: ShortUUID) -> str:
+    async def get_media_file_path(cls, project_id: UUID, media_id: UUID) -> str:
         media = await cls.get_media_by_id(project_id=project_id, media_id=media_id)
         if media is None:
             raise FileNotFoundError(f"Media with ID {media_id} not found.")
@@ -57,7 +57,7 @@ class MediaService:
         return bin_repo.get_full_path(filename=media.filename)
 
     @classmethod
-    async def get_thumbnail_file_path(cls, project_id: ShortUUID, media_id: ShortUUID) -> str:
+    async def get_thumbnail_file_path(cls, project_id: UUID, media_id: UUID) -> str:
         """Get the file path for a media's thumbnail."""
         media = await cls.get_media_by_id(project_id=project_id, media_id=media_id)
         if media is None:
@@ -69,14 +69,14 @@ class MediaService:
     @classmethod
     async def upload_image(
         cls,
-        project_id: ShortUUID,
+        project_id: UUID,
         image: np.ndarray | bytes,
         is_anomalous: bool,
         extension: str | None = None,
         size: int | None = None,
     ) -> Media:
         # Generate unique filename and media ID
-        media_id = ShortUUID.generate()
+        media_id = uuid4()
 
         if not extension or not extension.lstrip("."):
             raise ValueError("File extension must be provided")
@@ -141,7 +141,7 @@ class MediaService:
         return saved_media
 
     @classmethod
-    async def delete_media(cls, media_id: ShortUUID, project_id: ShortUUID) -> None:
+    async def delete_media(cls, media_id: UUID, project_id: UUID) -> None:
         async with get_async_db_session_ctx() as session:
             media_repo = MediaRepository(session, project_id=project_id)
             media = await media_repo.get_by_id(media_id)
@@ -154,13 +154,13 @@ class MediaService:
         await ProjectRepository(session).update_dataset_timestamp(project_id=project_id)
 
     @classmethod
-    async def delete_project_media_db(cls, session: AsyncSession, project_id: ShortUUID, commit: bool = False) -> None:
+    async def delete_project_media_db(cls, session: AsyncSession, project_id: UUID, commit: bool = False) -> None:
         """Delete all media associated with a project from the database."""
         media_repo = MediaRepository(session, project_id=project_id)
         await media_repo.delete_all(commit=commit)
 
     @classmethod
-    async def cleanup_project_media_files(cls, project_id: ShortUUID) -> None:
+    async def cleanup_project_media_files(cls, project_id: UUID) -> None:
         """Cleanup media files for a project."""
         try:
             # Cleanup project folder (removes all files at once)
@@ -171,7 +171,7 @@ class MediaService:
             logger.warning(f"Failed to cleanup media files for project {project_id}: {e}")
 
     @staticmethod
-    async def _delete_media_file(project_id: ShortUUID, filename: str) -> None:
+    async def _delete_media_file(project_id: UUID, filename: str) -> None:
         bin_repo = ImageBinaryRepository(project_id=project_id)
 
         try:
@@ -185,8 +185,8 @@ class MediaService:
     @classmethod
     async def generate_thumbnail(
         cls,
-        project_id: ShortUUID,
-        media_id: ShortUUID,
+        project_id: UUID,
+        media_id: UUID,
         image: np.ndarray | bytes,
         height_px: int = THUMBNAIL_SIZE,
         width_px: int = THUMBNAIL_SIZE,

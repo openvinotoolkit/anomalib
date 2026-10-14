@@ -31,7 +31,7 @@ class SparseRandomProjection:
     """Sparse Random Projection using PyTorch operations.
 
     This class implements sparse random projection for dimensionality reduction
-    using PyTorch. The implementation is based on the paper by Li et al. [1]_.
+    using PyTorch. The implementation is based on the paper by Li et al. .
 
     Args:
         eps (float, optional): Minimum distortion rate parameter for calculating
@@ -72,7 +72,7 @@ class SparseRandomProjection:
     def _sparse_random_matrix(self, n_features: int) -> torch.Tensor:
         """Generate a sparse random matrix for projection.
 
-        Implements the sparse random matrix generation described in [1]_.
+        Implements the sparse random matrix generation described in .
 
         Args:
             n_features (int): Dimensionality of the original source space.

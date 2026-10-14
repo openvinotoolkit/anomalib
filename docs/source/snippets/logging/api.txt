@@ -1,0 +1,12 @@
+from anomalib.data import MVTecAD
+from anomalib.engine import Engine
+from anomalib.loggers import AnomalibTensorBoardLogger
+from anomalib.models import Patchcore
+
+engine = Engine(
+    logger=AnomalibTensorBoardLogger(save_dir="results"),
+    max_epochs=1,
+)
+model = Patchcore()
+datamodule = MVTecAD()
+engine.fit(model=model, datamodule=datamodule)

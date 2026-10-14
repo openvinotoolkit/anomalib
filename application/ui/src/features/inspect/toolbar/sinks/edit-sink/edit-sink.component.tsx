@@ -1,7 +1,7 @@
 import { ReactNode, useRef } from 'react';
 
-import { ActionButton, Button, ButtonGroup, Divider, Flex, Form, Text, View } from '@geti/ui';
-import { Back } from '@geti/ui/icons';
+import { ActionButton, Button, ButtonGroup, Divider, Flex, Form, Text, View } from '@geti-ui/ui';
+import { Back } from '@geti-ui/ui/icons';
 
 import { useConnectSinkToPipeline } from '../../../../../hooks/use-pipeline.hook';
 import { useSinkAction } from '../hooks/use-sink-action.hook';

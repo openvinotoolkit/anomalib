@@ -16,6 +16,74 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+## [v2.7.0] - 2026-10-06
+
+### Added
+
+- 🚀 **model**: Add MH-PatchCore by @NickF93 in https://github.com/open-edge-platform/anomalib/pull/3809
+- 🚀 **model**: Add RAD (Retrieval-based Anomaly Detection) model by @josselinonduty in https://github.com/open-edge-platform/anomalib/pull/3721
+- 🚀 **model**: Add FoundAD Few Shot Anomaly Detection Model by @rajeshgangireddy in https://github.com/open-edge-platform/anomalib/pull/3793
+
+### Removed
+
+- ⚠️ **breaking**: Remove APIs scheduled for 2.7.0 — legacy ONNX exporter (`dynamo=False`; dynamo/`onnxscript` via `anomalib[openvino]` now required), `restore_frozen_encoder_weights` / pre-timm ViT checkpoint migration (retrain or re-export), and raise minimum PyTorch to `>=2.10.0` (`torchvision>=0.25.0` for cpu/cu/xpu; ROCm remains `torch>=2.13.0`) by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3826
+
+### Changed
+
+- ⚠️ **security**: When a dataset `root` is set, metadata path columns (Tabular and similar loaders) must resolve under that root; absolute paths outside `root` are rejected by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3794 and https://github.com/open-edge-platform/anomalib/pull/3796
+- 🔧 **model**: Replace Sklearn with optimized PyTorch KMeans in CFA by @andersendsa in https://github.com/open-edge-platform/anomalib/pull/3760
+- 🔧 **deps**: Require `transformers>=4.40` to avoid resolver backtracking to 4.12 by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3840
+
+### Deprecated
+
+### Fixed
+
+- 🐞 **metric**: `AUPR` now computes step-wise average precision, so constant, all-zero and inverted detectors score at the anomaly rate instead of 0.525 by @mateenali66 in https://github.com/open-edge-platform/anomalib/pull/3797
+- 🐞 **metric**: Fix `thresholds_between_min_and_max` device fallback when `device` is `None` by @andersendsa in https://github.com/open-edge-platform/anomalib/pull/3807
+- 🐞 **callbacks**: Make `MaxStepsProgressCallback` picklable during checkpointing by @jrusbo in https://github.com/open-edge-platform/anomalib/pull/3799
+- 🐞 **model**: Fix SuperADD's asynchronous CPU copy corrupting stored embeddings by @rajeshgangireddy in https://github.com/open-edge-platform/anomalib/pull/3827
+- 🐞 **model**: Make models exportable with the dynamo ONNX exporter by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3834
+- 🐞 **model**: Decode CFlow rows in one pass when exporting by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3836
+- 🔒 **deps**: Upgrade the ROCm installation extra to PyTorch 2.13 or later on ROCm 7.2 by @AlexanderBarabanov in https://github.com/open-edge-platform/anomalib/pull/3820
+- 🔒 **security**: Checkpoint loading now defaults to `weights_only=True`, blocking arbitrary code execution from untrusted `.ckpt`. Checkpoints saved before this change that pickled live component objects in `hyper_parameters` will fail to load; pass `weights_only=False` once to migrate, or re-save under the new format. Custom `PreProcessor` subclasses and non-default `Evaluator` / `Visualizer` instances are not reconstructed automatically — pass them to `load_from_checkpoint(...)` (and override `checkpoint_config` / `load_checkpoint_config` for custom pre/post-processors) by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3801
+
+## [v2.6.2] - 2026-09-11
+
+### Added
+
+### Removed
+
+### Changed
+
+- ⚠️ **data**: `Tabular.from_file()` now only accepts `csv`, `json`, and `parquet`; `pickle`, `hdf`, and other pandas readers that can execute code are rejected. Load those formats yourself and pass a DataFrame to `Tabular(...)` by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3782
+
+### Deprecated
+
+### Fixed
+
+## [v2.6.1] - 2026-09-04
+
+### Added
+
+### Removed
+
+### Changed
+
+- 🔄 **data**: Update Kaputt dataset source to the official Hugging Face repository (https://huggingface.co/datasets/amazon/kaputt) by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3765
+- 🔧 **metric**: Optimize binary classification curve metric with PyTorch by @andersendsa in https://github.com/open-edge-platform/anomalib/pull/3720
+- 🔧 **model**: Use native padding in FastFlow by @andersendsa in https://github.com/open-edge-platform/anomalib/pull/3742
+- 🔧 **deps**: Bump `torch` by @AlexanderBarabanov in https://github.com/open-edge-platform/anomalib/pull/3722 and https://github.com/open-edge-platform/anomalib/pull/3752
+
+### Deprecated
+
+### Fixed
+
+- 🐞 **data**: Random tiling now honours the configured tile width instead of always producing square tiles by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3772
+- 🐞 **security**: Block tar/zip path traversal on all supported Python versions by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3769
+- 📚 **docs**: Fix broken documentation links by @godarrenw in https://github.com/open-edge-platform/anomalib/pull/3746
+- 🐞 **data**: Treat `seed=0` as a valid seed in `random_split` by @VenishPaneliya in https://github.com/open-edge-platform/anomalib/pull/3738
+- 🔧 **typing**: Remove type-only references to wandb's removed `RunDisabled` class by @dmitryduev in https://github.com/open-edge-platform/anomalib/pull/3739
+
 ## [v2.6.0] - 2026-07-24
 
 ### Added

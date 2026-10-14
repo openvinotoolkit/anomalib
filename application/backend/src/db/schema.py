@@ -2,12 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from datetime import datetime
+from uuid import uuid4
 
 from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
-
-from utils.short_uuid import ShortUUID
 
 
 class Base(DeclarativeBase):
@@ -17,7 +16,7 @@ class Base(DeclarativeBase):
 class ProjectDB(Base):
     __tablename__ = "projects"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default=ShortUUID.generate)
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid4()))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.current_timestamp())
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.current_timestamp())
@@ -29,7 +28,7 @@ class ProjectDB(Base):
 class MediaDB(Base):
     __tablename__ = "media"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default=ShortUUID.generate)
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid4()))
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
     filename: Mapped[str] = mapped_column(Text, nullable=False)
     size: Mapped[int] = mapped_column(nullable=False)
@@ -43,7 +42,7 @@ class MediaDB(Base):
 class DatasetSnapshotDB(Base):
     __tablename__ = "dataset_snapshot"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default=ShortUUID.generate)
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid4()))
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
     filename: Mapped[str] = mapped_column(Text, nullable=False)
     count: Mapped[int] = mapped_column(nullable=False)
@@ -53,7 +52,7 @@ class DatasetSnapshotDB(Base):
 class ModelDB(Base):
     __tablename__ = "models"
 
-    id: Mapped[str] = mapped_column(Text, primary_key=True, default=ShortUUID.generate)
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=lambda: str(uuid4()))
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     architecture: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -73,7 +72,7 @@ class ModelDB(Base):
 class JobDB(Base):
     __tablename__ = "jobs"
 
-    id: Mapped[str] = mapped_column(primary_key=True, default=ShortUUID.generate)
+    id: Mapped[str] = mapped_column(primary_key=True, default=lambda: str(uuid4()))
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
     type: Mapped[str] = mapped_column(String(64), nullable=False)
     progress: Mapped[int] = mapped_column(nullable=False)
@@ -109,7 +108,7 @@ class PipelineDB(Base):
 class SourceDB(Base):
     __tablename__ = "sources"
 
-    id: Mapped[str] = mapped_column(Text, primary_key=True, default=ShortUUID.generate)
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=lambda: str(uuid4()))
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     source_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -121,7 +120,7 @@ class SourceDB(Base):
 class SinkDB(Base):
     __tablename__ = "sinks"
 
-    id: Mapped[str] = mapped_column(Text, primary_key=True, default=ShortUUID.generate)
+    id: Mapped[str] = mapped_column(Text, primary_key=True, default=lambda: str(uuid4()))
     project_id: Mapped[str] = mapped_column(ForeignKey("projects.id"))
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     sink_type: Mapped[str] = mapped_column(String(50), nullable=False)

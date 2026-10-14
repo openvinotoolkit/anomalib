@@ -1,7 +1,7 @@
 // Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { useDateFormatter } from '@react-aria/i18n';
+import { useDateFormatter } from '@geti-ui/ui';
 
 import { useProjectTrainingJobs } from './use-project-trainingJobs.hook';
 import { useTrainedModels } from './use-trained-models';

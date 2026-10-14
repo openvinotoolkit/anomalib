@@ -3,6 +3,7 @@
 
 """Unit Tests - Kaputt Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,12 @@ from tests.unit.data.datamodule.base.image import _TestAnomalibImageDatamodule
 
 class TestKaputt(_TestAnomalibImageDatamodule):
     """Kaputt Datamodule Unit Tests."""
+
+    @pytest.fixture(scope="class", autouse=True)
+    @staticmethod
+    def _make_kaputt_dataset(make_dummy_dataset: Callable[[str], Path]) -> None:
+        """Generate the Kaputt dummy dataset for this test class."""
+        make_dummy_dataset("kaputt")
 
     @pytest.fixture()
     @staticmethod

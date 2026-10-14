@@ -4,7 +4,7 @@
 import { Key, useState } from 'react';
 
 import { $api } from '@anomalib-studio/api';
-import { Heading, InlineAlert, Item, Link, Picker, Text } from '@geti/ui';
+import { Heading, InlineAlert, Item, Link, Picker, Text } from '@geti-ui/ui';
 import type { SchemaDeviceInfo } from 'src/api/openapi-spec';
 
 import { getDeviceDescription, getDeviceKey, getDeviceLabel, selectPreferredDevice } from './utils/device-metadata';

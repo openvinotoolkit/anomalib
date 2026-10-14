@@ -297,6 +297,6 @@ result = visualize_image_item(
 
 ```{seealso}
 For more information:
-- {doc}`AnomalibModule Documentation <../../reference/models/base>`
-- {doc}`Metrics Guide <../metrics/index>`
+- {doc}`AnomalibModule Guide <../models/anomalib_module>`
+- {doc}`Metrics Guide <../evaluation/metrics>`
 ```

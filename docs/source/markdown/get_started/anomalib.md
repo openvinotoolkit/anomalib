@@ -26,14 +26,14 @@ To ensure compatibility with your hardware, you can specify a backend during ins
 
 **Using `uv`:**
 
-```{literalinclude} /examples/cli/00_installation/uv_install.sh
+```{literalinclude} ../../../../examples/cli/00_installation/uv_install.sh
 :language: bash
-:lines: 12-32
+:lines: 10-30
 ```
 
 **Using `pip`:**
 
-```{literalinclude} /examples/cli/00_installation/pip_install.sh
+```{literalinclude} ../../../../examples/cli/00_installation/pip_install.sh
 :language: bash
 :lines: 9-17
 ```
@@ -52,7 +52,7 @@ interfaces, and might be easier for those who would like to use anomalib off-the
 
 ```{literalinclude} ../../../../examples/api/01_getting_started/basic_training.py
 :language: python
-:lines: 10-53
+:lines: 10-48
 ```
 
 :::
@@ -82,7 +82,7 @@ Anomalib includes multiple inferencing scripts, including Torch, Lightning, Grad
 
 ```{literalinclude} ../../../../examples/api/01_getting_started/basic_inference.py
 :language: python
-:lines: 10-40
+:lines: 10-39
 ```
 
 :::
@@ -127,6 +127,8 @@ Anomalib includes multiple inferencing scripts, including Torch, Lightning, Grad
 
 :::::{dropdown} OpenVINO Inference
 
+Exported OpenVINO models can be run using the optimized `OpenVINOInferencer`:
+
 ::::{tab-set}
 
 :::{tab-item} API
@@ -134,7 +136,7 @@ Anomalib includes multiple inferencing scripts, including Torch, Lightning, Grad
 
 ```{literalinclude} ../../../../examples/api/01_getting_started/basic_openvino_inference.py
 :language: python
-:lines: 10-28
+:lines: 10-27
 ```
 
 :::
@@ -142,90 +144,44 @@ Anomalib includes multiple inferencing scripts, including Torch, Lightning, Grad
 :::{tab-item} CLI
 :sync: label-2
 
-```{code-block} bash
-
+```bash
+anomalib predict \
+    --model Patchcore \
+    --data anomalib.data.MVTecAD \
+    --ckpt_path results/Patchcore/MVTecAD/weights/openvino/model.bin
 ```
 
 :::
 
 ::::
 :::::
-
-:::::{dropdown} Gradio Inference
-
-::::{tab-set}
-
-:::{tab-item} API
-:sync: label-1
-
-```{code-block} python
-
-```
-
-:::
-
-:::{tab-item} CLI
-:sync: label-2
-
-```{code-block} bash
-
-```
-
-:::
-
-::::
-:::::
-
-## {octicon}`graph` Hyper-Parameter Optimization
-
-Anomalib supports hyper-parameter optimization using [wandb](https://wandb.ai/) and [comet.ml](https://www.comet.com/). Here we show an example of hyper-parameter optimization using both comet and wandb.
-
-::::{tab-set}
-
-:::{tab-item} CLI
-
-```{literalinclude} /snippets/pipelines/hpo/cli.txt
-:language: bash
-```
-
-:::
-
-:::{tab-item} API
-
-```{literalinclude} /snippets/pipelines/hpo/api.txt
-:language: bash
-```
-
-:::
-
-::::
 
 ## {octicon}`beaker` Experiment Management
 
-Anomalib is integrated with various libraries for experiment tracking such as comet, tensorboard, and wandb through [lighting loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html).
+Anomalib integrates with popular experiment tracking platforms such as TensorBoard, Weights & Biases, and MLflow through Lightning loggers.
 
 ::::{tab-set}
 
 :::{tab-item} CLI
 
-To run a training experiment with experiment tracking, you will need the following configuration file:
+To run training with experiment tracking enabled:
 
-```{code-block} yaml
-
+```{literalinclude} ../../snippets/logging/cli.txt
+:language: bash
 ```
 
-By using the configuration file above, you can run the experiment with the following command:
+Or configure via YAML:
 
-```{literalinclude} /snippets/logging/cli.txt
-:language: bash
+```{literalinclude} ../../snippets/logging/config.txt
+:language: yaml
 ```
 
 :::
 
 :::{tab-item} API
 
-```{literalinclude} /snippets/logging/api.txt
-:language: bash
+```{literalinclude} ../../snippets/logging/api.txt
+:language: python
 ```
 
 :::
@@ -244,16 +200,19 @@ Each model in anomalib is benchmarked on a set of datasets, and the results are 
 
 To run the benchmarking tool, run the following command:
 
-```{code-block} bash
-anomalib benchmark --config tools/benchmarking/benchmark_params.yaml
+```{literalinclude} ../../snippets/pipelines/benchmark/cli_anomalib.txt
+:language: bash
 ```
 
 :::
 
 :::{tab-item} API
 
-```{code-block} python
+```python
+from anomalib.pipelines.benchmark import Benchmark
 
+benchmark = Benchmark(config="tools/experimental/benchmarking/sample.yaml")
+benchmark.run()
 ```
 
 :::

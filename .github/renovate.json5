@@ -28,14 +28,10 @@
     // "never") so a fresh lock PR is opened whenever new lock changes appear.
     // These PRs are immortal by design; that is acceptable now that the lock
     // no longer reintroduces blocked CVEs and is mergeable.
-
-    // FIXME: re-enable automerge once the issue is resolved
-    // https://github.com/open-edge-platform/anomalib/issues/3666
-    //
-    // automerge: true,
-    // automergeType: "pr",
-    // reviewers: ["sys-geti"],
-    // platformAutomerge: true,
+    automerge: true,
+    automergeType: "pr",
+    reviewers: ["sys-geti"],
+    platformAutomerge: true,
 
     // Renovate does not assign reviewers and assignees to
     // automerge-enabled PR unless it fails status checks.
@@ -165,6 +161,15 @@
       matchManagers: ["github-actions", "custom.regex"],
       matchPackagePatterns: ["*"],
       schedule: ["* * 1 * *"], // every month
+    },
+
+    // Custom semver versioning for geti-ci actions to support tags like zizmor/v0.1.0
+    {
+      groupName: "GitHub Actions",
+      matchManagers: ["github-actions"],
+      matchPackagePatterns: ["^open-edge-platform/geti-ci/actions/"],
+      schedule: ["* * 1 * *"], // every month
+      versioning: "regex:^(?<compatibility>[^/]+)/v?(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$",
     },
 
     // uv version used in GitHub Actions is updated manually

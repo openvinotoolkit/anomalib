@@ -1,4 +1,4 @@
-# Copyright (C) 2023-2025 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Fixtures that are used in tiled ensemble testing."""
@@ -24,12 +24,12 @@ from anomalib.pipelines.tiled_ensemble.components.utils.prediction_merging impor
 
 
 @pytest.fixture(scope="module")
-def get_ensemble_config(dataset_path: Path) -> dict:
+def get_ensemble_config(mvtecad_path: Path) -> dict:
     """Return ensemble dummy config dict with corrected dataset path to dummy temp dir."""
     with Path("tests/unit/pipelines/tiled_ensemble/dummy_config.yaml").open(encoding="utf-8") as file:
         config = yaml.safe_load(file)
         # dummy dataset
-        config["data"]["init_args"]["root"] = dataset_path / "mvtecad"
+        config["data"]["init_args"]["root"] = mvtecad_path
 
         return config
 

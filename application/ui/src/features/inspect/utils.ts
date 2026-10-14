@@ -4,6 +4,8 @@ import { isString } from 'lodash-es';
 
 import { MediaItem } from './dataset/types';
 
+const pluralRules = new Intl.PluralRules('en');
+
 export const removeUnderscore = (text: string) => {
     return text.replaceAll('_', ' ');
 };
@@ -141,3 +143,6 @@ export const formatDuration = (seconds: number | null): string | null => {
     }
     return `${secs}s`;
 };
+
+export const pluralize = (count: number, singular: string, plural: string): string =>
+    pluralRules.select(count) === 'one' ? singular : plural;

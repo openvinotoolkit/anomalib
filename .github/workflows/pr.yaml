@@ -74,7 +74,7 @@ jobs:
   # PR title validation - only runs on actual pull requests, not merge groups
   pr-title-check:
     if: github.event_name == 'pull_request'
-    uses: ./.github/workflows/_reusable-pr-title-check.yaml
+    uses: $/.github/workflows/_reusable-pr-title-check.yaml
     permissions:
       contents: read # Required by the called workflow to checkout the repository
     with:
@@ -83,7 +83,7 @@ jobs:
   # Code quality - covers both library (src/) and application/ via prek workspace mode
   quality:
     if: github.event.pull_request.draft != true
-    uses: ./.github/workflows/_reusable-code-quality.yaml
+    uses: $/.github/workflows/_reusable-code-quality.yaml
     permissions:
       contents: read # Required by the called workflow to checkout the repository
     with:
@@ -92,7 +92,7 @@ jobs:
   # Security scanning
   security:
     if: github.event.pull_request.draft != true
-    uses: ./.github/workflows/_reusable-security-scan.yaml
+    uses: $/.github/workflows/_reusable-security-scan.yaml
     permissions:
       security-events: write # needed to upload results
       contents: read
@@ -114,7 +114,7 @@ jobs:
       contents: read # Required to checkout the repository
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -125,7 +125,7 @@ jobs:
 
       - name: Check paths
         id: check-library-paths
-        uses: open-edge-platform/geti-ci/actions/check-paths@7e686c1248b3939f8ee8e04e2612da727e379d91
+        uses: open-edge-platform/geti-ci/actions/check-paths@2ed3ce382d1dbd6db52c7c6b93ffdae280a1c06f # check-paths/v0.1.0
         with:
           files_yaml: |
             test:
@@ -145,7 +145,7 @@ jobs:
   unit-tests:
     needs: check-library-paths
     if: needs.check-library-paths.outputs.run_library == 'true' && github.event.pull_request.draft != true
-    uses: ./.github/workflows/_reusable-test-suite.yaml
+    uses: $/.github/workflows/_reusable-test-suite.yaml
     permissions:
       contents: read # Required by the called workflow to checkout the repository
     with:
@@ -159,7 +159,7 @@ jobs:
   integration-tests:
     needs: check-library-paths
     if: needs.check-library-paths.outputs.run_library == 'true' && github.event.pull_request.draft != true
-    uses: ./.github/workflows/_reusable-test-suite.yaml
+    uses: $/.github/workflows/_reusable-test-suite.yaml
     permissions:
       contents: read # Required by the called workflow to checkout the repository
     with:
@@ -185,7 +185,7 @@ jobs:
     if: always() && !cancelled()
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -211,7 +211,7 @@ jobs:
       contents: read # Required to checkout the repository
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -222,7 +222,7 @@ jobs:
 
       - name: Check paths
         id: check-paths
-        uses: open-edge-platform/geti-ci/actions/check-paths@7e686c1248b3939f8ee8e04e2612da727e379d91
+        uses: open-edge-platform/geti-ci/actions/check-paths@2ed3ce382d1dbd6db52c7c6b93ffdae280a1c06f # check-paths/v0.1.0
         with:
           files_yaml: |
             test:
@@ -234,7 +234,7 @@ jobs:
     name: Build and upload docker image
     needs: check-paths
     if: needs.check-paths.outputs.run_build == 'true' && github.event.pull_request.draft != true
-    uses: ./.github/workflows/_reusable-docker-build.yaml
+    uses: $/.github/workflows/_reusable-docker-build.yaml
     permissions:
       contents: read
       # write permissions are required to update PR comments with image sizes
@@ -251,7 +251,7 @@ jobs:
     if: always() && !cancelled()
     steps:
       - name: Harden the runner (audit all outbound calls)
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 

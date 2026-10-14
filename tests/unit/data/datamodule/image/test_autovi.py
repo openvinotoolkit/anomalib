@@ -3,6 +3,7 @@
 
 """Unit Tests - AutoVI Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -17,8 +18,9 @@ class TestAutoVI(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> AutoVI:
+    def datamodule(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> AutoVI:
         """Create and return an AutoVI datamodule."""
+        make_dummy_dataset("autovi")
         datamodule_ = AutoVI(
             root=dataset_path / "autovi",
             category="engine_wiring",

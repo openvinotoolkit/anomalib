@@ -1,11 +1,12 @@
 // Copyright (C) 2025-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { generateShortUUID } from '../../../../../utils/short-uuid';
+import { v4 as uuid } from 'uuid';
+
 import { MqttSinkConfig, SinkOutputFormats } from '../utils';
 
 export const getMqttInitialConfig = (project_id: string): MqttSinkConfig => ({
-    id: generateShortUUID(),
+    id: uuid(),
     name: 'MQTT sink',
     project_id,
     topic: '',

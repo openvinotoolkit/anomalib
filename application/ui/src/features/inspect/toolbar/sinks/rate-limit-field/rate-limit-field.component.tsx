@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Checkbox, Content, ContextualHelp, Flex, Heading, NumberField, Text } from '@geti/ui';
+import { Checkbox, Content, ContextualHelp, Flex, Heading, NumberField, Text } from '@geti-ui/ui';
 
 interface RateLimitFieldProps {
     defaultValue: number | null | undefined;

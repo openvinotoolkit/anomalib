@@ -1,12 +1,10 @@
-# Use of virtual environment is highy recommended
-# Using conda
-yes | conda create -n anomalib_env python=3.10
-conda activate anomalib_env
-
-# Or using your favorite virtual environment
-# ...
-
-# Clone the repository and install in editable mode
+# Clone the repository
 git clone https://github.com/open-edge-platform/anomalib.git
 cd anomalib
-pip install -e .
+
+# Create virtual environment and install dependencies with uv
+uv venv
+uv sync --extra cpu
+
+# Or for development with all dependencies
+uv sync --extra dev --extra cpu

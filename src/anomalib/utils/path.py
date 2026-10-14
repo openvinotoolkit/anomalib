@@ -45,11 +45,40 @@ import re
 import shutil
 import sys
 from contextlib import suppress
-from pathlib import Path
+from pathlib import Path, PurePath
+from typing import TypeAlias
 
 import platformdirs
 
 logger = logging.getLogger(__name__)
+
+PathValue: TypeAlias = (
+    str | int | float | bool | PurePath | list["PathValue"] | tuple["PathValue", ...] | dict[str, "PathValue"] | None
+)
+
+
+def paths_to_strings(value: PathValue) -> PathValue:
+    """Convert paths nested in checkpoint data to strings.
+
+    Args:
+        value: Checkpoint data containing zero or more path values.
+
+    Returns:
+        Equivalent data with all path values converted to strings.
+
+    Example:
+        >>> paths_to_strings({"weights": Path("models/model.ckpt")})
+        {'weights': 'models/model.ckpt'}
+    """
+    if isinstance(value, PurePath):
+        return str(value)
+    if isinstance(value, dict):
+        return {key: paths_to_strings(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [paths_to_strings(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(paths_to_strings(item) for item in value)
+    return value
 
 
 def _get_cache_subdir(subdir: str) -> Path:

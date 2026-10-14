@@ -3,6 +3,7 @@
 import asyncio
 from io import BytesIO
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import numpy as np
 import pytest
@@ -12,7 +13,6 @@ from repositories import MediaRepository
 from repositories.binary_repo import ImageBinaryRepository
 from services import MediaService, ResourceNotFoundError
 from services.exceptions import ResourceType
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
@@ -234,7 +234,7 @@ class TestMediaService:
             mock_repo_class.return_value = mock_media_repo
 
             with pytest.raises(ResourceNotFoundError) as exc_info:
-                asyncio.run(fxt_media_service.delete_media(ShortUUID.generate(), fxt_project.id))
+                asyncio.run(fxt_media_service.delete_media(uuid4(), fxt_project.id))
 
             assert exc_info.value.resource_type == ResourceType.MEDIA
 
@@ -295,7 +295,7 @@ class TestMediaService:
 
         mock_bin_repo.save_file = AsyncMock(side_effect=_save_file)
 
-        media_id = ShortUUID.generate()
+        media_id = uuid4()
 
         with patch("services.media_service.ImageBinaryRepository", return_value=mock_bin_repo):
             asyncio.run(
@@ -313,7 +313,7 @@ class TestMediaService:
         mock_bin_repo.delete_file = AsyncMock()
 
         mock_media_repo = MagicMock()
-        saved_media = MagicMock(id=ShortUUID.generate(), filename="test.jpg")
+        saved_media = MagicMock(id=uuid4(), filename="test.jpg")
         mock_media_repo.save = AsyncMock(return_value=saved_media)
         mock_media_repo.get_by_id = AsyncMock(return_value=saved_media)
         mock_media_repo.delete_by_id = AsyncMock()

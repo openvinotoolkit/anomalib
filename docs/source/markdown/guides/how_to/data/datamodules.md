@@ -1,7 +1,4 @@
-```{eval-rst}
-:orphan:
-```
-
+````{eval-rst}
 # Datamodules
 
 This guide explains how Lightning DataModules work in Anomalib and how they integrate with {doc}`datasets <./datasets>` and {doc}`dataclasses <./dataclasses>`.
@@ -43,7 +40,7 @@ class AnomalibDataModule(LightningDataModule):
         self.eval_batch_size = eval_batch_size
         self.num_workers = num_workers
         self.transform = transform
-```
+````
 
 ## Integration with Datasets
 
@@ -136,8 +133,8 @@ datamodule = Avenue(
     target_frame="last",
 )
 datamodule.setup()
-i, data = next(enumerate(datamodule.train_dataloader()))
-data["image"].shape
+batch = next(iter(datamodule.train_dataloader()))
+print(batch.image.shape)
 # torch.Size([32, 2, 3, 256, 256])
 ```
 
@@ -153,8 +150,8 @@ datamodule = MVTec3D(
 )
 
 # Access RGB-D batches
-i, data = next(enumerate(datamodule.train_dataloader()))
-data["image"].shape
+batch = next(iter(datamodule.train_dataloader()))
+print(batch.image.shape)
 # torch.Size([32, 3, 256, 256])
 data["depth_map"].shape
 # torch.Size([32, 1, 256, 256])
@@ -165,7 +162,7 @@ data["depth_map"].shape
 To create a custom DataModule:
 
 ```python
-from pytorch_lightning import LightningDataModule
+from lightning.pytorch import LightningDataModule
 from torch.utils.data import DataLoader
 from anomalib.data.dataclasses import ImageBatch
 

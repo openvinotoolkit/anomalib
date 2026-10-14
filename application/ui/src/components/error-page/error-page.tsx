@@ -1,8 +1,8 @@
 // Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { Button, Heading, IllustratedMessage, View } from '@geti/ui';
-import { NotFound } from '@geti/ui/icons';
+import { Button, Heading, IllustratedMessage, View } from '@geti-ui/ui';
+import { NotFound } from '@geti-ui/ui/icons';
 import { isRouteErrorResponse, useRouteError } from 'react-router';
 
 import { paths } from '../../routes/paths';

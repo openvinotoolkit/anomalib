@@ -38,8 +38,8 @@ export const TrainingStatusAdapter = () => {
     const { data: progressData } = useQuery(
         queryOptions({
             queryKey: ['get', '/api/jobs/{job_id}/progress', trainingJob?.id],
-            queryFn: streamedQuery({
-                queryFn: () => fetchSSE<JobProgress>(`/api/jobs/${trainingJob?.id}/progress`),
+            queryFn: streamedQuery<JobProgress>({
+                streamFn: () => fetchSSE<JobProgress>(`/api/jobs/${trainingJob?.id}/progress`),
             }),
             enabled: !!trainingJob?.id,
             staleTime: Infinity,
@@ -75,7 +75,6 @@ export const TrainingStatusAdapter = () => {
                 }
             },
         });
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [
         trainingJob?.id,
         trainingJob?.payload.model_name,

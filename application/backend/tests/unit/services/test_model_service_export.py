@@ -1,6 +1,7 @@
 # Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 from anomalib.deploy import CompressionType, ExportType
@@ -9,20 +10,20 @@ from pydantic_models import Model
 from pydantic_models.model import ExportParameters
 from services import ResourceNotFoundError
 from services.model_service import ModelService
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
 def mock_model():
+    id = uuid4()
     return Model(
-        id=ShortUUID.generate(),
-        project_id=ShortUUID.generate(),
-        name="Padim",
+        id=id,
+        project_id=uuid4(),
+        name=f"Padim ({str(id).split('-')[0]})",
         architecture="padim",
         format=ExportType.OPENVINO,
         is_ready=True,
-        train_job_id=ShortUUID.generate(),
-        dataset_snapshot_id=ShortUUID.generate(),
+        train_job_id=uuid4(),
+        dataset_snapshot_id=uuid4(),
     )
 
 
@@ -68,7 +69,7 @@ async def test_export_model_success(
     mock_anyio_path_cls.return_value = mock_anyio_path
 
     # Create dummy checkpoint file
-    ckpt_dir = tmp_path / "weights" / "lightning"
+    ckpt_dir = tmp_path / "checkpoint"
     ckpt_dir.mkdir(parents=True)
     (ckpt_dir / "model.ckpt").touch()
 
@@ -97,7 +98,7 @@ async def test_export_model_not_found(mock_get_model_by_id, mock_model_service):
     export_params = ExportParameters(format=ExportType.OPENVINO)
 
     with pytest.raises(ResourceNotFoundError):
-        await mock_model_service.export_model(ShortUUID.generate(), ShortUUID.generate(), export_params)
+        await mock_model_service.export_model(uuid4(), uuid4(), export_params)
 
 
 @pytest.mark.asyncio

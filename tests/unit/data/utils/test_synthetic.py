@@ -1,4 +1,4 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for synthetic anomalous dataset."""
@@ -14,11 +14,11 @@ from anomalib.data.utils.synthetic import SyntheticAnomalyDataset
 
 
 @pytest.fixture(scope="module")
-def folder_dataset(dataset_path: Path) -> FolderDataset:
+def folder_dataset(mvtecad_path: Path) -> FolderDataset:
     """Fixture that returns a FolderDataset instance."""
     return FolderDataset(
         name="dummy",
-        root=dataset_path / "mvtecad" / "dummy",
+        root=mvtecad_path / "dummy",
         normal_dir="train/good",
         abnormal_dir="test/bad",
         normal_test_dir="test/good",

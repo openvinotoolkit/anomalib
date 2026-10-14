@@ -1,4 +1,4 @@
-# Copyright (C) 2023-2025 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Test CLI entrypoints on Padim model.
@@ -6,6 +6,7 @@
 This just checks if one of the model works end-to-end. The rest of the models are checked using the API.
 """
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,13 @@ from anomalib.deploy import ExportType
 
 class TestCLI:
     """Do sanity check on all models."""
+
+    @pytest.fixture(scope="class", autouse=True)
+    @staticmethod
+    def _make_datasets(make_dummy_dataset: Callable[[str], Path]) -> None:
+        """Generate datasets used by CLI data and image-path tests."""
+        make_dummy_dataset("mvtecad")
+        make_dummy_dataset("visa")
 
     def test_fit(self, dataset_path: Path, project_path: Path) -> None:
         """Test fit CLI.
@@ -33,58 +41,84 @@ class TestCLI:
         )
         torch.cuda.empty_cache()
 
-    def test_test(self, dataset_path: Path, project_path: Path) -> None:
+    def test_test(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+        ckpt_path: Callable[[str], Path],
+    ) -> None:
         """Test the test method of the CLI.
 
         Args:
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
+            ckpt_path (Callable[[str], Path]): Resolve a shared model checkpoint.
         """
+        padim_ckpt = ckpt_path("Padim")
         AnomalibCLI(
             args=[
                 "test",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+                str(padim_ckpt),
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_train(self, dataset_path: Path, project_path: Path) -> None:
+    def test_train(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+        ckpt_path: Callable[[str], Path],
+    ) -> None:
         """Test the train method of the CLI.
 
         Args:
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
+            ckpt_path (Callable[[str], Path]): Resolve a shared model checkpoint.
         """
+        padim_ckpt = ckpt_path("Padim")
         AnomalibCLI(
             args=[
                 "train",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+                str(padim_ckpt),
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_validate(self, dataset_path: Path, project_path: Path) -> None:
+    def test_validate(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+        ckpt_path: Callable[[str], Path],
+    ) -> None:
         """Test the validate method of the CLI.
 
         Args:
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
+            ckpt_path (Callable[[str], Path]): Resolve a shared model checkpoint.
         """
+        padim_ckpt = ckpt_path("Padim")
         AnomalibCLI(
             args=[
                 "validate",
                 *self._get_common_cli_args(dataset_path, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+                str(padim_ckpt),
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_predict_with_dataloader(self, dataset_path: Path, project_path: Path) -> None:
+    def test_predict_with_dataloader(
+        self,
+        dataset_path: Path,
+        project_path: Path,
+        ckpt_path: Callable[[str], Path],
+    ) -> None:
         """Test the predict method of the CLI.
 
         This test uses the MVTec AD dataloader for predict test.
@@ -92,7 +126,9 @@ class TestCLI:
         Args:
             dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
+            ckpt_path (Callable[[str], Path]): Resolve a shared model checkpoint.
         """
+        padim_ckpt = ckpt_path("Padim")
         # Test with MVTec AD Dataset
         AnomalibCLI(
             args=[
@@ -102,19 +138,25 @@ class TestCLI:
                     project_path,
                 ),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+                str(padim_ckpt),
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_predict_with_image_folder(self, project_path: Path) -> None:
+    def test_predict_with_image_folder(
+        self,
+        project_path: Path,
+        ckpt_path: Callable[[str], Path],
+    ) -> None:
         """Test the predict method of the CLI.
 
         This test uses the path to image folder for predict test.
 
         Args:
             project_path (Path): Path to temporary project folder.
+            ckpt_path (Callable[[str], Path]): Resolve a shared model checkpoint.
         """
+        padim_ckpt = ckpt_path("Padim")
         # Test with image path
         AnomalibCLI(
             args=[
@@ -126,19 +168,25 @@ class TestCLI:
                     project_path,
                 ),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+                str(padim_ckpt),
             ],
         )
         torch.cuda.empty_cache()
 
-    def test_predict_with_image_path(self, project_path: Path) -> None:
+    def test_predict_with_image_path(
+        self,
+        project_path: Path,
+        ckpt_path: Callable[[str], Path],
+    ) -> None:
         """Test the predict method of the CLI.
 
         This test uses the path to image for predict test.
 
         Args:
             project_path (Path): Path to temporary project folder.
+            ckpt_path (Callable[[str], Path]): Resolve a shared model checkpoint.
         """
+        padim_ckpt = ckpt_path("Padim")
         # Test with image path
         AnomalibCLI(
             args=[
@@ -150,7 +198,7 @@ class TestCLI:
                     project_path,
                 ),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+                str(padim_ckpt),
             ],
         )
         torch.cuda.empty_cache()
@@ -160,14 +208,16 @@ class TestCLI:
         self,
         project_path: Path,
         export_type: ExportType,
+        ckpt_path: Callable[[str], Path],
     ) -> None:
         """Test the export method of the CLI.
 
         Args:
-            dataset_path (Path): Root of the synthetic/original dataset.
             project_path (Path): Path to temporary project folder.
             export_type (ExportType): Export type.
+            ckpt_path (Callable[[str], Path]): Resolve a shared model checkpoint.
         """
+        padim_ckpt = ckpt_path("Padim")
         AnomalibCLI(
             args=[
                 "export",
@@ -175,7 +225,7 @@ class TestCLI:
                 export_type,
                 *self._get_common_cli_args(None, project_path),
                 "--ckpt_path",
-                f"{project_path}/Padim/MVTecAD/dummy/v0/weights/lightning/model.ckpt",
+                str(padim_ckpt),
             ],
         )
 

@@ -18,17 +18,6 @@ Core data structures that define how data is represented and validated throughou
 [Learn more »](./dataclasses/index)
 :::
 
-:::{grid-item-card} {octicon}`database` Datasets
-:link: ./datasets/index
-:link-type: doc
-:class-card: custom-card
-
-Ready-to-use PyTorch Dataset implementations of standard benchmark datasets (MVTecAD, BTech) and support for custom datasets across multiple modalities (Image, Video, Depth).
-
-+++
-[Learn more »](./datasets/index)
-:::
-
 :::{grid-item-card} {octicon}`workflow` Data Modules
 :link: ./datamodules/index
 :link-type: doc
@@ -54,11 +43,11 @@ Lightning implementations of these PyTorch datasets that provide automated data 
 Helper functions and utilities for data processing and augmentation.
 :::
 
-:::{grid-item-card} {octicon}`book` Tutorials
-:link: ../tutorials/index
+:::{grid-item-card} {octicon}`book` How-To Guides
+:link: ../../how_to/data/index
 :link-type: doc
 
-Step-by-step guides on using the data components.
+Step-by-step guides on using the data components and custom data.
 :::
 ::::
 
@@ -67,7 +56,6 @@ Step-by-step guides on using the data components.
 :hidden:
 
 ./dataclasses/index
-./datasets/index
 ./datamodules/index
 ./utils/index
 ```

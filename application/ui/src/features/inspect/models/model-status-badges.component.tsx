@@ -1,6 +1,6 @@
 import { Badge } from '@adobe/react-spectrum';
 import { ActiveIcon, LoadingIcon } from '@anomalib-studio/icons';
-import { Alert, Cancel, Pending } from '@geti/ui/icons';
+import { Alert, Cancel, Pending } from '@geti-ui/ui/icons';
 import { SchemaJob } from 'src/api/openapi-spec';
 
 import classes from './models-view.module.scss';

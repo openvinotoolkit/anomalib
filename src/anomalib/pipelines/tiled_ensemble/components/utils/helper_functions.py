@@ -1,4 +1,4 @@
-# Copyright (C) 2023-2025 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Helper functions for the tiled ensemble training."""
@@ -93,6 +93,39 @@ def setup_transforms(datamodule: AnomalibDataModule, image_size: int | tuple[int
             data_subset.augmentations = augmentations
 
 
+def drop_resize_transform(pre_processor: "PreProcessor") -> None:
+    """Remove the ``Resize`` transform from a pre-processor's transform pipeline, in place.
+
+    Resize is dropped since it gets copied to the datamodule instead (the
+    tiled ensemble determines the effective input size via tiling config, not
+    the model's own preprocessor).
+
+    Uses ``None`` rather than an empty list to represent "no transform",
+    since ``PreProcessor.transform`` is typed ``Transform | None``, and an
+    empty list is neither a registered ``Transform`` (breaking
+    ``transform_to_spec`` during checkpointing) nor assignable over a
+    previously-registered ``nn.Module`` transform (``nn.Module.__setattr__``
+    only accepts ``None`` or another module in that slot).
+
+    Args:
+        pre_processor (PreProcessor): Pre-processor to update in place.
+    """
+    pre_transforms = pre_processor.transform
+    if isinstance(pre_transforms, Resize):
+        update_transform = None
+    elif isinstance(pre_transforms, Compose):
+        update_transform = Compose([
+            transform for transform in pre_transforms.transforms if not isinstance(transform, Resize)
+        ])
+    elif pre_transforms is not None:
+        update_transform = pre_transforms
+    else:
+        update_transform = None
+
+    pre_processor.transform = update_transform
+    pre_processor.export_transform = get_exportable_transform(update_transform)
+
+
 def get_ensemble_model(
     model_args: dict,
     input_size: int | tuple[int, int],
@@ -118,23 +151,7 @@ def get_ensemble_model(
     # make actual model with correct input size
     model: AnomalibModule = get_model(model_args, pre_processor=pre_processor, visualizer=False)
     if model.pre_processor is not None:
-        model_pre_processor: PreProcessor = model.pre_processor
-
-        # drop Resize in all cases since it gets copied to datamodule, and we don't want that!
-        pre_transforms = model_pre_processor.transform
-        if isinstance(pre_transforms, Resize):
-            update_transform = []
-        elif isinstance(pre_transforms, Compose):
-            update_transform = Compose([
-                transform for transform in pre_transforms.transforms if not isinstance(transform, Resize)
-            ])
-        elif pre_transforms is not None:
-            update_transform = pre_transforms
-        else:
-            update_transform = []
-
-        model_pre_processor.transform = update_transform
-        model_pre_processor.export_transform = get_exportable_transform(update_transform)
+        drop_resize_transform(model.pre_processor)
 
     if model.post_processor is not None:
         model_post_processor: PostProcessor = model.post_processor

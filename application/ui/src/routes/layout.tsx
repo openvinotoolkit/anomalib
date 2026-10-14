@@ -1,4 +1,4 @@
-import { Flex, Grid, Tabs, View } from '@geti/ui';
+import { Flex, Grid, Tabs, View } from '@geti-ui/ui';
 import { Outlet, useLocation } from 'react-router';
 
 import { ProjectsListPanel } from './../features/inspect/projects-management/projects-list-panel.component';

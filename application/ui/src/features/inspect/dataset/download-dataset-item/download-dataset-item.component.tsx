@@ -1,8 +1,8 @@
 // Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ActionButton } from '@geti/ui';
-import { DownloadIcon } from '@geti/ui/icons';
+import { ActionButton } from '@geti-ui/ui';
+import { DownloadIcon } from '@geti-ui/ui/icons';
 
 import { MediaItem } from '../types';
 import { downloadFile } from './utils';

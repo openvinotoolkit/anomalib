@@ -309,6 +309,6 @@ def get_download_instructions(root_path: Path) -> str:
 
         For more information about the dataset, see:
         - Paper: https://arxiv.org/abs/2401.02749
-        - Code: https://github.com/REAL-IAD/REAL-IAD
+        - Code: https://github.com/Tencent/AnomalyDetection_Real-IAD
         - Dataset: https://huggingface.co/datasets/REAL-IAD/Real-IAD
     """)

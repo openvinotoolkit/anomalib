@@ -1,7 +1,7 @@
 // Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ThemeProvider } from '@geti/ui/theme';
+import { ThemeProvider } from '@geti-ui/ui';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { getMockedMediaItem } from 'mocks/mock-media-item';
 

@@ -23,7 +23,7 @@ Example:
     >>> # Initialize and compute AUPR
     >>> aupr = AUPR(fields=["pred_score", "gt_label"])
     >>> aupr(batch)
-    tensor(0.8750)
+    tensor(1.)
 
 The metric can also be updated incrementally:
 
@@ -33,13 +33,13 @@ The metric can also be updated incrementally:
 
 Note:
     The AUPR score ranges from 0 to 1, with 1 indicating perfect ranking of
-    anomalies above normal samples.
+    anomalies above normal samples. A detector whose scores carry no ranking
+    information scores the fraction of anomalous samples.
 """
 
 import torch
 from matplotlib.figure import Figure
 from torchmetrics.classification import BinaryPrecisionRecallCurve
-from torchmetrics.utilities.compute import auc
 from torchmetrics.utilities.data import dim_zero_cat
 
 from .base import AnomalibMetric
@@ -49,7 +49,8 @@ from .utils import plot_metric_curve
 class _AUPR(BinaryPrecisionRecallCurve):
     """Area under the PR curve.
 
-    This metric computes the area under the precision-recall curve.
+    This metric computes the area under the precision-recall curve as step-wise
+    average precision.
 
     Args:
         kwargs: Additional arguments to the TorchMetrics base class.
@@ -63,7 +64,7 @@ class _AUPR(BinaryPrecisionRecallCurve):
 
         >>> metric = _AUPR()
         >>> metric(pred, true)
-        tensor(0.4899)
+        tensor(0.4610)
 
         It is also possible to update the metric state incrementally within batches:
 
@@ -80,6 +81,10 @@ class _AUPR(BinaryPrecisionRecallCurve):
     def compute(self) -> torch.Tensor:
         """First compute PR curve, then compute area under the curve.
 
+        The area is the step-wise average precision. Trapezoidal integration of the
+        curve sorted by recall does not give the area under a precision-recall curve,
+        and overstates it most for detectors with few distinct scores.
+
         Returns:
             Value of the AUPR metric
         """
@@ -87,7 +92,10 @@ class _AUPR(BinaryPrecisionRecallCurve):
         rec: torch.Tensor
 
         prec, rec = self._compute()
-        return auc(rec, prec, reorder=True)
+        prec = torch.where(torch.isnan(prec), torch.zeros_like(prec), prec)
+        rec = torch.where(torch.isnan(rec), torch.zeros_like(rec), rec)
+        # Recall is in decreasing order, so the differences are negative.
+        return -torch.sum((rec[1:] - rec[:-1]) * prec[:-1])
 
     def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:
         """Update state with new values.

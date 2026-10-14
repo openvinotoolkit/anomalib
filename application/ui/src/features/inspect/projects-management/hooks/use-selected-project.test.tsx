@@ -1,20 +1,15 @@
 // Copyright (C) 2025 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { renderHook, waitFor } from '@testing-library/react';
+import { waitFor } from '@testing-library/react';
 import { getMockedProject } from 'mocks/mock-project';
 
+import { renderHook } from '../../../../../tests/utils';
 import { useGetProjects } from './use-get-project.hooks';
 import { useSelectedProject } from './use-selected-project.hook';
 
 vi.mock('./use-get-project.hooks', () => ({
     useGetProjects: vi.fn(),
-}));
-
-const mockUseProjectIdentifier = vi.fn();
-
-vi.mock('@anomalib-studio/hooks', () => ({
-    useProjectIdentifier: () => mockUseProjectIdentifier(),
 }));
 
 describe('useSelectedProject', () => {
@@ -24,7 +19,7 @@ describe('useSelectedProject', () => {
         getMockedProject({ id: 'project-3', name: 'Project 3' }),
     ];
 
-    const renderApp = (props: Partial<ReturnType<typeof useGetProjects>> & { projectId: string | null }) => {
+    const renderApp = (props: Partial<ReturnType<typeof useGetProjects>> & { projectId?: string }) => {
         vi.mocked(useGetProjects).mockReturnValue({
             isLoading: false,
             hasNextPage: false,
@@ -34,17 +29,18 @@ describe('useSelectedProject', () => {
             ...props,
         });
 
-        mockUseProjectIdentifier.mockReturnValue({ projectId: props?.projectId ?? null });
-
-        return renderHook(() => useSelectedProject());
+        return renderHook(() => useSelectedProject(), {
+            route: `/projects/${props.projectId ?? 'project-123'}/inspect`,
+        });
     };
 
-    it('does not fetch next page when projectId is null', () => {
-        const mockFetchNextPage = vi.fn();
+    it('uses the project id from the route', () => {
+        const { result } = renderApp({
+            projects: mockProjects,
+            projectId: 'project-3',
+        });
 
-        renderApp({ hasNextPage: true, fetchNextPage: mockFetchNextPage, projectId: null });
-
-        expect(mockFetchNextPage).not.toHaveBeenCalled();
+        expect(result.current).toEqual(mockProjects[2]);
     });
 
     it('does not fetch next page when selectedProject is found', () => {
@@ -55,7 +51,7 @@ describe('useSelectedProject', () => {
             hasNextPage: true,
             fetchNextPage: mockFetchNextPage,
             projects: mockProjects,
-            projectId: projectId ?? null,
+            projectId,
         });
 
         expect(mockFetchNextPage).not.toHaveBeenCalled();
@@ -97,7 +93,7 @@ describe('useSelectedProject', () => {
 
         const { result } = renderApp({
             projects: mockProjects,
-            projectId: projectId ?? null,
+            projectId,
         });
 
         expect(result.current).toEqual(mockProjects[1]);

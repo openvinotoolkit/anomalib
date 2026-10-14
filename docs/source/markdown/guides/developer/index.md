@@ -25,10 +25,17 @@ Learn how to contribute to Anomalib.
 Learn the criteria for reviewing code.
 :::
 
+:::{grid-item-card} {octicon}`rocket` Release Guidelines.
+:link: ./release_guidelines
+:link-type: doc
+
+Learn the release process and guidelines.
+:::
+
 ::::
 
 ```{toctree}
-:caption: Data
+:caption: Developer Guides
 :hidden:
 
 ./sdd

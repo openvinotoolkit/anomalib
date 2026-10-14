@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 from collections.abc import Callable
 from datetime import datetime
+from uuid import UUID
 
 import sqlalchemy as sa
 from loguru import logger
@@ -11,7 +12,6 @@ from db.schema import PipelineDB, ProjectDB
 from pydantic_models import Project
 from repositories.base import BaseRepository
 from repositories.mappers import ProjectMapper
-from utils.short_uuid import ShortUUID
 
 
 class ProjectRepository(BaseRepository):
@@ -36,7 +36,7 @@ class ProjectRepository(BaseRepository):
         await self.db.commit()
         return project
 
-    async def update_dataset_timestamp(self, project_id: str | ShortUUID) -> None:
+    async def update_dataset_timestamp(self, project_id: str | UUID) -> None:
         """Update the dataset_updated_at timestamp for the given project."""
         await self.db.execute(
             sa.update(ProjectDB)
@@ -49,7 +49,7 @@ class ProjectRepository(BaseRepository):
         logger.info(f"Updated dataset timestamp for project {project_id} to current time.")
         await self.db.commit()
 
-    async def get_dataset_timestamp(self, project_id: str | ShortUUID) -> datetime:
+    async def get_dataset_timestamp(self, project_id: str | UUID) -> datetime:
         """Get the dataset_updated_at timestamp for the given project."""
         result = await self.db.execute(sa.select(self.schema.dataset_updated_at).where(ProjectDB.id == str(project_id)))
         return result.scalar_one()

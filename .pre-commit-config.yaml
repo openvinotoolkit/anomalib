@@ -72,7 +72,8 @@ repos:
         # packages in a different order than the rest of the codebase.
         args: ["--ignore=D100,D407,I001,E402,B018"]
 
-  - repo: https://github.com/pre-commit/mirrors-prettier
+  # TODO: Replace this archived mirror when a maintained Prettier hook is available.
+  - repo: https://github.com/pre-commit/mirrors-prettier # zizmor: ignore[archived-uses]
     rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
@@ -91,7 +92,7 @@ repos:
 
   # zizmor detects security issues in GitHub Actions workflows.
   - repo: https://github.com/woodruffw/zizmor-pre-commit
-    rev: v1.9.0
+    rev: v1.30.1
     hooks:
       - id: zizmor
         args: ["--min-severity", "medium", "--min-confidence", "high"]

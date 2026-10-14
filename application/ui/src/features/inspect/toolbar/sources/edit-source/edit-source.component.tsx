@@ -3,8 +3,8 @@
 
 import { ReactNode, useRef } from 'react';
 
-import { ActionButton, Button, ButtonGroup, Divider, Flex, Form, Text, View } from '@geti/ui';
-import { Back } from '@geti/ui/icons';
+import { ActionButton, Button, ButtonGroup, Divider, Flex, Form, Text, View } from '@geti-ui/ui';
+import { Back } from '@geti-ui/ui/icons';
 
 import { useConnectSourceToPipeline } from '../../../../../hooks/use-pipeline.hook';
 import { useSourceAction } from '../hooks/use-source-action.hook';

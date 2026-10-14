@@ -1,5 +1,5 @@
-import { Button, Flex, Text } from '@geti/ui';
-import { Add as AddIcon } from '@geti/ui/icons';
+import { Button, Flex, Text } from '@geti-ui/ui';
+import { Add as AddIcon } from '@geti-ui/ui/icons';
 import { clsx } from 'clsx';
 import { isEqual } from 'lodash-es';
 

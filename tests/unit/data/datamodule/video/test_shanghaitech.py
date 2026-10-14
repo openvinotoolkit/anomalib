@@ -1,8 +1,9 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - ShanghaiTech Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -23,8 +24,13 @@ class TestShanghaiTech(_TestAnomalibVideoDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path, clip_length_in_frames: int) -> ShanghaiTech:
+    def datamodule(
+        dataset_path: Path,
+        make_dummy_dataset: Callable[[str], Path],
+        clip_length_in_frames: int,
+    ) -> ShanghaiTech:
         """Create and return a Shanghai datamodule."""
+        make_dummy_dataset("shanghaitech")
         datamodule_ = ShanghaiTech(
             root=dataset_path / "shanghaitech",
             scene=1,

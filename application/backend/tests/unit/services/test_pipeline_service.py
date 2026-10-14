@@ -3,6 +3,7 @@
 import asyncio
 from multiprocessing.synchronize import Condition
 from unittest.mock import AsyncMock, MagicMock, patch
+from uuid import uuid4
 
 import pytest
 
@@ -14,21 +15,20 @@ from repositories import PipelineRepository
 from services import ActivePipelineService, ModelService, ResourceNotFoundError
 from services.metrics_service import MetricsService
 from services.pipeline_service import PipelineService
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
 def fxt_pipeline(fxt_project, fxt_model):
     """Fixture for a test pipeline."""
     source = VideoFileSourceConfig(
-        id=ShortUUID.generate(),
+        id=uuid4(),
         project_id=fxt_project.id,
         source_type="video_file",
         name="Test Source",
         video_path="/path/to/video.mp4",
     )
     sink = FolderSinkConfig(
-        id=ShortUUID.generate(),
+        id=uuid4(),
         project_id=fxt_project.id,
         sink_type="folder",
         name="Test Sink",
@@ -167,7 +167,7 @@ class TestPipelineService:
         """Test getting pipeline by ID with different scenarios."""
         if should_raise:
             fxt_pipeline_repository.get_by_id.return_value = None
-            project_id = ShortUUID.generate()
+            project_id = uuid4()
         else:
             fxt_pipeline_repository.get_by_id.return_value = fxt_pipeline
             project_id = fxt_pipeline.project_id
@@ -215,7 +215,7 @@ class TestPipelineService:
     ):
         """Test updating running pipeline with source change."""
         new_source = UsbCameraSourceConfig(
-            id=ShortUUID.generate(),
+            id=uuid4(),
             project_id=fxt_pipeline.project_id,
             source_type="usb_camera",
             name="New Source",
@@ -247,7 +247,7 @@ class TestPipelineService:
     ):
         """Test updating running pipeline with sink change."""
         new_sink = MqttSinkConfig(
-            id=ShortUUID.generate(),
+            id=uuid4(),
             project_id=fxt_pipeline.project_id,
             sink_type="mqtt",
             name="New Sink",
@@ -282,16 +282,17 @@ class TestPipelineService:
         fxt_model_service,
     ):
         """Test updating running pipeline with model change."""
+        model_id = uuid4()
         new_model = Model(
-            id=ShortUUID.generate(),
+            id=model_id,
             project_id=fxt_pipeline.project_id,
-            name="new_model",
+            name=f"new_model ({str(model_id).split('-')[0]})",
             architecture="padim",
             format="openvino",
-            train_job_id=ShortUUID.generate(),
-            dataset_snapshot_id=ShortUUID.generate(),
+            train_job_id=uuid4(),
+            dataset_snapshot_id=uuid4(),
         )
-        updated_pipeline = fxt_pipeline.model_copy(update={"model": new_model, "model_id": new_model.id})
+        updated_pipeline = fxt_pipeline.model_copy(update={"model": new_model, "model_id": model_id})
         fxt_pipeline_repository.get_by_id.return_value = fxt_pipeline
         fxt_pipeline_repository.update.return_value = updated_pipeline
 
@@ -301,7 +302,7 @@ class TestPipelineService:
             result = asyncio.run(
                 fxt_pipeline_service.update_pipeline(
                     fxt_pipeline.project_id,
-                    {"model": new_model, "model_id": new_model.id},
+                    {"model": new_model, "model_id": model_id},
                 ),
             )
 

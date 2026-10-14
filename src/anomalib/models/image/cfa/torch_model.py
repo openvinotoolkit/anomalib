@@ -1,4 +1,4 @@
-# Copyright (C) 2022-2025 Intel Corporation
+# Copyright (C) 2022-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Torch Implementation of the CFA Model.
@@ -38,7 +38,6 @@ Example:
 import torch
 import torchvision
 from einops import rearrange
-from sklearn.cluster import KMeans
 from torch import nn
 from torch.fx.graph_module import GraphModule
 from torch.nn import functional as F  # noqa: N812
@@ -49,6 +48,7 @@ from tqdm import tqdm
 
 from anomalib.data import InferenceBatch
 from anomalib.models.components import DynamicBufferMixin
+from anomalib.models.components.cluster.kmeans import KMeans
 from anomalib.models.components.feature_extractors import dryrun_find_featuremap_dims
 
 from .anomaly_map import AnomalyMapGenerator
@@ -240,18 +240,12 @@ class CfaModel(DynamicBufferMixin):
         scale = self.get_scale(batch.shape[-2:])
 
         if self.gamma_c > 1:
-            # TODO(samet-akcay): Create PyTorch KMeans class.
-            # CVS-122673
             k_means = KMeans(
                 n_clusters=(scale[0] * scale[1]) // self.gamma_c,
                 max_iter=3000,
             )
-            cluster_centers = k_means.fit(self.memory_bank.cpu()).cluster_centers_
-            self.memory_bank = torch.tensor(
-                cluster_centers,
-                dtype=torch.float32,
-                requires_grad=False,
-            ).to(device)
+            _, cluster_centers = k_means.fit(self.memory_bank)
+            self.memory_bank = cluster_centers.detach().to(device)
 
         self.memory_bank = rearrange(self.memory_bank, "h w -> w h")
 

@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 
-import { Disclosure, DisclosurePanel, DisclosureTitle, Flex, Radio, RadioGroup, View } from '@geti/ui';
+import { Disclosure, DisclosurePanel, DisclosureTitle, Flex, Radio, RadioGroup, View } from '@geti-ui/ui';
 
 import classes from './radio-disclosure-group.module.scss';
 

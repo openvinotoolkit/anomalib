@@ -87,6 +87,25 @@ class MEBinPostProcessor(PostProcessor):
         self.erode = erode
         self.kernel_size = kernel_size
 
+    @property
+    def _checkpoint_config_keys(self) -> tuple[str, ...]:
+        """Attribute names persisted by ``checkpoint_config``/``load_checkpoint_config``.
+
+        Extends the base :class:`PostProcessor` keys with MEBin's own
+        configuration, so a checkpoint saved with a custom ``sample_rate``,
+        ``min_interval_len``, ``erode``, or ``kernel_size`` restores them too.
+
+        Returns:
+            tuple[str, ...]: Attribute names to persist.
+        """
+        return (
+            *super()._checkpoint_config_keys,
+            "sample_rate",
+            "min_interval_len",
+            "erode",
+            "kernel_size",
+        )
+
     def forward(self, predictions: InferenceBatch) -> InferenceBatch:
         """Post-process model predictions using MEBin adaptive thresholding.
 

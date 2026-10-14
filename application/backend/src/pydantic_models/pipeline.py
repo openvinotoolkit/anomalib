@@ -3,13 +3,13 @@
 
 from enum import StrEnum
 from functools import cached_property
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from pydantic_models.model import Model
 from pydantic_models.sink import Sink
 from pydantic_models.source import Source
-from utils.short_uuid import ShortUUID
 
 
 class PipelineStatus(StrEnum):
@@ -35,18 +35,16 @@ class PipelineStatus(StrEnum):
 
 
 class Pipeline(BaseModel):
-    project_id: ShortUUID  # ID of the project this pipeline belongs to
+    project_id: UUID  # ID of the project this pipeline belongs to
     source: Source | None = None  # None if disconnected
     sink: Sink | None = None  # None if disconnected
     model: Model | None = None  # None if no model is selected
-    source_id: ShortUUID | None = Field(
+    source_id: UUID | None = Field(
         default=None,
         exclude=True,
     )  # ID of the source, used for DB mapping, not exposed in API
-    sink_id: ShortUUID | None = Field(
-        default=None, exclude=True
-    )  # ID of the sink, used for DB mapping, not exposed in API
-    model_id: ShortUUID | None = Field(
+    sink_id: UUID | None = Field(default=None, exclude=True)  # ID of the sink, used for DB mapping, not exposed in API
+    model_id: UUID | None = Field(
         default=None,
         exclude=True,
     )  # ID of the model, used for DB mapping, not exposed in API
@@ -98,5 +96,5 @@ class Pipeline(BaseModel):
         return self
 
     @cached_property
-    def id(self) -> ShortUUID:
+    def id(self) -> UUID:
         return self.project_id

@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { usePatchPipeline, usePipeline, useProjectIdentifier } from '@anomalib-studio/hooks';
-import { Button, Content, IllustratedMessage } from '@geti/ui';
+import { Button, Content, IllustratedMessage } from '@geti-ui/ui';
+import { NotFound } from '@geti-ui/ui/icons';
 import { clsx } from 'clsx';
 import { isEmpty } from 'lodash-es';
-import { NotFound } from 'packages/ui/icons';
 
 import { useGetModels } from '../../../..//hooks/use-get-models.hook';
 import { LoadMoreList } from '../../../../components/load-more-list/load-more-list.component';

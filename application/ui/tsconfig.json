@@ -1,14 +1,29 @@
 {
-    "extends": "@geti/config/typescript",
     "include": ["src", "rsbuild.config.ts", "vitest.config.ts", "playwright.config.ts"],
     "compilerOptions": {
+        "target": "esnext",
+        "lib": ["dom", "dom.iterable", "esnext"],
+        "allowJs": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "jsx": "react-jsx",
         "types": ["vitest/globals"],
         "baseUrl": ".",
         "paths": {
             "@anomalib-studio/icons": ["./src/assets/icons"],
             "@anomalib-studio/api": ["./src/api/client"],
             "@anomalib-studio/api/spec": ["./src/api/openapi-spec.d"],
-            "@anomalib-studio/hooks": ["./src/hooks"]
+            "@anomalib-studio/hooks": ["./src/hooks"],
+            "@anomalib-studio/toast": ["./src/components/toast/toast.component"]
         }
     }
 }

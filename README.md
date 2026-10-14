@@ -12,7 +12,7 @@
 [License](LICENSE)
 
 ![python](https://img.shields.io/badge/python-3.10%2B-green)
-![pytorch](https://img.shields.io/badge/pytorch-2.6%2B-orange)
+![pytorch](https://img.shields.io/badge/pytorch-2.10%2B-orange)
 ![lightning](https://img.shields.io/badge/lightning-2.2%2B-blue)
 ![openvino](https://img.shields.io/badge/openvino-2024.0%2B-purple)
 
@@ -31,15 +31,15 @@
 
 ---
 
-> 🌟 **Announcing v2.6.0 Release!** 🌟
+> 🌟 **Announcing v2.7.0 Release!** 🌟
 >
-> This release adds the SuperADD model and AutoVI dataset, and removes APIs that were deprecated through v2.5.x.
+> This minor release adds new models and hardens checkpoint and path handling, while removing APIs scheduled for 2.7.0.
 >
 > Key Changes
 >
-> - **SuperADD**: Training-free class-agnostic anomaly segmentation (CVPR 2026 VAND 4.0 Industrial Track winner) using DINOv3 multi-layer memory banks.
-> - **AutoVI dataset**: Automotive Visual Inspection benchmark with six categories and automatic Zenodo download support.
-> - **Breaking API cleanup**: Removed Kaputt legacy flags (`use_reference` / `reference_only` / `category='all'`), AUPRO `num_thresholds` / `compute_pro(target=...)`, and the temporary `resolve_with_warning` dataset-path helper.
+> - **New models**: MH-PatchCore, RAD (retrieval-based), and FoundAD (few-shot).
+> - **Security / API**: Checkpoint loading defaults to `weights_only=True`. When a dataset `root` is set, metadata paths must resolve under that root.
+> - **Removals**: Legacy ONNX exporter (`dynamo=False`) is gone — use `dynamo=True` (default) with `anomalib[openvino]`. Pre-timm ViT checkpoint migration is no longer supported. Minimum PyTorch is 2.10+ (ROCm 2.13+).
 >
 > We value your input! Please share feedback via [GitHub Issues](https://github.com/open-edge-platform/anomalib/issues) or our [Discussions](https://github.com/open-edge-platform/anomalib/discussions)
 
@@ -53,7 +53,7 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 
 ## Key features
 
-- Simple and modular API and CLI for training, inference, benchmarking, and hyperparameter optimization.
+- Simple and modular API and CLI for training, inference, and benchmarking.
 - The largest public collection of ready-to-use deep learning anomaly detection algorithms and benchmark datasets.
 - [**Lightning**](https://www.lightning.ai/) based model implementations to reduce boilerplate code and limit the implementation efforts to the bare essentials.
 - The majority of models can be exported to [**OpenVINO**](https://www.intel.com/content/www/us/en/developer/tools/openvino-toolkit/overview.html) Intermediate Representation (IR) for accelerated inference on Intel hardware.
@@ -269,20 +269,9 @@ engine.train(Stfpm(), datamodule=MVTecAD())
 anomalib train --model Padim --data MVTecAD --trainer.accelerator xpu --trainer.strategy xpu_single
 ```
 
-# ⚙️ Hyperparameter Optimization
-
-Anomalib supports hyperparameter optimization (HPO) using [Weights & Biases](https://wandb.ai/) and [Comet.ml](https://www.comet.com/).
-
-```bash
-# Run HPO with Weights & Biases
-anomalib hpo --backend WANDB --sweep_config tools/hpo/configs/wandb.yaml
-```
-
-> 📘 **Note:** For detailed HPO configuration, check our [HPO Documentation](https://open-edge-platform.github.io/anomalib/tutorials/hyperparameter_optimization.html).
-
 # 🧪 Experiment Management
 
-Track your experiments with popular logging platforms through [PyTorch Lightning loggers](https://pytorch-lightning.readthedocs.io/en/stable/extensions/logging.html):
+Track your experiments with popular logging platforms through [PyTorch Lightning loggers](https://lightning.ai/docs/pytorch/stable/extensions/logging.html):
 
 - 📊 Weights & Biases
 - 📈 Comet.ml
@@ -295,7 +284,7 @@ Enable logging in your config file to track:
 - Model graphs
 - Test predictions
 
-> 📘 **Note:** For logging setup, see our [Logging Documentation](https://open-edge-platform.github.io/anomalib/tutorials/logging.html).
+> 📘 **Note:** For logging setup, see our [Logging Documentation](https://anomalib.readthedocs.io/en/latest/markdown/guides/reference/loggers/index.html).
 
 # 📊 Benchmarking
 

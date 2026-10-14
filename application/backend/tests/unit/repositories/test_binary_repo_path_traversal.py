@@ -72,7 +72,7 @@ class TestSaveFilePathTraversal:
         """A clean filename must be written inside the project directory."""
         project_dir = tmp_path / "projects" / "proj"
         project_dir.mkdir(parents=True)
-        repo = VideoBinaryRepository(project_id="proj")
+        repo = VideoBinaryRepository(project_id="52138d75-cc61-4890-b8ba-ce6a619f0863")
 
         with patch.object(
             type(repo),
@@ -86,9 +86,9 @@ class TestSaveFilePathTraversal:
 
     def test_save_file_bad_payload(self, tmp_path):
         """Malformed payload must be blocked."""
-        project_dir = tmp_path / "data" / "videos" / "projects" / "VfQiLbCy9ERHSyRuNpH2mB"
+        project_dir = tmp_path / "data" / "videos" / "projects" / "52138d75-cc61-4890-b8ba-ce6a619f0863"
         project_dir.mkdir(parents=True)
-        repo = VideoBinaryRepository(project_id="VfQiLbCy9ERHSyRuNpH2mB")
+        repo = VideoBinaryRepository(project_id="52138d75-cc61-4890-b8ba-ce6a619f0863")
 
         traversal = "../../anomalib_pwned.mp4"
         with (

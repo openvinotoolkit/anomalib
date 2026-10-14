@@ -3,7 +3,7 @@
 
 import { ReactNode, useState } from 'react';
 
-import { Disclosure, DisclosurePanel, DisclosureTitle, Flex, Text } from '@geti/ui';
+import { Disclosure, DisclosurePanel, DisclosureTitle, Flex, Text } from '@geti-ui/ui';
 import { clsx } from 'clsx';
 import { isFunction } from 'lodash-es';
 

@@ -1,8 +1,9 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - BMAD Datamodule."""
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -18,8 +19,9 @@ class TestBMAD(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> BMAD:
+    def datamodule(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> BMAD:
         """Create and return a BMAD datamodule."""
+        make_dummy_dataset("bmad")
         datamodule_ = BMAD(
             root=dataset_path / "bmad",
             category="dummy",

@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom/client';
 
 import { Providers } from './providers';
 
+import '@geti-ui/ui/styles.css';
 import './index.css';
 
 const rootEl = document.getElementById('root');

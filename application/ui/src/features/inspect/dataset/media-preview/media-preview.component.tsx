@@ -13,7 +13,7 @@ import {
     Heading,
     Size,
     View,
-} from '@geti/ui';
+} from '@geti-ui/ui';
 import { isEmpty } from 'lodash-es';
 
 import { MediaItem } from '../types';

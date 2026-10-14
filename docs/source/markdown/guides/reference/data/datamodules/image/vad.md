@@ -5,7 +5,3 @@
    :members:
    :show-inheritance:
 ```
-
-```{seealso}
-{doc}`../../datasets/image/vad` - Valeo Anomaly Detection (VAD) Dataset
-```

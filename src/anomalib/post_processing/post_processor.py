@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Post-processing module for anomaly detection results.
@@ -17,6 +17,8 @@ Example:
     >>> post_processor = PostProcessor(image_sensitivity=0.5)
     >>> predictions = post_processor(anomaly_maps=anomaly_maps)
 """
+
+from typing import Any
 
 import torch
 from lightning import LightningModule, Trainer
@@ -97,6 +99,53 @@ class PostProcessor(nn.Module, Callback):
         self.image_max: torch.Tensor
         self.pixel_min: torch.Tensor
         self.pixel_max: torch.Tensor
+
+    @property
+    def _checkpoint_config_keys(self) -> tuple[str, ...]:
+        """Attribute names persisted by ``checkpoint_config``/``load_checkpoint_config``.
+
+        Override in a subclass that manages additional configuration (see
+        :class:`~anomalib.post_processing.MEBinPostProcessor`), typically by
+        extending the inherited tuple rather than replacing it.
+
+        Returns:
+            tuple[str, ...]: Attribute names to persist.
+        """
+        return (
+            "enable_normalization",
+            "enable_thresholding",
+            "enable_threshold_matching",
+            "image_sensitivity",
+            "pixel_sensitivity",
+        )
+
+    def checkpoint_config(self) -> dict[str, Any]:
+        """Get plain-data configuration to persist in a checkpoint.
+
+        Uses ``getattr`` rather than direct attribute access so that a subclass
+        which does not call ``super().__init__()`` can still be checkpointed
+        safely, instead of raising ``AttributeError`` during
+        ``on_save_checkpoint``. Threshold and normalization statistics are not
+        included here since they are already persisted via ``register_buffer``.
+
+        Override this method (together with :meth:`load_checkpoint_config`) in a
+        subclass that manages additional configuration, for example
+        :class:`~anomalib.post_processing.MEBinPostProcessor`.
+
+        Returns:
+            dict[str, Any]: Plain-data configuration.
+        """
+        return {key: getattr(self, key, None) for key in self._checkpoint_config_keys}
+
+    def load_checkpoint_config(self, config: dict[str, Any]) -> None:
+        """Restore configuration previously returned by :meth:`checkpoint_config`.
+
+        Args:
+            config (dict[str, Any]): Plain-data configuration to restore.
+        """
+        for key in self._checkpoint_config_keys:
+            if key in config:
+                setattr(self, key, config[key])
 
     def on_validation_batch_end(
         self,
@@ -294,7 +343,10 @@ class PostProcessor(nn.Module, Callback):
         Returns:
             torch.Tensor | None: Thresholded predictions or None if input is None.
         """
-        if preds is None or threshold.isnan():
+        if preds is None:
+            return preds
+        # Keep eager NaN behavior without introducing a data-dependent export guard.
+        if not torch.compiler.is_compiling() and torch.isnan(threshold).item():
             return preds
         return preds > threshold
 
@@ -316,12 +368,18 @@ class PostProcessor(nn.Module, Callback):
         Returns:
             torch.Tensor | None: Normalized predictions or None if input is None.
         """
-        if preds is None or norm_min.isnan() or norm_max.isnan():
+        if preds is None:
             return preds
-        if threshold.isnan():
-            threshold = (norm_max + norm_min) / 2
-        preds = ((preds - threshold) / (norm_max - norm_min)) + 0.5
-        return preds.clamp(min=0, max=1)
+
+        threshold = torch.where(torch.isnan(threshold), (norm_max + norm_min) / 2, threshold)
+        value_range = norm_max - norm_min
+        zero_range = value_range == 0
+        safe_range = torch.where(zero_range, torch.ones_like(value_range), value_range)
+        normalized = (((preds - threshold) / safe_range) + 0.5).clamp(min=0, max=1)
+        degenerate = torch.where(preds > threshold, 1.0, torch.where(preds < threshold, 0.0, 0.5))
+        normalized = torch.where(zero_range, degenerate, normalized)
+        has_range = ~torch.isnan(norm_min) & ~torch.isnan(norm_max)
+        return torch.where(has_range, normalized, preds)
 
     @property
     def image_threshold(self) -> torch.Tensor:
@@ -330,9 +388,12 @@ class PostProcessor(nn.Module, Callback):
         Returns:
             float: Image-level threshold value.
         """
-        if not self._image_threshold.isnan():
-            return self._image_threshold
-        return self._pixel_threshold if self.enable_threshold_matching else torch.tensor(float("nan"))
+        fallback = (
+            self._pixel_threshold
+            if self.enable_threshold_matching
+            else torch.full_like(self._image_threshold, float("nan"))
+        )
+        return torch.where(torch.isnan(self._image_threshold), fallback, self._image_threshold)
 
     @property
     def pixel_threshold(self) -> torch.Tensor:
@@ -343,9 +404,12 @@ class PostProcessor(nn.Module, Callback):
         Returns:
             float: Pixel-level threshold value.
         """
-        if not self._pixel_threshold.isnan():
-            return self._pixel_threshold
-        return self._image_threshold if self.enable_threshold_matching else torch.tensor(float("nan"))
+        fallback = (
+            self._image_threshold
+            if self.enable_threshold_matching
+            else torch.full_like(self._pixel_threshold, float("nan"))
+        )
+        return torch.where(torch.isnan(self._pixel_threshold), fallback, self._pixel_threshold)
 
     @property
     def normalized_image_threshold(self) -> torch.Tensor:

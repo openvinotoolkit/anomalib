@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from unittest.mock import MagicMock
+from uuid import uuid4
 
 import pytest
 from fastapi import status
@@ -12,19 +13,19 @@ from pydantic_models import Model, ModelList
 from pydantic_models.base import Pagination
 from services import ModelService, ResourceNotFoundError
 from services.exceptions import ResourceType
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
 def fxt_model(fxt_project):
+    id = uuid4()
     return Model(
-        id=ShortUUID.generate(),
-        name="test_model",
+        id=id,
+        name=f"test_model ({str(id).split('-')[0]})",
         architecture="padim",
         project_id=fxt_project.id,
         export_path="/path/to/model",
-        train_job_id=ShortUUID.generate(),
-        dataset_snapshot_id=ShortUUID.generate(),
+        train_job_id=uuid4(),
+        dataset_snapshot_id=uuid4(),
         size=1024,
     )
 
@@ -65,7 +66,7 @@ def test_get_models(fxt_client, fxt_model_service, fxt_model, fxt_project):
 
 def test_delete_model_success(fxt_client, fxt_model_service, fxt_project):
     project_id = fxt_project.id
-    model_id = ShortUUID.generate()
+    model_id = uuid4()
 
     response = fxt_client.delete(f"/api/projects/{project_id}/models/{model_id}")
 
@@ -75,7 +76,7 @@ def test_delete_model_success(fxt_client, fxt_model_service, fxt_project):
 
 def test_delete_model_not_found(fxt_client, fxt_model_service, fxt_project):
     project_id = fxt_project.id
-    model_id = ShortUUID.generate()
+    model_id = uuid4()
     fxt_model_service.delete_model.side_effect = ResourceNotFoundError(ResourceType.MODEL, str(model_id))
 
     response = fxt_client.delete(f"/api/projects/{project_id}/models/{model_id}")

@@ -4,6 +4,7 @@
 """Endpoints for managing pipelines"""
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, status
 from fastapi.exceptions import HTTPException
@@ -15,7 +16,6 @@ from pydantic_models.metrics import PipelineMetrics
 from pydantic_models.pipeline import Pipeline, PipelineStatus
 from services import PipelineService
 from services.pipeline_metrics_service import PipelineMetricsService
-from utils.short_uuid import ShortUUID
 
 router = APIRouter(prefix="/api/projects/{project_id}/pipeline", tags=["Pipelines"])
 
@@ -53,7 +53,7 @@ UPDATE_PIPELINE_BODY_EXAMPLES = {
     response_model_exclude_none=True,
 )
 async def get_pipeline(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     pipeline_service: Annotated[PipelineService, Depends(get_pipeline_service)],
 ) -> Pipeline:
     """Get info about a given pipeline"""
@@ -71,7 +71,7 @@ async def get_pipeline(
     response_model_exclude_none=True,
 )
 async def update_pipeline(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     pipeline_config: Annotated[
         dict,
         Body(
@@ -103,7 +103,7 @@ async def update_pipeline(
     },
 )
 async def run_pipeline(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     pipeline_service: Annotated[PipelineService, Depends(get_pipeline_service)],
 ) -> None:
     """
@@ -128,7 +128,7 @@ async def run_pipeline(
     },
 )
 async def stop_pipeline(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     pipeline_service: Annotated[PipelineService, Depends(get_pipeline_service)],
 ) -> None:
     """
@@ -167,7 +167,7 @@ async def stop_pipeline(
     },
 )
 async def activate_pipeline(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     pipeline_service: Annotated[PipelineService, Depends(get_pipeline_service)],
 ) -> None:
     """
@@ -190,7 +190,7 @@ async def activate_pipeline(
     },
 )
 async def disable_pipeline(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     pipeline_service: Annotated[PipelineService, Depends(get_pipeline_service)],
 ) -> None:
     """Stop a pipeline. The pipeline will become idle, and it won't process any data until re-enabled."""
@@ -206,7 +206,7 @@ async def disable_pipeline(
     },
 )
 async def get_project_metrics(
-    project_id: Annotated[ShortUUID, Depends(get_project_id)],
+    project_id: Annotated[UUID, Depends(get_project_id)],
     pipeline_metrics_service: Annotated[PipelineMetricsService, Depends(get_pipeline_metrics_service)],
     time_window: int = 60,
 ) -> PipelineMetrics:

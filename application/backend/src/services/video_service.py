@@ -6,6 +6,7 @@
 import os
 import re
 from datetime import datetime
+from uuid import UUID
 
 import anyio
 from loguru import logger
@@ -13,7 +14,6 @@ from loguru import logger
 from pydantic_models import Video, VideoList
 from pydantic_models.base import Pagination
 from repositories.binary_repo import VideoBinaryRepository
-from utils.short_uuid import ShortUUID
 
 VALID_VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
 
@@ -93,7 +93,7 @@ class VideoService:
 
     @staticmethod
     async def upload_video(
-        project_id: ShortUUID,
+        project_id: UUID,
         video_bytes: bytes,
         original_filename: str,
     ) -> Video:
@@ -153,7 +153,7 @@ class VideoService:
             raise
 
     @staticmethod
-    async def list_videos(project_id: ShortUUID, limit: int = 100, offset: int = 0) -> VideoList:
+    async def list_videos(project_id: UUID, limit: int = 100, offset: int = 0) -> VideoList:
         """
         List uploaded videos for a project.
 
@@ -204,7 +204,7 @@ class VideoService:
         )
 
     @staticmethod
-    async def get_video_by_filename(project_id: ShortUUID, filename: str) -> Video | None:
+    async def get_video_by_filename(project_id: UUID, filename: str) -> Video | None:
         """
         Get a video by its filename.
 
@@ -236,7 +236,7 @@ class VideoService:
         )
 
     @staticmethod
-    async def delete_video_by_filename(project_id: ShortUUID, filename: str) -> None:
+    async def delete_video_by_filename(project_id: UUID, filename: str) -> None:
         """
         Delete an uploaded video by filename.
 
@@ -260,7 +260,7 @@ class VideoService:
         logger.info(f"Deleted video file: {filename}")
 
     @staticmethod
-    async def cleanup_project_videos(project_id: ShortUUID) -> None:
+    async def cleanup_project_videos(project_id: UUID) -> None:
         """
         Delete all videos for a project.
 

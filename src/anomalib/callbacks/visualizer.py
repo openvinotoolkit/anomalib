@@ -129,35 +129,48 @@ class _VisualizationCallback(Callback):
             ValueError: If ``save`` is ``True`` but ``file_name`` is ``None``.
         """
         for generator in self.generators:
-            if generator.visualize_on == VisualizationStep.BATCH:
-                for result in generator(
-                    trainer=trainer,
-                    pl_module=pl_module,
-                    outputs=outputs,
-                    batch=batch,
-                    batch_idx=batch_idx,
-                    dataloader_idx=dataloader_idx,
-                ):
-                    if self.save:
-                        if result.file_name is None:
-                            msg = "``save`` is set to ``True`` but file name is ``None``"
-                            raise ValueError(msg)
+            if generator.visualize_on != VisualizationStep.BATCH:
+                continue
+            for result in generator(
+                trainer=trainer,
+                pl_module=pl_module,
+                outputs=outputs,
+                batch=batch,
+                batch_idx=batch_idx,
+                dataloader_idx=dataloader_idx,
+            ):
+                if self.save:
+                    if result.file_name is None:
+                        msg = "``save`` is set to ``True`` but file name is ``None``"
+                        raise ValueError(msg)
+                    filename = self._resolve_save_filename(result.file_name, trainer)
+                    save_image(image=result.image, root=self.root, filename=filename)
+                if self.show:
+                    show_image(image=result.image, title=str(result.file_name))
+                if self.log:
+                    self._add_to_logger(result, pl_module, trainer)
 
-                        # Get the filename to save the image.
-                        # Filename is split based on the datamodule name and category.
-                        # For example, if the filename is `MVTec/bottle/000.png`, then the
-                        # filename is split based on `MVTec/bottle` and `000.png` is saved.
-                        if trainer.datamodule is not None:
-                            filename = str(result.file_name).split(
-                                sep=f"{trainer.datamodule.name}/{trainer.datamodule.category}",
-                            )[-1]
-                        else:
-                            filename = Path(result.file_name).name
-                        save_image(image=result.image, root=self.root, filename=filename)
-                    if self.show:
-                        show_image(image=result.image, title=str(result.file_name))
-                    if self.log:
-                        self._add_to_logger(result, pl_module, trainer)
+    @staticmethod
+    def _resolve_save_filename(file_name: str | Path, trainer: Trainer) -> str:
+        """Build a root-relative output filename from a dataset sample path.
+
+        Falls back to the basename when no datamodule is available or when the
+        stripped path would escape the output root.
+        """
+        # Filename is split based on the datamodule name and category.
+        # For example, if the filename is `MVTec/bottle/000.png`, then the
+        # filename is split based on `MVTec/bottle` and `000.png` is saved.
+        # ``save_image`` confines the final path under ``self.root``.
+        if trainer.datamodule is None:
+            return Path(file_name).name
+
+        filename = str(file_name).split(
+            sep=f"{trainer.datamodule.name}/{trainer.datamodule.category}",
+        )[-1]
+        filename = filename.lstrip("/\\")
+        if not filename or Path(filename).is_absolute() or ".." in Path(filename).parts:
+            return Path(file_name).name
+        return filename
 
     def on_test_end(self, trainer: Trainer, pl_module: AnomalibModule) -> None:
         """Generate visualizations at the end of testing.

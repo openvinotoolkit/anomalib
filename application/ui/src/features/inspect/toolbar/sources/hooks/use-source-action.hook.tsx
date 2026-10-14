@@ -3,7 +3,7 @@
 
 import { useActionState } from 'react';
 
-import { toast } from '@geti/ui';
+import { toast } from '@anomalib-studio/toast';
 import { isFunction } from 'lodash-es';
 
 import { SourceConfig } from '../util';

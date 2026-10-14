@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 from datetime import datetime
 from enum import StrEnum
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from pydantic_models.base import BaseIDModel, Pagination
-from utils.short_uuid import ShortUUID
 
 
 class Subset(StrEnum):
@@ -26,7 +26,7 @@ class ImageExtension(StrEnum):
 
 
 class Media(BaseIDModel):
-    project_id: ShortUUID
+    project_id: UUID
     filename: str
     size: int = Field(..., ge=0)
     is_anomalous: bool

@@ -52,6 +52,44 @@ class TestKCenterGreedy:
         assert len(idxs) == len(set(idxs))
 
     @staticmethod
+    @pytest.mark.parametrize("initial_idx", [0, 7])
+    @pytest.mark.parametrize("sampling_ratio", [0.5, 1.0])
+    @pytest.mark.parametrize("flatten", [False, True])
+    @pytest.mark.parametrize("distinct_features", [1, 2])
+    def test_repeated_features_have_unique_indices(
+        initial_idx: int,
+        sampling_ratio: float,
+        flatten: bool,
+        distinct_features: int,
+    ) -> None:
+        """Zero-distance ties must not select an already selected observation."""
+        embedding = (torch.arange(10) % distinct_features).float().unsqueeze(1).repeat(1, 16)
+        if flatten:
+            embedding = embedding.reshape(10, 4, 4)
+        sampler = KCenterGreedy(embedding=embedding, sampling_ratio=sampling_ratio)
+
+        with patch("torch.randint", return_value=torch.tensor(initial_idx)):
+            idxs = sampler.select_coreset_idxs()
+
+        assert idxs[0] == initial_idx
+        assert len(idxs) == int(10 * sampling_ratio)
+        assert len(set(idxs)) == len(idxs)
+        assert all(0 <= idx < 10 for idx in idxs)
+        if sampling_ratio == 1.0:
+            assert set(idxs) == set(range(10))
+
+    @staticmethod
+    def test_farthest_point_order() -> None:
+        """Excluding selected indices must preserve greedy farthest-point selection."""
+        embedding = torch.tensor([0.0, 1.0, 4.0, 10.0]).reshape(4, 1, 1)
+        sampler = KCenterGreedy(embedding=embedding, sampling_ratio=1.0)
+
+        with patch("torch.randint", return_value=torch.tensor(0)):
+            idxs = sampler.select_coreset_idxs()
+
+        assert idxs == [0, 3, 2, 1]
+
+    @staticmethod
     def test_sample_coreset_shape() -> None:
         """sample_coreset should return a tensor with the correct shape."""
         embedding = torch.randn(200, 64)

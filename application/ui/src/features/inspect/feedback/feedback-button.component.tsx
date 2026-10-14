@@ -21,8 +21,8 @@ import {
     Tooltip,
     TooltipTrigger,
     View,
-} from '@geti/ui';
-import { CheckmarkCircleOutline, DownloadIcon, ExternalLinkIcon, HelpIcon } from '@geti/ui/icons';
+} from '@geti-ui/ui';
+import { CheckmarkCircleOutline, DownloadIcon, ExternalLinkIcon, HelpIcon } from '@geti-ui/ui/icons';
 import { useMutation } from '@tanstack/react-query';
 import { isTauri } from '@tauri-apps/api/core';
 

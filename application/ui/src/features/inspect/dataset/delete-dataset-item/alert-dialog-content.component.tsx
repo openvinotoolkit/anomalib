@@ -1,4 +1,4 @@
-import { AlertDialog, Text } from '@geti/ui';
+import { AlertDialog, Text } from '@geti-ui/ui';
 
 type AlertDialogContentProps = {
     itemsIds: string[];

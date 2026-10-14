@@ -241,13 +241,15 @@ class WinClipModel(DynamicBufferMixin, BufferListMixin, nn.Module):
             return hook
 
         # register hook to get the intermediate tokens of the transformer
-        self.clip.visual.patch_dropout.register_forward_hook(get_feature_map("feature_map"))
+        hook_handle = self.clip.visual.patch_dropout.register_forward_hook(get_feature_map("feature_map"))
+        try:
+            # get image and patch embeddings
+            image_embeddings, patch_embeddings = self.clip.encode_image(batch)
+            feature_map = outputs["feature_map"]
+        finally:
+            hook_handle.remove()
 
-        # get image and patch embeddings
-        image_embeddings, patch_embeddings = self.clip.encode_image(batch)
-
-        # get window embeddings
-        feature_map = outputs["feature_map"]
+        # get window embeddings after removing the hook; it only captures the full-image feature map.
         window_embeddings = [self._get_window_embeddings(feature_map, masks) for masks in self.masks]
 
         return (

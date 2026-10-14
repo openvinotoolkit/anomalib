@@ -1,4 +1,4 @@
-import { Flex, Text } from '@geti/ui';
+import { Flex, Text } from '@geti-ui/ui';
 import { clsx } from 'clsx';
 
 import styles from './inference-result.module.scss';

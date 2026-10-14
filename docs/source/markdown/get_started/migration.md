@@ -190,6 +190,6 @@ Here is the summary of the changes to the configuration file:
 
 ## Migrating from 1.0 to 2.0
 
-### Overview
+### Overview (v2.0)
 
-The 2.0 release of Anomalib introduces several changes to the library. This guide will be updated with migration instructions when v2.0 is released.
+Anomalib 2.0 introduces engine-centric architecture, standardized dataclasses (`Batch`, `ImageBatch`, `ImageItem`), unified CLI subcommands (`train`, `predict`, `export`), and OpenVINO/Torch model export workflows.

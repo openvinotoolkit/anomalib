@@ -165,12 +165,12 @@ Anomalib, including the CLI, core components and entyrpoints.
 
 ```{figure} ../../../_static/images/guides/developer/sdd/cli.png
    :alt: CLI
-   :name: cli
+   :name: fig-cli
    :align: center
    :width: 500px
 ```
 
-As shown in Figure [3](cli), Anomalib's command-line interface (CLI) provides a
+As shown in Figure [3](fig-cli), Anomalib's command-line interface (CLI) provides a
 user-friendly way to interact with the library, allowing users to run anomaly
 detection tasks, configure algorithms, and visualize results. The CLI is
 implemented using LightningCLI, a command-line interface framework for PyTorch
@@ -269,7 +269,7 @@ PyTorch models to OpenVINO format.
    :alt: Engine
    :name: engine
    :align: center
-   <!-- :width: 500px -->
+   :width: 500px
 ```
 
 Overall, Anomalib is designed with a focus on modular, scalable, and flexible

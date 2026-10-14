@@ -5,7 +5,3 @@
    :members:
    :show-inheritance:
 ```
-
-```{seealso}
-{doc}`../../datasets/image/mvtecad` - MVTec AD Dataset
-```

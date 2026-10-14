@@ -2,7 +2,7 @@
 
 import 'react';
 
-import { type NavigateOptions } from 'react-router-dom';
+import { type NavigateOptions } from 'react-router';
 
 declare module '@adobe/react-spectrum' {
     interface RouterConfig {

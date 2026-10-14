@@ -204,12 +204,14 @@ def harmonic_aggregation(window_scores: torch.Tensor, output_size: tuple, masks:
     batch_size = window_scores.shape[0]
     height, width = output_size
 
-    scores = []
-    for idx in range(height * width):
-        patch_mask = torch.any(masks == idx, dim=0)  # boolean tensor indicating which masks contain the patch
-        scores.append(sum(patch_mask) / (1 / window_scores.T[patch_mask]).sum(dim=0))
+    # coverage[p, m] is True when window m covers patch p.
+    patch_ids = torch.arange(height * width, device=masks.device).view(-1, 1, 1)
+    coverage = (masks.unsqueeze(0) == patch_ids).any(dim=1)
 
-    return torch.stack(scores).T.reshape(batch_size, height, width).nan_to_num(posinf=0.0)
+    # Mask instead of matmul so zero scores (1 / 0 = inf) never multiply uncovered entries.
+    inverse_scores = torch.where(coverage, (1 / window_scores).unsqueeze(1), 0).sum(dim=-1)
+    scores = coverage.sum(dim=1) / inverse_scores
+    return scores.reshape(batch_size, height, width).nan_to_num(posinf=0.0)
 
 
 def visual_association_score(embeddings: torch.Tensor, reference_embeddings: torch.Tensor) -> torch.Tensor:

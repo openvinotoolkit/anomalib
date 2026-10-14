@@ -1,4 +1,4 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Unit Tests - MVTecAD Datamodule."""
@@ -17,10 +17,10 @@ class TestMVTecAD(_TestAnomalibImageDatamodule):
 
     @pytest.fixture()
     @staticmethod
-    def datamodule(dataset_path: Path) -> MVTecAD:
+    def datamodule(mvtecad_path: Path) -> MVTecAD:
         """Create and return a MVTec datamodule."""
         datamodule_ = MVTecAD(
-            root=dataset_path / "mvtecad",
+            root=mvtecad_path,
             category="dummy",
             train_batch_size=4,
             eval_batch_size=4,

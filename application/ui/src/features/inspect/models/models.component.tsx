@@ -1,10 +1,10 @@
 import { Suspense, useState } from 'react';
 
-import { Flex, Heading, Loading } from '@geti/ui';
+import { Flex, Heading, Loading } from '@geti-ui/ui';
 import { usePipeline } from 'src/hooks/use-pipeline.hook';
 
 import { useCompletedModels } from '../../../hooks/use-completed-models.hook';
-import { TrainModelButton } from '../train-model/train-model-button.component';
+import { TrainModelButton } from '../train-model/train-model-button/train-model-button.component';
 import { ModelDetail } from './model-detail/model-detail.component';
 import { ModelsView } from './models-view.component';
 

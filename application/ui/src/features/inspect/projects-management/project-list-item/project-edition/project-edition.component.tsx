@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-import { Loading, TextField, type TextFieldRef } from '@geti/ui';
+import { Loading, TextField, type TextFieldRef } from '@geti-ui/ui';
 
 interface ProjectEditionProps {
     name: string;

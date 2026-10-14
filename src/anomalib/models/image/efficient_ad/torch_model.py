@@ -524,6 +524,17 @@ class EfficientAdModel(nn.Module):
         return any(value.sum() != 0 for _, value in p_dic.items())
 
     @staticmethod
+    def _is_set_tensor(p_dic: nn.ParameterDict) -> torch.Tensor:
+        """Tensor version of :meth:`is_set` that dynamo can export without a data-dependent branch."""
+        return torch.stack([value.sum() != 0 for value in p_dic.values()]).any()
+
+    def _normalize_teacher(self, teacher_output: torch.Tensor) -> torch.Tensor:
+        """Standardize teacher features once ``mean_std`` has been computed; otherwise return them unchanged."""
+        is_set = self._is_set_tensor(self.mean_std)
+        std = torch.where(is_set, self.mean_std["std"], torch.ones_like(self.mean_std["std"]))
+        return torch.where(is_set, (teacher_output - self.mean_std["mean"]) / std, teacher_output)
+
+    @staticmethod
     def choose_random_aug_image(image: torch.Tensor) -> torch.Tensor:
         """Apply random augmentation to input image.
 
@@ -591,9 +602,7 @@ class EfficientAdModel(nn.Module):
                 - Squared distance between normalized teacher and student features
         """
         with torch.no_grad():
-            teacher_output = self.teacher(batch)
-            if self.is_set(self.mean_std):
-                teacher_output = (teacher_output - self.mean_std["mean"]) / self.mean_std["std"]
+            teacher_output = self._normalize_teacher(self.teacher(batch))
 
         student_output = self.student(batch)
         distance_st = torch.pow(teacher_output - student_output[:, : self.teacher_out_channels, :, :], 2)
@@ -688,9 +697,14 @@ class EfficientAdModel(nn.Module):
         map_st = F.interpolate(map_st, size=image_size, mode="bilinear")
         map_stae = F.interpolate(map_stae, size=image_size, mode="bilinear")
 
-        if self.is_set(self.quantiles) and normalize:
-            map_st = 0.1 * (map_st - self.quantiles["qa_st"]) / (self.quantiles["qb_st"] - self.quantiles["qa_st"])
-            map_stae = 0.1 * (map_stae - self.quantiles["qa_ae"]) / (self.quantiles["qb_ae"] - self.quantiles["qa_ae"])
+        if normalize:
+            # Select with a tensor mask instead of branching on parameter values, so dynamo can export it.
+            is_set = self._is_set_tensor(self.quantiles)
+            q = self.quantiles
+            range_st = torch.where(is_set, q["qb_st"] - q["qa_st"], torch.ones_like(q["qa_st"]))
+            range_ae = torch.where(is_set, q["qb_ae"] - q["qa_ae"], torch.ones_like(q["qa_ae"]))
+            map_st = torch.where(is_set, 0.1 * (map_st - q["qa_st"]) / range_st, map_st)
+            map_stae = torch.where(is_set, 0.1 * (map_stae - q["qa_ae"]) / range_ae, map_stae)
         return map_st, map_stae
 
     def get_maps(self, batch: torch.Tensor, normalize: bool = False) -> tuple[torch.Tensor, torch.Tensor]:

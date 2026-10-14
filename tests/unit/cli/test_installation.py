@@ -1,4 +1,4 @@
-# Copyright (C) 2023-2024 Intel Corporation
+# Copyright (C) 2023-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Tests for installation utils."""
@@ -94,11 +94,17 @@ def test_get_cuda_version_with_nvcc(mocker: MockerFixture) -> None:
 
 def test_update_cuda_version_with_available_torch_cuda_build() -> None:
     """Test that update_cuda_version_with_available_torch_cuda_build returns the expected CUDA version."""
-    assert update_cuda_version_with_available_torch_cuda_build("11.1", "2.6.0") == "12.6"
-    assert update_cuda_version_with_available_torch_cuda_build("11.8", "2.6.0") == "12.6"
-    assert update_cuda_version_with_available_torch_cuda_build("12.6", "2.7.0") == "12.6"
-    assert update_cuda_version_with_available_torch_cuda_build("11.8", "2.8.0") == "12.6"
-    assert update_cuda_version_with_available_torch_cuda_build("13.0", "2.9.0") == "13.0"
+    assert update_cuda_version_with_available_torch_cuda_build("11.1", "2.10.0") == "12.6"
+    assert update_cuda_version_with_available_torch_cuda_build("11.8", "2.10.0") == "12.6"
+    assert update_cuda_version_with_available_torch_cuda_build("12.6", "2.10.0") == "12.6"
+    assert update_cuda_version_with_available_torch_cuda_build("13.0", "2.10.0") == "13.0"
+    assert update_cuda_version_with_available_torch_cuda_build("13.0", "2.11.0") == "13.0"
+    assert update_cuda_version_with_available_torch_cuda_build("13.2", "2.14.0") == "13.2"
+    # Gaps in the supported list: 12.8 isn't built for torch 2.12, so use the closest lower build.
+    assert update_cuda_version_with_available_torch_cuda_build("12.8", "2.12.0") == "12.6"
+    assert update_cuda_version_with_available_torch_cuda_build("13.1", "2.12.0") == "13.0"
+    # Newer than every build: use the newest; compare numerically, not as strings.
+    assert update_cuda_version_with_available_torch_cuda_build("13.10", "2.12.0") == "13.2"
 
 
 def test_get_cuda_suffix() -> None:
@@ -113,7 +119,7 @@ def test_get_hardware_suffix(mocker: MockerFixture) -> None:
     assert get_hardware_suffix() == "cu112"
 
     mocker.patch("anomalib.cli.utils.installation.get_cuda_version", return_value="12.6")
-    assert get_hardware_suffix(with_available_torch_build=True, torch_version="2.7.0") == "cu126"
+    assert get_hardware_suffix(with_available_torch_build=True, torch_version="2.10.0") == "cu126"
 
     with pytest.raises(ValueError, match=r"``torch_version`` must be provided"):
         get_hardware_suffix(with_available_torch_build=True)
@@ -124,20 +130,20 @@ def test_get_hardware_suffix(mocker: MockerFixture) -> None:
 
 def test_get_torch_install_args(mocker: MockerFixture) -> None:
     """Test that get_torch_install_args returns the expected install arguments."""
-    requirement = Requirement("torch>=2.7.0")
+    requirement = Requirement("torch>=2.10.0")
     mocker.patch("anomalib.cli.utils.installation.platform.system", return_value="Linux")
     mocker.patch("anomalib.cli.utils.installation.get_hardware_suffix", return_value="cpu")
     install_args = get_torch_install_args(requirement)
     expected_args = [
         "--extra-index-url",
         "https://download.pytorch.org/whl/cpu",
-        "torch>=2.7.0",
-        "torchvision>=0.22.0",
+        "torch>=2.10.0",
+        "torchvision>=0.25.0",
     ]
     for arg in expected_args:
         assert arg in install_args
 
-    requirement = Requirement("torch>=2.9.0")
+    requirement = Requirement("torch>=2.11.0")
     mocker.patch("anomalib.cli.utils.installation.get_hardware_suffix", return_value="cu130")
     install_args = get_torch_install_args(requirement)
     expected_args = [
@@ -147,13 +153,13 @@ def test_get_torch_install_args(mocker: MockerFixture) -> None:
     for arg in expected_args:
         assert arg in install_args
 
-    requirement = Requirement("torch==2.8.0")
+    requirement = Requirement("torch==2.10.0")
     mocker.patch("anomalib.cli.utils.installation.get_hardware_suffix", return_value="cu126")
     expected_args = [
         "--extra-index-url",
         "https://download.pytorch.org/whl/cu126",
-        "torch==2.8.0",
-        "torchvision==0.23.0",
+        "torch==2.10.0",
+        "torchvision==0.25.0",
     ]
     install_args = get_torch_install_args(requirement)
     for arg in expected_args:

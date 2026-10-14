@@ -5,12 +5,14 @@ Anomalib is a deep learning library that aims to collect state-of-the-art anomal
 :::{dropdown} {octicon}`checklist;1em`&nbsp; Key Features
 :animate: fade-in-slide-down
 
-- Simple and modular API and CLI for training, inference, benchmarking, and hyperparameter optimization.
+- Simple and modular API and CLI for training, inference, and benchmarking.
 - The largest public collection of ready-to-use deep learning anomaly detection algorithms and benchmark datasets.
 - Lightning based model implementations to reduce boilerplate code and limit the implementation efforts to the bare essentials.
 - The majority of models can be exported to OpenVINO Intermediate Representation (IR) for accelerated inference on Intel hardware.
 - A set of inference tools for quick and easy deployment of the standard or custom anomaly detection models.
   :::
+
+(installation)=
 
 ## {octicon}`package;1em` Installation
 
@@ -85,12 +87,20 @@ markdown/get_started/migration
 ```
 
 ```{toctree}
+:caption: Notebooks
+:maxdepth: 1
+
+examples/notebooks/index
+```
+
+```{toctree}
 :caption: Guides
 :hidden:
 
 markdown/guides/reference/index
 markdown/guides/how_to/index
 markdown/guides/developer/index
+anomalib-studio/ui-architecture
 ```
 
 ```{toctree}

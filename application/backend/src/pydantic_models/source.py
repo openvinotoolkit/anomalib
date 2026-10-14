@@ -5,11 +5,11 @@ from enum import StrEnum
 from os import getenv
 from typing import Annotated, Literal
 from urllib.parse import urlparse, urlunparse
+from uuid import UUID
 
 from pydantic import BaseModel, Field, TypeAdapter
 
 from pydantic_models.base import BaseIDNameModel, NoRequiredIDs, Pagination
-from utils.short_uuid import ShortUUID
 
 IP_CAMERA_USERNAME = "IP_CAMERA_USERNAME"
 IP_CAMERA_PASSWORD = "IP_CAMERA_PASSWORD"  # noqa: S105  # nosec B105
@@ -25,13 +25,13 @@ class SourceType(StrEnum):
 
 
 class BaseSourceConfig(BaseIDNameModel):
-    project_id: ShortUUID
+    project_id: UUID
     source_type: str
 
 
 class DisconnectedSourceConfig(BaseSourceConfig):
     source_type: Literal[SourceType.DISCONNECTED] = SourceType.DISCONNECTED
-    project_id: ShortUUID = ShortUUID("2222222222222222222222")
+    project_id: UUID = UUID("00000000-0000-0000-0000-000000000000")
     name: str = "No Source"
 
 
@@ -44,7 +44,7 @@ class UsbCameraSourceConfig(BaseSourceConfig):
             "example": {
                 "source_type": "usb_camera",
                 "name": "USB Camera 0",
-                "id": "Bf8KYoUmuTV3hLdiEaarSA",
+                "id": "1fe8017e-3494-407d-9c80-d3def3ab73be",
                 "device_id": 0,
             },
         },
@@ -61,7 +61,7 @@ class IPCameraSourceConfig(BaseSourceConfig):
             "example": {
                 "source_type": "ip_camera",
                 "name": "Street Camera 123",
-                "id": "Bf8KYoUmuTV3hLdiEaarSA",
+                "id": "b7e0a318-e269-46fc-82b8-6b9a485d9162",
                 "stream_url": "http://example.com/stream",
                 "auth_required": True,
             },
@@ -94,7 +94,7 @@ class VideoFileSourceConfig(BaseSourceConfig):
             "example": {
                 "source_type": "video_file",
                 "name": "Sample Video",
-                "id": "Bf8KYoUmuTV3hLdiEaarSA",
+                "id": "d1a28f9f-8458-4615-bda0-5c5ebc649e9a",
                 "video_path": "/path/to/video.mp4",
             },
         },
@@ -111,7 +111,7 @@ class ImagesFolderSourceConfig(BaseSourceConfig):
             "example": {
                 "source_type": "images_folder",
                 "name": "Best Photos",
-                "id": "Bf8KYoUmuTV3hLdiEaarSA",
+                "id": "926063c5-f9ea-4a68-b52f-46e62d050d76",
                 "images_folder_path": "/path/to/images",
                 "ignore_existing_images": True,
             },

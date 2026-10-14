@@ -2,11 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 from pydantic_models.base import BaseIDModel, Pagination
-from utils.short_uuid import ShortUUID
 
 
 class DatasetSnapshot(BaseIDModel):
@@ -14,7 +14,7 @@ class DatasetSnapshot(BaseIDModel):
     Pydantic model for DatasetSnapshot.
     """
 
-    project_id: ShortUUID
+    project_id: UUID
     filename: str
     count: int
     created_at: datetime | None = Field(default=None)

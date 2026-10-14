@@ -28,6 +28,50 @@ import math
 
 from lightning.pytorch import Callback, LightningModule, Trainer
 
+try:
+    from lightning.pytorch.callbacks import RichProgressBar
+except ImportError:
+    try:
+        from lightning.pytorch.callbacks.progress.rich_progress import RichProgressBar
+    except ImportError:
+
+        class RichProgressBar:  # type: ignore[no-redef]
+            """Dummy RichProgressBar class for when rich is not available."""
+
+            def __init__(self, *args, **kwargs) -> None:
+                """Initialize dummy RichProgressBar."""
+
+
+class _FixedRichProgressBar(RichProgressBar):
+    """RichProgressBar subclass with corrected epoch display for step-based training.
+
+    Lightning internally sets ``max_epochs = -1`` when configured with
+    ``max_steps``, which causes the default ``RichProgressBar`` to show
+    ``Epoch X/-2``. This class overrides ``_get_train_description`` to show
+    the estimated total number of epochs derived from ``max_steps / num_training_batches``.
+    """
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.est_max_epochs: int | None = None
+        self.val_desc: str = "Validation"
+
+    def _get_train_description(self, current_epoch: int) -> str:
+        """Get the description for the training progress bar.
+
+        Args:
+            current_epoch: Current training epoch index.
+
+        Returns:
+            Formatted progress bar description string.
+        """
+        desc = f"Epoch {current_epoch}"
+        if self.est_max_epochs is not None:
+            desc += f"/{self.est_max_epochs - 1}"
+        if len(self.val_desc) > len(desc):
+            desc = f"{desc:{len(self.val_desc)}}"
+        return desc
+
 
 class MaxStepsProgressCallback(Callback):
     """Correct epoch display in the Rich progress bar for step-based training.
@@ -51,14 +95,6 @@ class MaxStepsProgressCallback(Callback):
         if trainer.max_epochs is None or trainer.max_epochs >= 0:
             return
 
-        try:
-            from lightning.pytorch.callbacks import RichProgressBar
-        except ImportError:
-            try:
-                from lightning.pytorch.callbacks.progress.rich_progress import RichProgressBar
-            except ImportError:
-                return
-
         progress_bar = getattr(trainer, "progress_bar_callback", None)
         if not isinstance(progress_bar, RichProgressBar) or not hasattr(
             progress_bar,
@@ -75,15 +111,6 @@ class MaxStepsProgressCallback(Callback):
 
         val_desc = getattr(progress_bar, "validation_description", "Validation")
 
-        class _FixedRichProgressBar(RichProgressBar):
-            """RichProgressBar subclass with corrected epoch display for step-based training."""
-
-            def _get_train_description(self, current_epoch: int) -> str:  # noqa: PLR6301
-                desc = f"Epoch {current_epoch}"
-                if est_max_epochs is not None:
-                    desc += f"/{est_max_epochs - 1}"
-                if len(val_desc) > len(desc):
-                    desc = f"{desc:{len(val_desc)}}"
-                return desc
-
         progress_bar.__class__ = _FixedRichProgressBar
+        progress_bar.est_max_epochs = est_max_epochs
+        progress_bar.val_desc = val_desc

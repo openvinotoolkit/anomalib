@@ -2,8 +2,8 @@
 name = "anomalib-studio"
 version = "1.0.0"
 description = "Anomalib Studio server"
-# Capped below 3.14: py3.14 has no torch xpu wheels yet, so universal resolution
-# would pull the CVE-flagged torch 2.6.0+xpu fallback. Builds/CI run on 3.13.
+# Capped below 3.14: Studio pins OpenVINO 2025.4.1, which has no Python 3.14 wheels.
+# Builds/CI currently run on 3.13.
 requires-python = ">=3.13,<3.14"
 
 dependencies = [
@@ -21,7 +21,6 @@ dependencies = [
     "pyarrow~=23.0",
     "pydantic-settings~=2.14.2",
     "requests",
-    "shortuuid~=1.0",
     "sqlalchemy[asyncio]~=2.0",
     "sse-starlette~=3.0",
     "tensorboard",
@@ -65,12 +64,13 @@ override-dependencies = [
     # upstream fix (no source changes, safe to override): https://github.com/mlflow/mlflow/pull/24872
     "cryptography>=50.0.0",
 ]
-# Resolve only for the built target platforms (linux + windows). macOS/emscripten
-# aren't built here and their dead xpu branches otherwise pull the CVE-flagged
-# torch 2.6.0+xpu. Combined with the requires-python cap this keeps it out.
+# Resolve for linux, windows, and macOS (local Studio development). Exclude
+# emscripten: no wheels. xpu is already platform-gated to linux/win32, so
+# darwin does not take that extra.
 environments = [
     "sys_platform == 'linux'",
     "sys_platform == 'win32'",
+    "sys_platform == 'darwin'",
 ]
 conflicts = [
     [

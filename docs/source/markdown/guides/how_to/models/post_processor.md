@@ -251,6 +251,6 @@ post-processor.  Use it when downstream tasks benefit from high-confidence masks
 
 ```{seealso}
 For more information:
-- {doc}`PreProcessing guide <./pre_processing>`
-- {doc}`AnomalibModule Documentation <../../reference/models/base>`
+- {doc}`PreProcessor guide <./pre_processor>`
+- {doc}`AnomalibModule Guide <./anomalib_module>`
 ```

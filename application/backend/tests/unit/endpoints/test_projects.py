@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from unittest.mock import MagicMock
+from uuid import uuid4
 
 import pytest
 from fastapi import status
@@ -11,7 +12,6 @@ from main import app
 from pydantic_models import Pipeline, ProjectList
 from pydantic_models.base import Pagination
 from services import JobService, PipelineService, ProjectService
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
@@ -48,7 +48,7 @@ def test_get_projects(fxt_client, fxt_project_service, fxt_project):
 
 
 def test_get_project_not_found(fxt_client, fxt_project_service):
-    project_id = ShortUUID.generate()
+    project_id = uuid4()
     fxt_project_service.get_project_by_id.return_value = None
 
     response = fxt_client.get(f"/api/projects/{project_id}")
@@ -67,7 +67,7 @@ def test_delete_project(fxt_client, fxt_project_service, fxt_job_service, fxt_pi
 
 
 def test_delete_project_not_found(fxt_client, fxt_project_service, fxt_job_service, fxt_pipeline_service):
-    project_id = ShortUUID.generate()
+    project_id = uuid4()
     fxt_project_service.get_project_by_id.return_value = None
 
     response = fxt_client.delete(f"/api/projects/{project_id}")
