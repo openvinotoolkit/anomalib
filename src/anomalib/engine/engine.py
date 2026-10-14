@@ -818,7 +818,12 @@ class Engine:
             self.trainer.validate(resolved_model, val_dataloaders, None, verbose=False, datamodule=datamodule)
         else:
             self.trainer.fit(
-                resolved_model, train_dataloaders, val_dataloaders, datamodule, ckpt_path, weights_only=False
+                resolved_model,
+                train_dataloaders,
+                val_dataloaders,
+                datamodule,
+                ckpt_path,
+                weights_only=False,
             )
         return self.trainer.test(
             resolved_model,
