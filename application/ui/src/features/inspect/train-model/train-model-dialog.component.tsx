@@ -1,7 +1,11 @@
+// Copyright (C) 2020-2026 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
 import { Suspense, useState } from 'react';
 
 import { $api } from '@anomalib-studio/api';
 import { usePipeline, useProjectIdentifier } from '@anomalib-studio/hooks';
+import { toast } from '@anomalib-studio/toast';
 import {
     Button,
     ButtonGroup,
@@ -27,14 +31,21 @@ import { getDeviceKey, isSamePhysicalDevice } from './utils/device-metadata';
 
 import classes from './train-model.module.scss';
 
+const useTrainJob = () => {
+    return $api.useMutation('post', '/api/jobs:train', {
+        meta: { invalidates: [['get', '/api/jobs']] },
+        onError: (error) => {
+            const message = 'message' in error ? String(error.message) : String(error.detail);
+            toast({ type: 'error', message });
+        },
+    });
+};
+
 export const TrainModelDialog = ({ close }: { close: () => void }) => {
+    const startTrainingMutation = useTrainJob();
     const { projectId } = useProjectIdentifier();
     const { jobs = [] } = useProjectTrainingJobs();
     const [searchParams, setSearchParams] = useSearchParams();
-    const startTrainingMutation = $api.useMutation('post', '/api/jobs:train', {
-        meta: { invalidates: [['get', '/api/jobs']] },
-    });
-
     const [selectedModel, setSelectedModel] = useState<string | null>(null);
     const { selectedDevice, setSelectedDevice, devices } = useTrainingDevice();
 
@@ -93,8 +104,9 @@ export const TrainModelDialog = ({ close }: { close: () => void }) => {
                             <InlineAlert variant='info'>
                                 <Heading level={5}>Training already queued</Heading>
                                 <Text>
-                                    A training job is already pending or running for this project. Starting now will
-                                    queue this job to run after the current one finishes.
+                                    A training job is already pending or running for this project. A different model or
+                                    device can be queued, but the same training configuration cannot be submitted again
+                                    until the current job finishes.
                                 </Text>
                             </InlineAlert>
                         )}

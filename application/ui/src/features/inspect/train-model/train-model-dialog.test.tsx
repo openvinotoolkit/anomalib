@@ -1,4 +1,4 @@
-// Copyright (C) 2025 Intel Corporation
+// Copyright (C) 2025-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { DialogContainer, ThemeProvider } from '@geti-ui/ui';
@@ -192,6 +192,7 @@ describe('TrainModelDialog', () => {
                 renderDialog({ jobs: [makeJob(status)] });
 
                 expect(await screen.findByText('Training already queued')).toBeVisible();
+                expect(screen.getByText(/same training configuration cannot be submitted again/)).toBeVisible();
             }
         );
 
@@ -218,7 +219,7 @@ describe('TrainModelDialog', () => {
             renderDialog({ devices: CPU_ONLY, pipelineConfig: { status: 'idle', inference_device: 'CPU' } });
 
             expect(await screen.findByText('Train model')).toBeVisible();
-            expect(screen.queryByText(/Inference pipeline is running on/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/Inference pipeline is (?:active|running) on/i)).not.toBeInTheDocument();
         });
 
         it('does not show the device conflict warning when pipeline runs on a different device', async () => {
@@ -232,7 +233,7 @@ describe('TrainModelDialog', () => {
             });
 
             expect(await screen.findByText('Train model')).toBeVisible();
-            expect(screen.queryByText(/Inference pipeline is running on/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/Inference pipeline is (?:active|running) on/i)).not.toBeInTheDocument();
         });
 
         it('clears the device conflict warning when the user switches to a non-conflicting device', async () => {
@@ -250,7 +251,7 @@ describe('TrainModelDialog', () => {
 
             await userEvent.click(screen.getByRole('button', { name: /select a training device/i }));
             await userEvent.click(await screen.findByRole('option', { name: /Intel\(R\) Graphics/i }));
-            expect(screen.queryByText(/Inference pipeline is running on/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/Inference pipeline is (?:active|running) on/i)).not.toBeInTheDocument();
         });
     });
 });
