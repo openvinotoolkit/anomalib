@@ -4,7 +4,7 @@
 import { Suspense, useState } from 'react';
 
 import { $api } from '@anomalib-studio/api';
-import { usePipeline, useProjectIdentifier } from '@anomalib-studio/hooks';
+import { useActivePipeline, useProjectIdentifier } from '@anomalib-studio/hooks';
 import { toast } from '@anomalib-studio/toast';
 import {
     Button,
@@ -35,7 +35,11 @@ const useTrainJob = () => {
     return $api.useMutation('post', '/api/jobs:train', {
         meta: { invalidates: [['get', '/api/jobs']] },
         onError: (error) => {
-            const message = 'message' in error ? String(error.message) : String(error.detail);
+            const message =
+                'message' in error
+                    ? String(error.message)
+                    : String(error.detail ?? 'Unable to start training. Please try again.');
+
             toast({ type: 'error', message });
         },
     });
@@ -58,7 +62,7 @@ export const TrainModelDialog = ({ close }: { close: () => void }) => {
     );
 
     // Warning 2: pipeline running on the same device as selected for training
-    const { data: pipeline } = usePipeline();
+    const { data: pipeline } = useActivePipeline();
 
     const pipelineIsActive = pipeline?.status === 'running' || pipeline?.status === 'active';
     const isDeviceConflict = pipelineIsActive && isSamePhysicalDevice(selectedDeviceInfo, pipeline?.inference_device);

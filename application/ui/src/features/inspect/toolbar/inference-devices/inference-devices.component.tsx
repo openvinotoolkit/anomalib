@@ -55,6 +55,7 @@ export const InferenceDevices = () => {
     const updatePipeline = $api.useMutation('patch', '/api/projects/{project_id}/pipeline', {
         meta: {
             invalidates: [
+                ['get', '/api/active-pipeline'],
                 ['get', '/api/projects/{project_id}/pipeline', { params: { path: { project_id: projectId } } }],
             ],
         },
@@ -72,6 +73,7 @@ export const InferenceDevices = () => {
         }
 
         setOptimisticKey(key);
+
         updatePipeline.mutate({
             params: { path: { project_id: projectId } },
             body: { inference_device: key },

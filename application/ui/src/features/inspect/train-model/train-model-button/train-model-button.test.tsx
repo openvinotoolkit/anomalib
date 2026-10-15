@@ -39,7 +39,7 @@ const mockTrainModelDialogResources = () => {
             HttpResponse.json([{ type: 'cpu', name: 'CPU', memory: null, index: null }])
         ),
         http.get('/api/jobs', () => HttpResponse.json({ jobs: [], pagination: getMockedPagination() })),
-        http.get('/api/projects/{project_id}/pipeline', () => HttpResponse.json(getMockedPipeline({ status: 'idle' })))
+        http.get('/api/active-pipeline', () => HttpResponse.json(getMockedPipeline({ status: 'idle' })))
     );
 };
 

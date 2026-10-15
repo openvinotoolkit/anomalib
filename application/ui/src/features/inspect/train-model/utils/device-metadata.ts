@@ -79,7 +79,7 @@ export const isSamePhysicalDevice = (
     }
 
     if (inferenceIndexPart === undefined) {
-        return trainingDevice.index == null;
+        return trainingDevice.index == null || (inferenceTypePart === 'GPU' && trainingDevice.index === 0);
     }
 
     return trainingDevice.index === Number(inferenceIndexPart);

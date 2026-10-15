@@ -58,7 +58,7 @@ describe('TrainModelDialog', () => {
             http.get('/api/system/devices/training', ({ response }) => response(200).json(devices)),
             http.post('/api/jobs:train', ({ response }) => response(200).json({ job_id: 'job-123' })),
             http.get('/api/jobs', ({ response }) => response(200).json({ jobs, pagination: getMockedPagination() })),
-            http.get('/api/projects/{project_id}/pipeline', ({ response }) =>
+            http.get('/api/active-pipeline', ({ response }) =>
                 response(200).json(getMockedPipeline({ status: 'idle', ...pipelineConfig }))
             )
         );
