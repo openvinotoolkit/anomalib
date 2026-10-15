@@ -309,24 +309,26 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 "No normal test images found. Sampling from training set using ratio of %0.2f",
                 self.test_split_ratio,
             )
-            if self.test_split_ratio is not None and self.test_split_ratio > 0:
+            if self.test_split_ratio is None or self.test_split_ratio == 0:
                 # A ratio of 0 means no normal images are moved into the test
                 # split at all: keep every normal training image where it is.
-                # random_split rejects 0, so guard instead of crashing.
-                self.train_data, normal_test_data = random_split(
-                    self.train_data,
-                    self.test_split_ratio,
-                    seed=self.seed,
-                )
-            else:
+                # random_split rejects 0, so guard instead of crashing. Any
+                # other value, including a negative ratio, is left for
+                # random_split to reject with its validation error rather than
+                # being silently treated as 0 here.
                 # Nothing was sampled: FROM_DIR must not append an empty set,
                 # and SYNTHETIC cannot build from nothing. Skip both consumers
                 # instead of touching normal_test_data.
-                if self.test_split_mode != TestSplitMode.NONE:
+                if self.test_split_ratio == 0 and self.test_split_mode != TestSplitMode.NONE:
                     logger.info(
                         "test_split_ratio is 0; keeping every normal training image in the training split",
                     )
                 return
+            self.train_data, normal_test_data = random_split(
+                self.train_data,
+                self.test_split_ratio,
+                seed=self.seed,
+            )
 
         if self.test_split_mode == TestSplitMode.FROM_DIR:
             self.test_data += normal_test_data

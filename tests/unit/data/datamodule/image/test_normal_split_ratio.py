@@ -150,6 +150,44 @@ class TestFolderNormalSplitRatio:
         assert len(datamodule.train_data.samples) == 10
 
     @staticmethod
+    def test_negative_ratio_is_rejected_not_silently_zeroed(tmp_path: Path) -> None:
+        """A negative ``normal_split_ratio`` must be rejected, not silently treated as 0."""
+        make_folder_layout(tmp_path)
+        datamodule = Folder(
+            name="dummy",
+            root=tmp_path,
+            normal_dir="normal",
+            abnormal_dir="abnormal",
+            normal_split_ratio=-0.1,
+            val_split_mode="none",
+            train_batch_size=4,
+            eval_batch_size=4,
+            num_workers=0,
+            seed=42,
+        )
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            datamodule.setup()
+
+    @staticmethod
+    def test_negative_test_split_ratio_is_rejected(tmp_path: Path) -> None:
+        """A negative ``test_split_ratio`` stays rejected when it drives the normal-image sampling."""
+        make_folder_layout(tmp_path)
+        datamodule = Folder(
+            name="dummy",
+            root=tmp_path,
+            normal_dir="normal",
+            abnormal_dir="abnormal",
+            val_split_mode="none",
+            train_batch_size=4,
+            eval_batch_size=4,
+            num_workers=0,
+            test_split_ratio=-0.1,
+            seed=42,
+        )
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            datamodule.setup()
+
+    @staticmethod
     def test_normal_split_ratio_attribute_is_preserved(tmp_path: Path) -> None:
         """The stored attribute must reflect the value passed by the user."""
         make_folder_layout(tmp_path)
@@ -206,6 +244,23 @@ class TestTabularNormalSplitRatio:
         datamodule.setup()
         assert normal_test_count(datamodule) == 0
         assert len(datamodule.train_data.samples) == 10
+
+    @staticmethod
+    def test_negative_ratio_is_rejected_not_silently_zeroed(tmp_path: Path) -> None:
+        """A negative ``normal_split_ratio`` must be rejected, not silently treated as 0."""
+        samples = make_tabular_layout(tmp_path)
+        datamodule = Tabular(
+            name="dummy",
+            samples=samples,
+            normal_split_ratio=-0.1,
+            val_split_mode="none",
+            train_batch_size=4,
+            eval_batch_size=4,
+            num_workers=0,
+            seed=42,
+        )
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            datamodule.setup()
 
     @staticmethod
     def test_default_none_keeps_test_split_ratio(tmp_path: Path) -> None:

@@ -1,4 +1,4 @@
-# Copyright (C) 2022-2025 Intel Corporation
+# Copyright (C) 2022-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Custom Folder Data Module.
@@ -61,7 +61,8 @@ class Folder(AnomalibDataModule):
             Overrides ``test_split_ratio`` for this split. ``None`` keeps the
             ``test_split_ratio`` value, which the base class uses to sample
             normal test images from the training set. A ratio of ``0`` keeps
-            every normal training image in the training split.
+            every normal training image in the training split; values outside
+            ``[0, 1)`` are rejected by the underlying split.
             Defaults to ``None``.
         extensions (tuple[str, ...] | None): Image extensions to include.
             Defaults to ``None``.
