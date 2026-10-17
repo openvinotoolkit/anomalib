@@ -88,7 +88,7 @@ class LIBADDataset(AnomalibDataset):
             msg = f"Unknown category {category}. Must be one of {CATEGORIES}"
             raise ValueError(msg)
 
-        if modality is not None and modality not in ("A", "B", "L", "X"):
+        if modality is not None and modality not in {"A", "B", "L", "X"}:
             msg = f"Unknown modality {modality}. Must be one of 'A', 'B', 'L', 'X'"
             raise ValueError(msg)
 

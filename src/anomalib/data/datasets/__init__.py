@@ -50,12 +50,12 @@ from .image import (
     DatumaroDataset,
     FolderDataset,
     KolektorDataset,
+    LIBADDataset,
     MPDDDataset,
     MVTecADDataset,
     TabularDataset,
     VADDataset,
     VisaDataset,
-    LIBADDataset,
 )
 from .video import AvenueDataset, ShanghaiTechDataset, UCSDpedDataset
 

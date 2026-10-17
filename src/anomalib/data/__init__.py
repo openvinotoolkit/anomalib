@@ -51,6 +51,7 @@ from .datamodules.base import AnomalibDataModule
 from .datamodules.depth import ADAM3D, DepthDataFormat, Folder3D, MVTec3D
 from .datamodules.image import (
     BMAD,
+    LIBAD,
     MPDD,
     VAD,
     AutoVI,
@@ -66,7 +67,6 @@ from .datamodules.image import (
     RealIAD,
     Tabular,
     Visa,
-    LIBAD,
 )
 from .datamodules.video import Avenue, ShanghaiTech, UCSDped, VideoDataFormat
 
@@ -81,13 +81,13 @@ from .datasets.image import (
     FolderDataset,
     KaputtDataset,
     KolektorDataset,
+    LIBADDataset,
     MPDDDataset,
     MVTecADDataset,
     MVTecLOCODataset,
     TabularDataset,
     VADDataset,
     VisaDataset,
-    LIBADDataset,
 )
 from .datasets.video import AvenueDataset, ShanghaiTechDataset, UCSDpedDataset
 from .predict import PredictDataset

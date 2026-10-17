@@ -40,6 +40,7 @@ from .datumaro import Datumaro
 from .folder import Folder
 from .kaputt import Kaputt
 from .kolektor import Kolektor
+from .libad import LIBAD
 from .mpdd import MPDD
 from .mvtec_loco import MVTecLOCO
 from .mvtecad import MVTecAD
@@ -48,7 +49,6 @@ from .realiad import RealIAD
 from .tabular import Tabular
 from .vad import VAD
 from .visa import Visa
-from .libad import LIBAD
 
 
 class ImageDataFormat(str, Enum):

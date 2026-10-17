@@ -263,7 +263,7 @@ def make_mvtec2_dataset(
                         msg = f"Missing mask for anomalous image: {image_path}"
                         raise MisMatchError(msg)
                     samples_list.append(
-                            (str(root), "test", "bad", str(image_path), str(mask_path), 1),
+                        (str(root), "test", "bad", str(image_path), str(mask_path), 1),
                     )
     elif test_type == TestType.PRIVATE:
         test_path = root / "test_private"

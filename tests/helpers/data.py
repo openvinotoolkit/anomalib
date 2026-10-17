@@ -884,7 +884,6 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
             ref_df = pd.DataFrame(reference_samples)
             ref_df.to_parquet(datasets_dir / f"reference-{split}.parquet", index=False)
 
-
     def _generate_dummy_libad_dataset(
         self,
         normal_dir: str = "normal",
@@ -912,6 +911,7 @@ class DummyImageDatasetGenerator(DummyDatasetGenerator):
             for mod in modalities:
                 image_filename = abnormal_path / f"{sample_id}{mod}{image_extension}"
                 self.image_generator.generate_image(label=label, image_filename=image_filename)
+
 
 class DummyVideoDatasetGenerator(DummyDatasetGenerator):
     """Dummy video dataset generator.
@@ -1071,4 +1071,3 @@ class DummyVideoDatasetGenerator(DummyDatasetGenerator):
                 self.video_generator.save_image(image_filename, frame)
             masks_array = np.stack(masks)
             np.save(mask_path, masks_array)
-

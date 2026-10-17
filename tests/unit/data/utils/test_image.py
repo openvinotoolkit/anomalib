@@ -116,7 +116,10 @@ class TestReadImage:
         assert img_tensor.shape == (3, 2, 2)
         assert img_tensor.dtype == torch.float32
         torch.testing.assert_close(
-            img_tensor[:, 0, 1], torch.full((3,), 32767 / 65535, dtype=torch.float32), rtol=0, atol=1e-6,
+            img_tensor[:, 0, 1],
+            torch.full((3,), 32767 / 65535, dtype=torch.float32),
+            rtol=0,
+            atol=1e-6,
         )
         assert torch.isclose(img_tensor.max(), torch.tensor(1.0))
 

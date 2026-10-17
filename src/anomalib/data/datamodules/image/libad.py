@@ -236,7 +236,7 @@ class LIBAD(AnomalibDataModule):
                         local_dir=scratch_dir,
                     ),
                 )
-                extract(downloaded_path, scratch_dir)
+                extract(downloaded_path, Path(scratch_dir))
 
                 extracted_dir = Path(scratch_dir) / "LIBAD"
                 if extracted_dir.is_dir():
