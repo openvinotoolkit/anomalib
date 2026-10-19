@@ -39,3 +39,10 @@ class TestMVTec3D(_TestAnomalibDepthDatamodule):
     def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
         return "examples/configs/data/mvtec_3d.yaml"
+
+    @staticmethod
+    def test_train_samples_mask_path_is_empty_string(datamodule: MVTec3D) -> None:
+        """Test if train samples mask path is an empty string and not the string 'nan'."""
+        train_samples = datamodule.train_data.samples
+        assert (train_samples["mask_path"] == "").all()
+        assert not (train_samples["mask_path"] == "nan").any()
