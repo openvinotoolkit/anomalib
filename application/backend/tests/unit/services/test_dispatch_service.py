@@ -3,19 +3,19 @@
 
 from pathlib import Path
 from unittest.mock import patch
+from uuid import uuid4
 
 import pytest
 
 from pydantic_models.sink import FolderSinkConfig, SinkType
 from services.dispatch_service import DispatchService
-from utils.short_uuid import ShortUUID
 
 
 @pytest.fixture
 def folder_sink_config(tmp_path: Path) -> FolderSinkConfig:
     return FolderSinkConfig(
-        id=ShortUUID("Bf8KYoUmuTV3hLdiEaarSA"),
-        project_id=ShortUUID("Bf8KYoUmuTV3hLdiEaarSA"),
+        id=uuid4(),
+        project_id=uuid4(),
         name="Local Folder",
         sink_type=SinkType.FOLDER,
         folder_path=str(tmp_path),

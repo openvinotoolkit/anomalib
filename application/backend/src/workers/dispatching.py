@@ -61,7 +61,6 @@ class DispatchingWorker(BaseThreadWorker):
         elif not self._prev_sink_config or sink_config != self._prev_sink_config:
             logger.info(f"Sink config changed from {self._prev_sink_config} to {sink_config}")
             self._destinations = DispatchService.get_destinations(output_configs=[sink_config])
-            
             self._prev_sink_config = copy.deepcopy(sink_config)
 
     def _publish_mjpeg(self, frame: np.ndarray) -> None:
