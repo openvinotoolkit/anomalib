@@ -11,7 +11,7 @@ import { $api } from '../api/client';
 import { SchemaJob } from '../api/openapi-spec';
 import { http } from '../api/utils';
 import { server } from '../msw-node-setup';
-import { useProjectTrainingJobs } from './use-project-trainingJobs.hook';
+import { useProjectActiveTrainingJobs, useProjectTrainingJobs } from './use-project-trainingJobs.hook';
 
 const makeJob = (id: string, overrides: Partial<SchemaJob> = {}): SchemaJob => ({
     id,
@@ -247,6 +247,41 @@ describe('useProjectTrainingJobs', () => {
         await act(async () => {
             await vi.waitFor(() => expect(requests).toEqual([0, 0]));
         });
+        unmount();
+    });
+
+    it('discovers active training on a bounded page poll without scanning history', async () => {
+        vi.useFakeTimers();
+        const activeJob = makeJob('active-job', { status: 'running' });
+        const requests: URL[] = [];
+        server.use(
+            http.get('/api/jobs', ({ request, response }) => {
+                requests.push(new URL(request.url));
+                return response(200).json({
+                    jobs: requests.length === 1 ? [] : [activeJob],
+                    pagination: getMockedPagination({
+                        limit: 50,
+                        count: requests.length === 1 ? 0 : 1,
+                        total: requests.length === 1 ? 0 : 1,
+                    }),
+                });
+            })
+        );
+        const { result, unmount } = renderHook(() => useProjectActiveTrainingJobs());
+
+        await act(async () => {
+            await vi.waitFor(() => expect(requests).toHaveLength(1));
+        });
+        expect(result.current.data).toEqual([]);
+        expect(requests[0].searchParams.get('offset')).toBe('0');
+        expect(requests[0].searchParams.get('limit')).toBe('50');
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(10_000);
+            await vi.waitFor(() => expect(result.current.data).toEqual([activeJob]));
+        });
+        expect(requests).toHaveLength(2);
+        expect(requests.every((request) => request.searchParams.get('offset') === '0')).toBe(true);
         unmount();
     });
 

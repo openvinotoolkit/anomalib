@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { $api } from '@anomalib-studio/api';
 import { queryOptions, experimental_streamedQuery as streamedQuery, useQuery } from '@tanstack/react-query';
 import { fetchSSE } from 'src/api/fetch-sse';
-import { useProjectTrainingJobs } from 'src/hooks/use-project-trainingJobs.hook';
+import { useProjectActiveTrainingJobs } from 'src/hooks/use-project-trainingJobs.hook';
 
 import { useStatusBar } from '../status-bar-context';
 
@@ -17,7 +17,7 @@ interface JobProgress {
 
 export const TrainingStatusAdapter = () => {
     const { setStatus, removeStatus } = useStatusBar();
-    const { jobs } = useProjectTrainingJobs({});
+    const { data: jobs } = useProjectActiveTrainingJobs();
 
     const { mutate: cancelJob } = $api.useMutation('post', '/api/jobs/{job_id}:cancel', {
         meta: { invalidates: [['get', '/api/jobs']] },

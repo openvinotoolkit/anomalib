@@ -8,6 +8,7 @@ import { SchemaJob } from '../api/openapi-spec';
 import { useProjectIdentifier } from './use-project-identifier.hook';
 
 const REFETCH_INTERVAL_WITH_TRAINING = 5_000;
+const ACTIVE_TRAINING_JOBS_POLL_INTERVAL = 10_000;
 const JOBS_PAGE_LIMIT = 50;
 
 const getAllJobs = async (signal: AbortSignal): Promise<SchemaJob[]> => {
@@ -69,4 +70,31 @@ export const useProjectTrainingJobs = (options: { refetchInterval?: number; refe
     });
 
     return { ...query, jobs: data?.filter((job) => job.project_id === projectId) };
+};
+
+/** Poll one bounded page of jobs to discover active training without rescanning all history. */
+export const useProjectActiveTrainingJobs = () => {
+    const { projectId } = useProjectIdentifier();
+
+    return useQuery({
+        queryKey: ['get', '/api/jobs', 'active-training', projectId],
+        queryFn: async ({ signal }) => {
+            const { data, error } = await fetchClient.GET('/api/jobs', {
+                params: { query: { offset: 0, limit: JOBS_PAGE_LIMIT } },
+                signal,
+            });
+
+            if (error !== undefined) {
+                throw error;
+            }
+
+            return data.jobs.filter(
+                ({ project_id, type, status }) =>
+                    projectId === project_id &&
+                    type === 'training' &&
+                    (status === 'running' || status === 'pending')
+            );
+        },
+        refetchInterval: ACTIVE_TRAINING_JOBS_POLL_INTERVAL,
+    });
 };
