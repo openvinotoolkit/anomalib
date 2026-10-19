@@ -253,7 +253,6 @@ def make_autovi_dataset(
     samples.attrs["task"] = "classification" if (samples["mask_path"] == "").all() else "segmentation"
 
     if split:
-        split_value = split.value if isinstance(split, Split) else split
-        samples = samples[samples["split"] == split_value].reset_index(drop=True)
+        samples = samples[samples["split"] == split].reset_index(drop=True)
 
     return samples

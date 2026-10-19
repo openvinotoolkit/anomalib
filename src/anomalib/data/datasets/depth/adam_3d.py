@@ -188,7 +188,6 @@ def make_adam_3d_dataset(
         mask_samples.path + "/" + samples.split + "/" + samples.label + "/" + "ground_truth/" + samples.file_name
     )
     samples = samples.dropna(subset=["image_path"])
-    samples["mask_path"] = samples["mask_path"].fillna("")
     samples = samples.astype({"image_path": "str", "mask_path": "str", "depth_path": "str"})
 
     # assert that the right mask files are associated with the right test images
