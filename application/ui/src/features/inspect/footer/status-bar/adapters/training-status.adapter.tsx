@@ -1,13 +1,12 @@
-// Copyright (C) 2025 Intel Corporation
+// Copyright (C) 2025-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 import { useEffect } from 'react';
 
 import { $api } from '@anomalib-studio/api';
-import { SchemaJob as Job } from '@anomalib-studio/api/spec';
-import { useProjectIdentifier } from '@anomalib-studio/hooks';
 import { queryOptions, experimental_streamedQuery as streamedQuery, useQuery } from '@tanstack/react-query';
 import { fetchSSE } from 'src/api/fetch-sse';
+import { useProjectTrainingJobs } from 'src/hooks/use-project-trainingJobs.hook';
 
 import { useStatusBar } from '../status-bar-context';
 
@@ -18,21 +17,14 @@ interface JobProgress {
 
 export const TrainingStatusAdapter = () => {
     const { setStatus, removeStatus } = useStatusBar();
-    const { projectId } = useProjectIdentifier();
-
-    const { data: jobsData } = $api.useQuery('get', '/api/jobs', undefined, {
-        refetchInterval: 10000,
-    });
+    const { jobs } = useProjectTrainingJobs({});
 
     const { mutate: cancelJob } = $api.useMutation('post', '/api/jobs/{job_id}:cancel', {
         meta: { invalidates: [['get', '/api/jobs']] },
     });
 
-    const trainingJob = jobsData?.jobs.find(
-        (job: Job) =>
-            job.project_id === projectId &&
-            job.type === 'training' &&
-            (job.status === 'running' || job.status === 'pending')
+    const trainingJob = jobs?.find(
+        (job) => job.type === 'training' && (job.status === 'running' || job.status === 'pending')
     );
 
     const { data: progressData } = useQuery(

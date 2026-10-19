@@ -48,7 +48,12 @@ const useTrainJob = () => {
 export const TrainModelDialog = ({ close }: { close: () => void }) => {
     const startTrainingMutation = useTrainJob();
     const { projectId } = useProjectIdentifier();
-    const { jobs = [] } = useProjectTrainingJobs();
+    const {
+        jobs = [],
+        isFetching: isCheckingJobs,
+        isError: hasJobsError,
+        refetch: refetchJobs,
+    } = useProjectTrainingJobs({ refetchOnMount: 'always' });
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedModel, setSelectedModel] = useState<string | null>(null);
     const { selectedDevice, setSelectedDevice, devices } = useTrainingDevice();
@@ -104,6 +109,27 @@ export const TrainModelDialog = ({ close }: { close: () => void }) => {
                     minWidth={'60vw'}
                 >
                     <Flex direction='column' gap='size-300'>
+                        {isCheckingJobs && <Text>Checking for pending or running training jobs...</Text>}
+                        {hasJobsError && (
+                            <InlineAlert variant='notice'>
+                                <Heading level={5}>Unable to check training jobs</Heading>
+                                <Content>
+                                    <Flex gap='size-100' alignItems='center'>
+                                        <Text>
+                                            The queued-job warning may be incomplete. You can still start training;
+                                            duplicate configurations will be rejected.
+                                        </Text>
+                                        <Button
+                                            variant='secondary'
+                                            onPress={() => void refetchJobs()}
+                                            isDisabled={isCheckingJobs}
+                                        >
+                                            Retry job check
+                                        </Button>
+                                    </Flex>
+                                </Content>
+                            </InlineAlert>
+                        )}
                         {hasActiveTrainingJob && (
                             <InlineAlert variant='info'>
                                 <Heading level={5}>Training already queued</Heading>

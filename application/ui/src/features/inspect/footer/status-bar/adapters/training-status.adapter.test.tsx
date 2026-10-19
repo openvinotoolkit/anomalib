@@ -1,17 +1,15 @@
-// Copyright (C) 2025 Intel Corporation
+// Copyright (C) 2025-2026 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-import { ReactNode } from 'react';
-
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
+import { waitFor } from '@testing-library/react';
 import { HttpResponse } from 'msw';
-import { MemoryRouter, Route, Routes } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
 import { getMockedPagination } from '../../../../../../mocks/mock-pagination';
+import { render } from '../../../../../../tests/utils';
 import { http } from '../../../../../api/utils';
 import { server } from '../../../../../msw-node-setup';
+import { queryClient } from '../../../../../query-client/query-client';
 import { StatusBarProvider, useStatusBar } from '../status-bar-context';
 import { TrainingStatusAdapter } from './training-status.adapter';
 
@@ -27,31 +25,49 @@ vi.mock('src/api/fetch-sse', () => ({
     fetchSSE: (url: string) => mockFetchSSE(url),
 }));
 
-const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={new QueryClient()}>
-        <MemoryRouter initialEntries={['/projects/test-project/inspect']}>
-            <Routes>
-                <Route
-                    path='/projects/:projectId/inspect'
-                    element={
-                        <StatusBarProvider>
-                            <TrainingStatusAdapter />
-                            {children}
-                        </StatusBarProvider>
-                    }
-                />
-            </Routes>
-        </MemoryRouter>
-    </QueryClientProvider>
-);
+const renderTrainingStatus = () => {
+    let current: ReturnType<typeof useStatusBar>;
+    const StatusProbe = () => {
+        current = useStatusBar();
+        return null;
+    };
+
+    render(
+        <StatusBarProvider>
+            <TrainingStatusAdapter />
+            <StatusProbe />
+        </StatusBarProvider>,
+        { route: '/projects/test-project/inspect', queryClient }
+    );
+
+    return {
+        result: {
+            get current() {
+                return current;
+            },
+        },
+    };
+};
 
 describe('TrainingStatusAdapter', () => {
+    beforeEach(() => {
+        queryClient.clear();
+        mockFetchSSE.mockReset();
+        mockFetchSSE.mockImplementation(() => ({
+            async *[Symbol.asyncIterator]() {},
+        }));
+    });
+
+    afterEach(() => {
+        queryClient.clear();
+    });
+
     it('does not set status when no training job exists', async () => {
         server.use(
             http.get('/api/jobs', ({ response }) => response(200).json({ jobs: [], pagination: getMockedPagination() }))
         );
 
-        const { result } = renderHook(() => useStatusBar(), { wrapper });
+        const { result } = renderTrainingStatus();
 
         await waitFor(() => {
             expect(result.current.activeStatus).toBeNull();
@@ -70,11 +86,14 @@ describe('TrainingStatusAdapter', () => {
         };
         server.use(
             http.get('/api/jobs', ({ response }) =>
-                response(200).json({ jobs: [trainingJob], pagination: getMockedPagination() })
+                response(200).json({
+                    jobs: [trainingJob],
+                    pagination: getMockedPagination({ limit: 50, count: 1, total: 1 }),
+                })
             )
         );
 
-        const { result } = renderHook(() => useStatusBar(), { wrapper });
+        const { result } = renderTrainingStatus();
 
         await waitFor(() => {
             expect(result.current.activeStatus).toEqual(
@@ -103,11 +122,14 @@ describe('TrainingStatusAdapter', () => {
         };
         server.use(
             http.get('/api/jobs', ({ response }) =>
-                response(200).json({ jobs: [trainingJob], pagination: getMockedPagination() })
+                response(200).json({
+                    jobs: [trainingJob],
+                    pagination: getMockedPagination({ limit: 50, count: 1, total: 1 }),
+                })
             )
         );
 
-        const { result } = renderHook(() => useStatusBar(), { wrapper });
+        const { result } = renderTrainingStatus();
 
         await waitFor(() => {
             expect(result.current.activeStatus?.message).toBe('Training Padim...');
@@ -126,11 +148,14 @@ describe('TrainingStatusAdapter', () => {
         };
         server.use(
             http.get('/api/jobs', ({ response }) =>
-                response(200).json({ jobs: [trainingJob], pagination: getMockedPagination() })
+                response(200).json({
+                    jobs: [trainingJob],
+                    pagination: getMockedPagination({ limit: 50, count: 1, total: 1 }),
+                })
             )
         );
 
-        const { result } = renderHook(() => useStatusBar(), { wrapper });
+        const { result } = renderTrainingStatus();
 
         await waitFor(() => {
             expect(result.current.activeStatus).toBeNull();
@@ -149,11 +174,14 @@ describe('TrainingStatusAdapter', () => {
         };
         server.use(
             http.get('/api/jobs', ({ response }) =>
-                response(200).json({ jobs: [completedJob], pagination: getMockedPagination() })
+                response(200).json({
+                    jobs: [completedJob],
+                    pagination: getMockedPagination({ limit: 50, count: 1, total: 1 }),
+                })
             )
         );
 
-        const { result } = renderHook(() => useStatusBar(), { wrapper });
+        const { result } = renderTrainingStatus();
 
         await waitFor(() => {
             expect(result.current.activeStatus).toBeNull();
@@ -173,15 +201,18 @@ describe('TrainingStatusAdapter', () => {
         };
         server.use(
             http.get('/api/jobs', ({ response }) =>
-                response(200).json({ jobs: [trainingJob], pagination: getMockedPagination() })
+                response(200).json({
+                    jobs: [trainingJob],
+                    pagination: getMockedPagination({ limit: 50, count: 1, total: 1 }),
+                })
             ),
             http.post('/api/jobs/{job_id}:cancel', ({ params }) => {
                 cancelJobSpy(params.job_id);
-                return HttpResponse.json({}, { status: 204 });
+                return new HttpResponse(null, { status: 204 });
             })
         );
 
-        const { result } = renderHook(() => useStatusBar(), { wrapper });
+        const { result } = renderTrainingStatus();
 
         await waitFor(() => {
             expect(result.current.activeStatus?.onCancel).toBeDefined();
@@ -213,11 +244,14 @@ describe('TrainingStatusAdapter', () => {
 
         server.use(
             http.get('/api/jobs', ({ response }) =>
-                response(200).json({ jobs: [trainingJob], pagination: getMockedPagination() })
+                response(200).json({
+                    jobs: [trainingJob],
+                    pagination: getMockedPagination({ limit: 50, count: 1, total: 1 }),
+                })
             )
         );
 
-        const { result } = renderHook(() => useStatusBar(), { wrapper });
+        const { result } = renderTrainingStatus();
 
         await waitFor(() => {
             expect(result.current.activeStatus).toEqual(
