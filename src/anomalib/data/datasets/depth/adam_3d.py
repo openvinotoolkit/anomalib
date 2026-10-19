@@ -193,8 +193,7 @@ def make_adam_3d_dataset(
 
     # assert that the right mask files are associated with the right test images
     mismatch_masks = (
-        samples
-        .loc[samples.label_index == LabelName.ABNORMAL]
+        samples.loc[samples.label_index == LabelName.ABNORMAL]
         .apply(lambda x: Path(x.image_path).stem in Path(x.mask_path).stem, axis=1)
         .all()
     )
@@ -207,8 +206,7 @@ def make_adam_3d_dataset(
         raise MisMatchError(msg)
 
     mismatch_depth = (
-        samples
-        .loc[samples.label_index == LabelName.ABNORMAL]
+        samples.loc[samples.label_index == LabelName.ABNORMAL]
         .apply(lambda x: Path(x.image_path).stem in Path(x.depth_path).stem, axis=1)
         .all()
     )
