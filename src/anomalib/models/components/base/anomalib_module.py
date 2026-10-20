@@ -105,9 +105,10 @@ def _hyperparameters_match(saved: PathValue, current: PathValue) -> bool:
         bool: ``True`` if the values are equivalent or cannot be compared.
     """
     try:
-        # ``==`` on tensors and arrays is elementwise; ``bool()`` raises for them.
+        # ``==`` on tensors and arrays is elementwise, and ``bool()`` of the result raises
+        # ``RuntimeError`` for tensors and ``ValueError`` for arrays.
         matches = bool(_lists_to_tuples(paths_to_strings(saved)) == _lists_to_tuples(paths_to_strings(current)))
-    except (RuntimeError, TypeError, ValueError):
+    except (RuntimeError, ValueError):
         return True
     return matches
 
