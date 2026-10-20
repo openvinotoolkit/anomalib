@@ -44,7 +44,7 @@ import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
 from pathlib import Path, PurePath
-from typing import Any, ClassVar
+from typing import Any
 
 import lightning.pytorch as pl
 import torch
@@ -165,11 +165,6 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         ... )
     """
 
-    # Constructor arguments that only choose the initial weights. A checkpoint's
-    # ``state_dict`` replaces those weights, so a different value when loading a
-    # checkpoint is expected and not reported as a mismatch.
-    _HYPERPARAMETERS_REPLACED_BY_WEIGHTS: ClassVar[frozenset[str]] = frozenset({"pre_trained"})
-
     def __init__(
         self,
         pre_processor: nn.Module | bool = True,
@@ -266,8 +261,7 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         ``num_neighbors`` in PatchCore, then keep the instance's values, and the
         scores no longer match the thresholds and normalization statistics
         stored in the checkpoint. Only arguments present in both the checkpoint
-        and the model are compared, and arguments listed in
-        ``_HYPERPARAMETERS_REPLACED_BY_WEIGHTS`` are skipped.
+        and the model are compared, and ``pre_trained`` is skipped.
 
         Args:
             saved (dict[str, Any] | None): ``hyper_parameters`` from the
@@ -276,7 +270,9 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         if not saved:
             return
         current = dict(self.hparams)
-        compared = (saved.keys() & current.keys()) - self._HYPERPARAMETERS_REPLACED_BY_WEIGHTS
+        # ``pre_trained`` only chooses the initial weights, which the checkpoint's
+        # ``state_dict`` replaces, so a different value is expected.
+        compared = (saved.keys() & current.keys()) - {"pre_trained"}
         mismatches = [
             f"{key}={current[key]!r} (checkpoint: {saved[key]!r})"
             for key in sorted(compared)
