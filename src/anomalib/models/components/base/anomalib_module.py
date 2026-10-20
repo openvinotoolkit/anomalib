@@ -43,7 +43,7 @@ Example:
 import logging
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Any
 
 import lightning.pytorch as pl
@@ -60,7 +60,7 @@ from anomalib.metrics import AUROC, F1Score
 from anomalib.metrics.evaluator import Evaluator
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
-from anomalib.utils.path import paths_to_strings
+from anomalib.utils.path import PathValue, paths_to_strings
 from anomalib.utils.serialization import anomalib_safe_globals
 from anomalib.visualization import ImageVisualizer, Visualizer
 
@@ -69,44 +69,44 @@ from .export_mixin import ExportMixin
 logger = logging.getLogger(__name__)
 
 
-def _comparable_hyperparameter(value: object) -> object:
-    """Normalize a hyperparameter value so equivalent values compare equal.
+def _lists_to_tuples(value: object) -> object:
+    """Convert lists nested in a hyperparameter value to tuples.
 
-    Checkpoints store paths as strings, and configuration files produce lists
-    where Python code usually passes tuples. Neither difference changes what the
-    model does, so both are normalized before comparison.
+    Configuration files produce lists where Python code usually passes tuples,
+    for example PatchCore's ``layers``. Both describe the same model, so they
+    are made equal before comparison.
 
     Args:
         value (object): Hyperparameter value from a checkpoint or a live model.
 
     Returns:
-        object: The value with paths converted to strings and lists to tuples.
+        object: The value with every list and tuple converted to a tuple.
     """
-    if isinstance(value, PurePath):
-        return str(value)
     if isinstance(value, (list, tuple)):
-        return tuple(_comparable_hyperparameter(item) for item in value)
+        return tuple(_lists_to_tuples(item) for item in value)
     if isinstance(value, dict):
-        return {key: _comparable_hyperparameter(item) for key, item in value.items()}
+        return {key: _lists_to_tuples(item) for key, item in value.items()}
     return value
 
 
-def _hyperparameters_match(saved: object, current: object) -> bool:
+def _hyperparameters_match(saved: PathValue, current: PathValue) -> bool:
     """Check whether a saved hyperparameter matches the live model's value.
 
-    Values that cannot be reduced to a single boolean, such as multi-element
-    tensors, are treated as matching so that no false warning is raised.
+    Paths are compared as strings, as they are stored in checkpoints, and lists
+    are compared as tuples. Values that cannot be reduced to a single boolean,
+    such as multi-element tensors, are treated as matching so that no false
+    warning is raised.
 
     Args:
-        saved (object): Value stored in the checkpoint.
-        current (object): Value on the model instance.
+        saved (PathValue): Value stored in the checkpoint.
+        current (PathValue): Value on the model instance.
 
     Returns:
         bool: ``True`` if the values are equivalent or cannot be compared.
     """
     try:
         # ``==`` on tensors and arrays is elementwise; ``bool()`` raises for them.
-        matches = bool(_comparable_hyperparameter(saved) == _comparable_hyperparameter(current))
+        matches = bool(_lists_to_tuples(paths_to_strings(saved)) == _lists_to_tuples(paths_to_strings(current)))
     except (RuntimeError, TypeError, ValueError):
         return True
     return matches
