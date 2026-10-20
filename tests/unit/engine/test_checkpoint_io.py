@@ -8,6 +8,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pytest
 import torch
 from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
@@ -21,6 +22,7 @@ from anomalib.engine import Engine
 from anomalib.engine.plugins import AnomalibCheckpointIO
 from anomalib.models import Padim, Patchcore
 from anomalib.models.components.base import AnomalibModule
+from anomalib.models.components.base.anomalib_module import _hyperparameters_match
 from anomalib.models.image.efficient_ad import EfficientAd
 from anomalib.models.image.efficient_ad.torch_model import EfficientAdModelSize
 from anomalib.models.image.super_add import SuperADDPostProcessor
@@ -474,3 +476,19 @@ def test_pre_trained_difference_is_not_logged(tmp_path: Path, caplog: pytest.Log
         model.on_load_checkpoint(checkpoint)
 
     assert _MISMATCH_MESSAGE not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("saved", "current"),
+    [
+        pytest.param(torch.tensor([1.0, 2.0]), torch.tensor([3.0, 4.0]), id="tensor"),
+        pytest.param(np.array([1.0, 2.0]), np.array([3.0, 4.0]), id="array"),
+    ],
+)
+def test_values_without_a_single_truth_value_are_treated_as_matching(saved: object, current: object) -> None:
+    """Multi-element tensors and arrays are skipped rather than reported, even when they differ.
+
+    ``==`` compares them elementwise, so the result has no single truth value.
+    No built-in model takes such an argument; this keeps a custom one loadable.
+    """
+    assert _hyperparameters_match(saved, current)
