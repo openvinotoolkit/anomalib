@@ -10,6 +10,8 @@ import pytest
 from torchvision.transforms.v2 import Resize
 
 from anomalib.data import AutoVI
+from anomalib.data.datasets.image.autovi import make_autovi_dataset
+from anomalib.data.utils import Split
 from tests.unit.data.datamodule.base.image import _TestAnomalibImageDatamodule
 
 
@@ -39,3 +41,11 @@ class TestAutoVI(_TestAnomalibImageDatamodule):
     def fxt_data_config_path() -> str:
         """Return the path to the test data config."""
         return "examples/configs/data/autovi.yaml"
+
+    @staticmethod
+    def test_autovi_split_enum_filtering(dataset_path: Path, make_dummy_dataset: Callable[[str], Path]) -> None:
+        """Test if passing a Split enum to make_autovi_dataset works properly."""
+        make_dummy_dataset("autovi")
+        samples = make_autovi_dataset(dataset_path / "autovi" / "engine_wiring", split=Split.TRAIN)
+        assert len(samples) > 0
+        assert (samples["split"] == "train").all()
