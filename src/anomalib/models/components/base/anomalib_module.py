@@ -265,22 +265,14 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
         # ``pre_trained`` only chooses the initial weights, which the checkpoint's
         # ``state_dict`` replaces, so a different value is expected.
         compared = (saved.keys() & current.keys()) - {"pre_trained"}
-        mismatches = [
-            f"{key}={current[key]!r} (checkpoint: {saved[key]!r})"
-            for key in sorted(compared)
-            if not _hyperparameters_match(saved[key], current[key])
-        ]
+        # Only names are logged: values can be secrets, such as ``api_key`` in ``VlmAd``.
+        mismatches = [key for key in sorted(compared) if not _hyperparameters_match(saved[key], current[key])]
         if not mismatches:
             return
         logger.warning(
-            "%s was created with arguments that differ from the checkpoint: %s. The model runs with the current "
-            "values. Differences in arguments that only affect training are harmless, but differences in "
-            "arguments used at inference make scores inconsistent with the thresholds and normalization "
-            "statistics saved in the checkpoint. Use %s.load_from_checkpoint(...) or create the model with the "
-            "same arguments.",
+            "%s was created with arguments that differ from the checkpoint: %s",
             self.__class__.__name__,
             ", ".join(mismatches),
-            self.__class__.__name__,
         )
 
     def _restore_component_enabled_flags(self, flags: dict[str, bool] | None) -> None:

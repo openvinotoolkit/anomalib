@@ -401,7 +401,7 @@ def test_hyperparameter_mismatch_is_logged_on_load(tmp_path: Path, caplog: pytes
     with caplog.at_level(logging.WARNING, logger=_MODULE_LOGGER):
         model.on_load_checkpoint(checkpoint)
 
-    assert "num_neighbors=9 (checkpoint: 2)" in caplog.text
+    assert "differ from the checkpoint: num_neighbors" in caplog.text
 
 
 def test_matching_hyperparameters_are_not_logged(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
