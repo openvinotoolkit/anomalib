@@ -23,7 +23,7 @@ Checkpoint loading reconstructs these scalar options; older checkpoints use defa
 
 The [model README](https://github.com/open-edge-platform/anomalib/blob/main/src/anomalib/models/image/grdnet/README.md) provides Python, CLI, and YAML examples, checkpoint/export usage, and selected-category MVTec AD measurements using the six option defaults. Nondefault configurations have not been benchmarked. Historical paper values, through-200 selections, the 300-epoch extension, and Hazelnut geometry sensitivity are reported separately. Image and raw-pixel checkpoints were independently selected using test labels; these are not unbiased generalization estimates. The public output map is smoothed by default, unlike the raw map used for pixel checkpoint selection.
 
-For ROI-aware folders, see {doc}`../../data/datamodules/image/grdnet`. Standard anomalib datamodules need no ROI configuration.
+For ROI-aware folders, see {doc}`../../data/datamodules/image/grdnet`. The data components live in `anomalib.models.image.grdnet.data`. Custom ROI preprocessing must use `GRDNetPreProcessor(transform=...)` or a subclass, or be disabled for already aligned inputs. Standard anomalib datamodules need no ROI configuration.
 
 ## Sample results
 
@@ -39,8 +39,6 @@ These completed-run examples use the through-200 raw-pixel-selected checkpoints 
 .. image:: ../../../../../images/grdnet/results/2.png
    :alt: Pill GRD-Net prediction
 ```
-
-The MVTec Software GmbH dataset-derived panels are [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/), with a [separate asset notice](https://github.com/open-edge-platform/anomalib/blob/main/docs/source/images/grdnet/results/LICENSE).
 
 ## API
 

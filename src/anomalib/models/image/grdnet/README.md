@@ -104,9 +104,9 @@ Both texture modes use the same Perlin mask and blend factor sampled uniformly f
 ROI masks describe where synthetic anomalies should be treated as relevant during training. They are **not** anomaly ground truth and must not be supplied as `gt_mask`. The segmentator target is the synthetic mask intersected with the ROI. Inference neither requires ROI masks nor multiplies them into predictions.
 
 ```python
-from anomalib.models.image.grdnet.data import GRDNetFolder
 from anomalib.engine import Engine
 from anomalib.models import GRDNet
+from anomalib.models.image.grdnet.data import GRDNetFolder
 
 datamodule = GRDNetFolder(
     name="widgets",
@@ -126,6 +126,10 @@ engine.fit(model=GRDNet(), datamodule=datamodule)
 ROI paths mirror image paths relative to `root`. For `train/good/000.jpg`, the dataset first looks for `roi/train/good/000.jpg`, then `roi/train/good/000.png`. An absolute ROI directory is also supported; resolved masks must remain inside it. A missing ROI uses a full-image mask. If a configured ROI directory exists but some files are absent, the dataset logs a summarized warning. An invalid configured directory fails rather than silently disabling ROI supervision.
 
 `GRDNetItem` and `GRDNetBatch` extend the standard Torch image dataclasses with `roi_mask` and `roi_mask_path`. Item masks are `[H, W]`; batch masks are `[B, H, W]`. Dataset transforms and default preprocessing keep the image, anomaly ground truth, and ROI aligned. NumPy conversion deliberately returns ordinary image dataclasses without the training-only ROI fields. Standard datamodules such as `MVTecAD` need no ROI configuration.
+
+The data classes and folder datamodule are available from `anomalib.models.image.grdnet.data`. Images and anomaly ground-truth masks must resolve inside the dataset root, including through symlinks. An explicitly configured external ROI directory remains supported.
+
+For custom preprocessing with ROI batches, use `GRDNetPreProcessor(transform=...)` from `anomalib.models.image.grdnet.pre_processor`, or a subclass, so geometric transforms apply jointly to image, ground truth, and ROI. Passing `None` as its transform retains the canonical resize. Alternatively, use `pre_processor=False` with already aligned inputs. Ordinary custom processors remain supported for batches without ROI, but are rejected before preprocessing when an ROI is present. Checkpoints restore registered deterministic transforms; unsupported random transforms are not restored and belong in dataset augmentations instead.
 
 ## Checkpoints and export
 
@@ -160,7 +164,7 @@ The following measurements use the six model-option defaults above and cover Haz
 
 Image scores use the smoothed map maximum. The raw-pixel selection uses the unsmoothed map; the table also shows the public smoothed-map AUROC at that pixel-selected checkpoint. Image and pixel maxima generally belong to different checkpoints and must not be interpreted as the performance of one fitted model.
 
-The compact [measured artifact](/results/GRDNet/selected_categories.json) records checkpoint hashes, metrics, curves, protocol, and sample provenance. These measurements do not establish complete reproduction of the paper.
+These selected-category measurements do not establish complete reproduction of the paper.
 
 ### Paper-reported results
 
@@ -220,8 +224,6 @@ The panels use each category's raw-pixel-selected checkpoint through epoch 200 a
 ![Hazelnut prediction](/docs/source/images/grdnet/results/0.png)
 ![Metal Nut prediction](/docs/source/images/grdnet/results/1.png)
 ![Pill prediction](/docs/source/images/grdnet/results/2.png)
-
-Dataset images and annotations are from MVTec Software GmbH. These dataset-derived panels retain [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/); see the [asset notice](/docs/source/images/grdnet/results/LICENSE). They are not Apache-2.0 assets.
 
 ## Reference
 

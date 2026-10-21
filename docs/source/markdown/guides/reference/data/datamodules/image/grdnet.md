@@ -4,7 +4,7 @@
 
 ## Folder layout
 
-Image paths must resolve inside `root`. ROI paths mirror those image paths relative to `root`:
+Images and anomaly ground-truth masks must resolve inside `root`, including symlink targets. ROI paths mirror those image paths relative to `root`:
 
 ```text
 widgets/
@@ -18,6 +18,8 @@ widgets/
 For `train/good/000.jpg`, the ROI lookup prefers `roi/train/good/000.jpg` and falls back to `roi/train/good/000.png`. An absolute `roi_dir` is supported, but every resolved ROI file must stay within that directory, including symlink targets.
 
 No `roi_dir` means full-image ROI masks without warnings. Missing individual files in an existing ROI directory produce a summarized warning and full-image fallbacks. An invalid configured directory raises an error. Fallback masks start at native image size; image, ground truth, and ROI then receive joint torchvision v2 transforms. Masks use nearest-neighbor interpolation.
+
+These data components are model-local: import them from `anomalib.models.image.grdnet.data`. For custom model preprocessing with ROI batches, use `GRDNetPreProcessor(transform=...)` from `anomalib.models.image.grdnet.pre_processor` or a subclass. Its default/`None` transform retains the canonical resize; `pre_processor=False` disables preprocessing for already aligned inputs. Ordinary custom processors are rejected before transforming batches with ROI masks, but remain supported for ordinary batches without ROI. Only the existing registered deterministic transforms survive checkpoint restoration; put unsupported random transforms in dataset augmentations.
 
 ## Python
 
@@ -86,7 +88,7 @@ Batch size 4 is a memory-conscious example, not a change to the datamodule's def
 | `roi_mask`      | Optional boolean `Mask[H, W]` | Optional boolean `Mask[B, H, W]` |
 | `roi_mask_path` | Optional string               | Optional list of strings         |
 
-The folder dataset materializes a full-image mask when needed and uses an empty path string for fallback items, keeping collation stable. `gt_mask` and `mask_path` retain their ordinary anomaly-ground-truth meanings.
+The folder dataset and batch collation materialize a full-image mask when needed and use an empty path string for fallback items. Mixed optional ROIs preserve supplied supervision without modifying the original items. `gt_mask` and `mask_path` retain their ordinary anomaly-ground-truth meanings.
 
 NumPy conversion intentionally returns the standard `NumpyImageItem` or `NumpyImageBatch` without training-only ROI fields. Existing visualization therefore uses the shared image/prediction fields. Ordinary `ImageBatch` inputs are also supported: GRD-Net supplies an all-ones training ROI.
 

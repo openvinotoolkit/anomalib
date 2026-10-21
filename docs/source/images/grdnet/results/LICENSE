@@ -14,6 +14,3 @@ https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode
 Credit the source, retain this license notice, and indicate modifications.
 Commercial use is not permitted. Adaptations must use the same license.
 No endorsement by MVTec Software GmbH is implied.
-
-Source-image identifiers, checkpoint hashes, and display scaling are recorded
-in results/GRDNet/selected_categories.json.
