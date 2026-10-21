@@ -105,7 +105,7 @@ class _F1AdaptiveThreshold(BinaryPrecisionRecallCurve, Threshold):
             bool: True if anomalous samples (target=1) exist, False otherwise.
         """
         if self.thresholds is None:
-            return any(1 in batch for batch in self.target)
+            return any((batch == 1).any().item() for batch in self.target)
         # confmat[i] = [[TN, FP], [FN, TP]]; positives = FN + TP  #  noqa: ERA001
         return (self.confmat[0, 1, 0] + self.confmat[0, 1, 1]).item() > 0
 
@@ -116,7 +116,7 @@ class _F1AdaptiveThreshold(BinaryPrecisionRecallCurve, Threshold):
             bool: True if normal samples (target=0) exist, False otherwise.
         """
         if self.thresholds is None:
-            return any(0 in batch for batch in self.target)
+            return any((batch == 0).any().item() for batch in self.target)
         # confmat[i] = [[TN, FP], [FN, TP]]; negatives = TN + FP  # noqa: ERA001
         return (self.confmat[0, 0, 0] + self.confmat[0, 0, 1]).item() > 0
 
