@@ -105,7 +105,7 @@ class Benchmark(Pipeline):
 
         Raises:
             ValueError: If an unsupported accelerator type is specified. Only
-                ``"cpu"`` and ``"cuda"`` are supported.
+                ``"cpu"``, ``"cuda"``, and ``"mps"`` are supported.
 
         Example:
             >>> args = {"accelerator": "cuda"}
@@ -114,7 +114,7 @@ class Benchmark(Pipeline):
         accelerators = args["accelerator"] if isinstance(args["accelerator"], list) else [args["accelerator"]]
         runners: list[Runner] = []
         for accelerator in accelerators:
-            if accelerator not in {"cpu", "cuda"}:
+            if accelerator not in {"cpu", "cuda", "mps"}:
                 msg = f"Unsupported accelerator: {accelerator}"
                 raise ValueError(msg)
             device_count = torch.cuda.device_count()

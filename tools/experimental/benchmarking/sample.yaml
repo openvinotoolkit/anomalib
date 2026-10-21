@@ -1,15 +1,22 @@
 # sample script to show grid search for two categories
 accelerator:
   - cuda
+  - mps
   - cpu
 benchmark:
   seed: 42
+  inference:
+    enabled: false
+    warmup_runs: 10
+    runs: 50
+    # batch_size: 32
   model:
     class_path:
       grid: [Padim, Patchcore]
   data:
-    class_path: MVTec
+    class_path: MVTecAD
     init_args:
+      root: ./datasets/MVTecAD
       category:
         grid:
           - bottle

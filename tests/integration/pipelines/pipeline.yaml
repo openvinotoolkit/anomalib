@@ -4,6 +4,10 @@ accelerator: cpu
 benchmark:
   seed:
     grid: [42, 51]
+  inference:
+    enabled: false
+    warmup_runs: 1
+    runs: 1
   model:
     class_path:
       grid: [Padim, Patchcore]
