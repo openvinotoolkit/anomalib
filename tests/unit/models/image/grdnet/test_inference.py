@@ -10,7 +10,7 @@ import torch
 from torch import nn
 
 from anomalib.data import InferenceBatch
-from anomalib.models.image.grdnet.torch_model import GRDNetModel
+from anomalib.models.image.grdnet.torch_model import GRDNetGenerator, GRDNetModel
 
 
 class _Reconstruction(nn.Module):
@@ -88,6 +88,23 @@ def test_inference_shapes_finiteness_and_batch_isolation() -> None:
     assert torch.isfinite(predictions.pred_score).all()
     assert torch.allclose(predictions.anomaly_map, torch.cat([item.anomaly_map for item in individual]))
     assert torch.allclose(predictions.pred_score, torch.cat([item.pred_score for item in individual]))
+
+
+@pytest.mark.parametrize("dtype", [torch.float64, torch.bfloat16])
+def test_inference_with_converted_dtype(dtype: torch.dtype) -> None:
+    """Direct inference should accept matching converted model and input dtypes."""
+    model = _build_model(nn.Conv2d(6, 2, kernel_size=1))
+    model.generator = GRDNetGenerator(base_features=1, stage_blocks=(1,), latent_channels=2)
+    model = model.eval().to(dtype=dtype)
+    images = torch.full((1, 3, 192, 192), 0.5, dtype=dtype)
+
+    with torch.no_grad():
+        predictions = model(images)
+
+    assert predictions.anomaly_map.shape == (1, 1, 192, 192)
+    assert predictions.pred_score.shape == (1,)
+    assert torch.isfinite(predictions.anomaly_map).all()
+    assert torch.isfinite(predictions.pred_score).all()
 
 
 @pytest.mark.parametrize("kernel_size", [1, 3, 21])

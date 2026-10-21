@@ -353,7 +353,7 @@ class GRDNetModel(nn.Module):
             Image-level anomaly scores and smoothed anomaly maps.
         """
         tiler = Tiler(tile_size=self.tile_size, stride=self.stride)
-        image_tiles = tiler.tile(images)
+        image_tiles = tiler.tile(images).to(dtype=images.dtype)
         _, reconstruction = self.generator.reconstruct(image_tiles)
         logits = self.segmentator(torch.cat((image_tiles, reconstruction), dim=1))
         tile_maps = torch.softmax(logits, dim=1)[:, 1:2]
