@@ -492,3 +492,15 @@ def test_values_without_a_single_truth_value_are_treated_as_matching(saved: obje
     No built-in model takes such an argument; this keeps a custom one loadable.
     """
     assert _hyperparameters_match(saved, current)
+
+
+def test_mismatch_warning_does_not_log_argument_values(caplog: pytest.LogCaptureFixture) -> None:
+    """Only argument names are logged, so a secret such as ``VlmAd``'s ``api_key`` never reaches the logs."""
+    model = VlmAd(model=ModelName.GPT_4O_MINI, api_key="current-dummy-key")
+    saved = {**model.hparams, "api_key": "saved-dummy-key"}
+
+    with caplog.at_level(logging.WARNING, logger=_MODULE_LOGGER):
+        model.on_load_checkpoint({"hyper_parameters": saved})
+
+    assert "differ from the checkpoint: api_key" in caplog.text
+    assert "dummy-key" not in caplog.text
