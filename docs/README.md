@@ -44,3 +44,21 @@ uv run sphinx-build -b linkcheck docs/source docs/build/linkcheck
 - `docs/source/markdown/guides/reference/`: API, CLI, model, and datamodule references.
 - `docs/source/markdown/guides/developer/`: Contributor guidelines and architecture design.
 - `docs/source/examples`: Symlink to `examples/` at the repository root.
+
+## Benchmark dashboard
+
+`docs/source/markdown/benchmarks.md` embeds the interactive benchmark
+dashboard via an iframe pointing at `_static/benchmarks/index.html`. That
+directory is a build artifact — it is not committed, and Read the Docs
+builds it automatically (see `.readthedocs.yaml`). To build it locally
+before running Sphinx:
+
+```bash
+cd docs/benchmark-dashboard
+npm ci
+npm run build:docs
+rm -rf ../source/_static/benchmarks
+cp -r dist-docs ../source/_static/benchmarks
+```
+
+Without this step the benchmarks page will render an empty iframe.

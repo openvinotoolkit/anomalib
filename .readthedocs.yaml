@@ -6,6 +6,7 @@ build:
   os: "ubuntu-24.04"
   tools:
     python: "3.12"
+    nodejs: "24"
   jobs:
     pre_create_environment:
       - asdf plugin add uv
@@ -15,6 +16,13 @@ build:
       - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
     install:
       - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --frozen --extra docs
+    pre_build:
+      # Build the interactive benchmark dashboard and embed it as a static
+      # asset. Depends on docs/benchmark-dashboard/ (see
+      # docs/benchmark-dashboard/README.md).
+      - cd docs/benchmark-dashboard && npm ci && npm run build:docs
+      - rm -rf docs/source/_static/benchmarks
+      - cp -r docs/benchmark-dashboard/dist-docs docs/source/_static/benchmarks
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:

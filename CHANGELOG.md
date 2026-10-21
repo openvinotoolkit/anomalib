@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- 📚 **docs**: Embed interactive benchmark dashboard, built by Read the Docs from `docs/benchmark-dashboard` by @ashwinvaidya17
+
 ### Removed
 
 ### Changed

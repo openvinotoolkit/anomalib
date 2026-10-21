@@ -82,3 +82,13 @@ terms are listed below.
 17. FoundAD model (anomalib.models.image.foundad)
     Copyright (c) 2026 FoundAD authors, https://github.com/ymxlzgy/FoundAD
     SPDX-License-Identifier: MIT
+
+18. Instrument Serif font (bundled in the benchmark dashboard via @fontsource/instrument-serif, docs/benchmark-dashboard)
+    Copyright 2022 The Instrument Serif Project Authors,
+    https://github.com/Instrument/instrument-serif
+    SPDX-License-Identifier: OFL-1.1
+
+19. Nunito Sans font (bundled in the benchmark dashboard via @fontsource-variable/nunito-sans, docs/benchmark-dashboard)
+    Copyright 2016 The Nunito Sans Project Authors,
+    https://github.com/Fonthausen/NunitoSans
+    SPDX-License-Identifier: OFL-1.1
