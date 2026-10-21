@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="740" viewBox="0 0 1080 740" role="img" aria-labelledby="title description">
+  <!-- Copyright (C) 2026 Intel Corporation. SPDX-License-Identifier: Apache-2.0 -->
+  <title id="title">GRD-Net training and inference</title>
+  <desc id="description">Training reconstructs clean tiles from synthetic anomalies, with independent discriminator, generator, and segmentator updates. ROI masks supervise the segmentation target only. Inference averages overlapping maps, smooths them, and takes their maximum for image scoring.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="#334155"/></marker>
+    <style>
+      text { font-family: sans-serif; fill: #172554; font-size: 16px; }
+      .heading { font-size: 23px; font-weight: 700; }
+      .label { font-weight: 700; }
+      .small { font-size: 14px; }
+      .box { fill: #eff6ff; stroke: #2563eb; stroke-width: 1.5; rx: 9; }
+      .training { fill: #f0fdf4; stroke: #15803d; stroke-width: 1.5; rx: 9; }
+      .loss { fill: #fff7ed; stroke: #c2410c; stroke-width: 1.5; rx: 9; }
+      .line { fill: none; stroke: #334155; stroke-width: 1.8; marker-end: url(#arrow); }
+      .dash { stroke-dasharray: 5 4; }
+    </style>
+  </defs>
+  <rect width="1080" height="740" fill="white"/>
+  <text x="30" y="38" class="heading">GRD-Net</text>
+  <text x="30" y="65">RGB resize 256 × 256 · internal tiles 128 × 128 · stride 64 · nine tiles per image</text>
+  <text x="30" y="105" class="heading">Training</text>
+  <rect x="30" y="130" width="190" height="95" class="training"/>
+  <text x="48" y="156" class="label">Clean tile X + ROI</text>
+  <text x="48" y="181">Joint random rotation</text>
+  <text x="48" y="205" class="small">Perlin mask M + texture</text>
+  <path d="M220 177 H270" class="line"/>
+  <text x="225" y="158" class="small">Xₙ</text>
+  <rect x="270" y="130" width="285" height="95" class="box"/>
+  <text x="286" y="156" class="label">Residual generator G</text>
+  <text x="286" y="181">E₁ → Z → decoder → X̂ → E₂ → Ẑ</text>
+  <text x="286" y="205" class="small">Independent encoders and projections</text>
+  <path d="M555 177 H610" class="line"/>
+  <text x="563" y="158" class="small">X̂</text>
+  <rect x="610" y="130" width="180" height="95" class="training"/>
+  <text x="626" y="156" class="label">Concatenate</text>
+  <text x="626" y="181">[Xₙ, detached X̂]</text>
+  <text x="626" y="205" class="small">Six channels</text>
+  <path d="M790 177 H830" class="line"/>
+  <rect x="830" y="130" width="220" height="95" class="box"/>
+  <text x="846" y="156" class="label">DRÆM segmentator S</text>
+  <text x="846" y="181">Normal / anomalous logits</text>
+  <text x="846" y="205" class="small">Focal loss</text>
+  <rect x="30" y="280" width="190" height="80" class="loss"/>
+  <text x="46" y="306" class="label">Adversarial D</text>
+  <text x="46" y="330" class="small">Real X / detached fake X̂</text>
+  <path d="M125 225 V280" class="line"/>
+  <path d="M412 225 V253 H200 V280" class="line"/>
+  <rect x="270" y="280" width="285" height="80" class="loss"/>
+  <text x="286" y="306" class="label">Generator objectives</text>
+  <text x="286" y="330" class="small">Feature matching + context + latent L1</text>
+  <path d="M412 225 V280" class="line"/>
+  <path d="M220 320 H270" class="line dash"/>
+  <rect x="610" y="280" width="180" height="80" class="training"/>
+  <text x="626" y="306" class="label">Target M × ROI</text>
+  <text x="626" y="330" class="small">Training supervision only</text>
+  <rect x="830" y="280" width="220" height="80" class="loss"/>
+  <text x="846" y="306" class="label">Segmentator objective</text>
+  <text x="846" y="330" class="small">No gradient into generator</text>
+  <path d="M940 225 V280" class="line"/>
+  <path d="M790 320 H830" class="line"/>
+  <text x="30" y="398">Three separate Adam steps: discriminator → generator → segmentator</text>
+  <text x="30" y="425" class="small">Context = L1 + (1 − SSIM) · generator weights: adversarial 1, contextual 50, encoder 1</text>
+  <path d="M30 449 H1050" stroke="#cbd5e1"/>
+  <text x="30" y="488" class="heading">Inference — images only, no ROI</text>
+  <rect x="30" y="515" width="150" height="80" class="box"/>
+  <text x="46" y="542" class="label">Input tiles X</text>
+  <text x="46" y="566" class="small">No corruption</text>
+  <path d="M180 555 H215" class="line"/>
+  <rect x="215" y="515" width="190" height="80" class="box"/>
+  <text x="231" y="542" class="label">G reconstructs X̂</text>
+  <text x="231" y="566" class="small">E₂ is not needed</text>
+  <path d="M405 555 H440" class="line"/>
+  <rect x="440" y="515" width="225" height="80" class="box"/>
+  <text x="456" y="542" class="label">S([X, X̂]) → softmax</text>
+  <text x="456" y="566" class="small">Anomalous-class tile maps</text>
+  <path d="M665 555 H700" class="line"/>
+  <rect x="700" y="515" width="170" height="80" class="box"/>
+  <text x="716" y="542" class="label">Average overlaps</text>
+  <text x="716" y="566" class="small">Full-image map</text>
+  <path d="M870 555 H905" class="line"/>
+  <rect x="905" y="515" width="145" height="80" class="box"/>
+  <text x="920" y="542" class="label">21 × 21 mean</text>
+  <text x="920" y="566" class="small">Smoothed map</text>
+  <path d="M978 595 V635 H850" class="line"/>
+  <text x="470" y="641" class="label">Map maximum → image anomaly score</text>
+  <text x="30" y="701">Output: anomaly_map [B, 1, 256, 256] · pred_score [B]</text>
+</svg>

@@ -42,6 +42,13 @@ Datumaro format datamodule (compatible with Intel Geti™).
 Custom folder-based datamodule for organizing your own image dataset.
 :::
 
+:::{grid-item-card} GRD-Net Folder
+:link: grdnet
+:link-type: doc
+
+Folder data with optional, spatially aligned ROI supervision for GRD-Net training.
+:::
+
 :::{grid-item-card} Kaputt
 :link: kaputt
 :link-type: doc
@@ -122,6 +129,7 @@ bmad
 btech
 datumaro
 folder
+grdnet
 kaputt
 kolektor
 mpdd

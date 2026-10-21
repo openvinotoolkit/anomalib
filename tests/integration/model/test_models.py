@@ -274,6 +274,8 @@ class TestAPI:
             export_kwargs["input_size"] = (448, 448)
         if model_name == "found_a_d":
             export_kwargs["input_size"] = (224, 224)
+        if model_name == "g_r_d_net":
+            export_kwargs["input_size"] = (256, 256)
         if model_name in {"cfm", "c_f_m"}:
             export_kwargs["input_size"] = (224, 224)
             if export_type in {ExportType.ONNX, ExportType.OPENVINO}:
@@ -377,8 +379,9 @@ class TestAPI:
             dataset = MVTecAD(
                 root=dataset_path / "mvtecad",
                 category="dummy",
-                # EfficientAd requires train batch size 1
-                train_batch_size=1 if model_name == "efficient_ad" else 2,
+                # Keep resource-intensive models at batch size 1.
+                train_batch_size=1 if model_name in {"efficient_ad", "g_r_d_net"} else 2,
+                eval_batch_size=1 if model_name == "g_r_d_net" else 32,
             )
 
         # FoundAD hard-codes pretrained=True in its encoder loader; force offline
@@ -398,6 +401,13 @@ class TestAPI:
             model.vlm_backend = MagicMock()
             model.vlm_backend.predict.return_value = "YES: Because reasons..."
 
+        if model_name == "efficient_ad":
+            max_steps = 70000
+        elif model_name == "g_r_d_net":
+            max_steps = 1
+        else:
+            max_steps = -1
+
         engine = Engine(
             logger=False,
             default_root_dir=project_path,
@@ -408,6 +418,6 @@ class TestAPI:
             limit_test_batches=2,
             # TODO(ashwinvaidya17): Fix these Edge cases
             # https://github.com/open-edge-platform/anomalib/issues/1478
-            max_steps=70000 if model_name == "efficient_ad" else -1,
+            max_steps=max_steps,
         )
         return model, dataset, engine

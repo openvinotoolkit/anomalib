@@ -138,6 +138,13 @@ A Unified Anomaly Synthesis Strategy with Gradient Ascent for Industrial Anomaly
 Anomaly Detection Across Domains by Attending to Distorted Features
 :::
 
+:::{grid-item-card} {material-regular}`model_training;1.5em` GRD-Net
+:link: ./grdnet
+:link-type: doc
+
+Residual denoising and discriminative anomaly localization with optional training ROI supervision
+:::
+
 :::{grid-item-card} {material-regular}`model_training;1.5em` L2BT
 :link: ./l2bt
 :link-type: doc
@@ -259,6 +266,7 @@ WinCLIP: Zero-/Few-Shot Anomaly Classification and Segmentation
 ./ganomaly
 ./glass
 ./general_ad
+./grdnet
 ./inp_former
 ./l2bt
 ./mh_patchcore
