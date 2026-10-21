@@ -79,8 +79,8 @@ class GRDNetFolderDataset(FolderDataset):
         roi_paths = []
         missing = 0
         for image_path in samples["image_path"]:
-            image = validate_path(image_path, base_dir=self.dataset_root)
-            roi_path = _find_roi_path(image, self.dataset_root, self.roi_dir)
+            validate_path(image_path, base_dir=self.dataset_root)
+            roi_path = _find_roi_path(Path(image_path), self.dataset_root, self.roi_dir)
             roi_paths.append(str(roi_path) if roi_path is not None else "")
             missing += roi_path is None
         samples["roi_mask_path"] = roi_paths
@@ -166,7 +166,8 @@ def _find_roi_path(image_path: Path, dataset_root: Path, roi_root: Path | None) 
     if roi_root is None:
         return None
 
-    relative_path = image_path.resolve().relative_to(dataset_root.resolve())
+    # Confinement follows symlinks, but ROI lookup mirrors the original sample path.
+    relative_path = image_path.relative_to(dataset_root)
     candidates = [relative_path]
     png_path = relative_path.with_suffix(".png")
     if png_path != relative_path:

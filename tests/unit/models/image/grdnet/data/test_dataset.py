@@ -92,6 +92,32 @@ def test_absolute_roi_root(tmp_path: Path) -> None:
     assert dataset[0].roi_mask.all()
 
 
+@pytest.mark.parametrize("target_roi_exists", [False, True])
+def test_image_symlink_preserves_sample_relative_roi(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+    target_roi_exists: bool,
+) -> None:
+    """An in-root image symlink uses its sample path, not its target, for ROI lookup."""
+    root = tmp_path / "dataset"
+    _write_image(root / "pool/000.png")
+    image_path = root / "train/good/000.png"
+    image_path.parent.mkdir(parents=True)
+    image_path.symlink_to(root / "pool/000.png")
+    roi_path = root / "roi/train/good/000.png"
+    _write_mask(roi_path, value=0)
+    if target_roi_exists:
+        _write_mask(root / "roi/pool/000.png")
+
+    with caplog.at_level(logging.WARNING):
+        dataset = GRDNetFolderDataset(name="test", root=root, normal_dir="train/good", roi_dir="roi")
+
+    item = dataset[0]
+    assert Path(item.roi_mask_path) == roi_path
+    assert not item.roi_mask.any()
+    assert not caplog.records
+
+
 def test_missing_roi_uses_native_full_image_mask(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     """Missing masks emit one summary and use a native-size full-image ROI."""
     root = tmp_path / "dataset"
@@ -150,6 +176,12 @@ def test_image_and_roi_paths_are_confined(tmp_path: Path) -> None:
     roi_link.symlink_to(outside / "roi.png")
     with pytest.raises(ValueError, match="outside the allowed directory"):
         GRDNetFolderDataset(name="test", root=root, normal_dir="train/good", roi_dir="roi")
+
+    image_path = root / "train/good/000.png"
+    image_path.unlink()
+    image_path.symlink_to(outside / "000.png")
+    with pytest.raises(ValueError, match="outside the allowed directory"):
+        GRDNetFolderDataset(name="test", root=root, normal_dir="train/good")
 
 
 class _CountingTransform(Transform):
