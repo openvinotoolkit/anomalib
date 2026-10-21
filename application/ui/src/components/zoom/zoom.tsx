@@ -44,7 +44,7 @@ export const ZoomProvider = ({ children }: { children: ReactNode }) => {
 
     const setClampedZoom = useCallback<Dispatch<SetStateAction<ZoomState>>>((action) => {
         setZoom((prev) => {
-            const next = typeof action === 'function' ? action(prev) : action;
+            const next = isFunction(action) ? action(prev) : action;
             return clampZoomState(next);
         });
     }, []);
