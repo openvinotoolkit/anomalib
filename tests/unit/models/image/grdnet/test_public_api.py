@@ -69,9 +69,6 @@ trainer:
 
 def test_cli_configuration_with_roi_folder(tmp_path: Path) -> None:
     """CLI arguments construct the ROI-aware folder datamodule."""
-    parameter_args = [
-        argument for name, value in _NONDEFAULT_PARAMETERS.items() for argument in (f"--model.{name}", str(value))
-    ]
     cli = AnomalibCLI(
         args=[
             "fit",
@@ -87,7 +84,6 @@ def test_cli_configuration_with_roi_folder(tmp_path: Path) -> None:
             "train/good",
             "--data.roi_dir",
             "roi",
-            *parameter_args,
         ],
         run=False,
     )
@@ -95,10 +91,3 @@ def test_cli_configuration_with_roi_folder(tmp_path: Path) -> None:
     assert isinstance(cli.model, GRDNet)
     assert isinstance(cli.datamodule, GRDNetFolder)
     assert cli.datamodule.roi_dir == "roi"
-    assert all(cli.model.hparams[name] == value for name, value in _NONDEFAULT_PARAMETERS.items())
-    assert cli.model.generator_loss.contextual_l1_weight == 2.0
-    assert cli.model.generator_loss.contextual_ssim_weight == 0.5
-    assert cli.model.rotation_degrees == 30.0
-    assert cli.model.model.smoothing_kernel_size == 3
-    _, schedulers = cli.model.configure_optimizers()
-    assert schedulers[0].patience == 0

@@ -74,16 +74,14 @@ def test_roi_resolution_prefers_exact_suffix_and_supports_png(tmp_path: Path) ->
     assert dataset[1].roi_mask.all()
 
 
-def test_absolute_roi_root(tmp_path: Path) -> None:
+def test_absolute_roi_root(folder_root: Path, tmp_path: Path) -> None:
     """An absolute external ROI root mirrors paths relative to the dataset root."""
-    root = tmp_path / "dataset"
     roi_root = tmp_path / "external-roi"
-    _write_image(root / "train/good/000.png")
-    _write_mask(roi_root / "train/good/000.png")
+    (folder_root / "roi").rename(roi_root)
 
     dataset = GRDNetFolderDataset(
         name="test",
-        root=root,
+        root=folder_root,
         normal_dir="train/good",
         roi_dir=roi_root,
     )
@@ -139,25 +137,21 @@ def test_missing_roi_uses_native_full_image_mask(tmp_path: Path, caplog: pytest.
     assert dataset[0].roi_mask.all()
 
 
-def test_no_roi_root_uses_full_mask_without_warning(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+def test_no_roi_root_uses_full_mask_without_warning(folder_root: Path, caplog: pytest.LogCaptureFixture) -> None:
     """Omitting ROI configuration silently uses full-image masks."""
-    root = tmp_path / "dataset"
-    _write_image(root / "train/good/000.png")
-
     with caplog.at_level(logging.WARNING):
-        dataset = GRDNetFolderDataset(name="test", root=root, normal_dir="train/good")
+        dataset = GRDNetFolderDataset(name="test", root=folder_root, normal_dir="train/good")
 
+    item = dataset[0]
     assert not caplog.records
-    assert dataset[0].roi_mask.all()
+    assert item.gt_mask is None
+    assert item.roi_mask.all()
 
 
-def test_nonexistent_roi_root_fails(tmp_path: Path) -> None:
+def test_nonexistent_roi_root_fails(folder_root: Path) -> None:
     """An explicitly configured missing ROI root is rejected."""
-    root = tmp_path / "dataset"
-    _write_image(root / "train/good/000.png")
-
     with pytest.raises(FileNotFoundError):
-        GRDNetFolderDataset(name="test", root=root, normal_dir="train/good", roi_dir="missing")
+        GRDNetFolderDataset(name="test", root=folder_root, normal_dir="train/good", roi_dir="missing")
 
 
 def test_image_and_roi_paths_are_confined(tmp_path: Path) -> None:
@@ -237,24 +231,6 @@ def test_joint_augmentations_keep_masks_aligned(tmp_path: Path) -> None:
     assert torch.equal(item.gt_mask, item.roi_mask)
 
 
-def test_classification_and_segmentation_samples(folder_root: Path) -> None:
-    """Both folder task types return GRD-Net items with materialized ROI masks."""
-    classification = GRDNetFolderDataset(name="classification", root=folder_root, normal_dir="train/good")
-    segmentation = GRDNetFolderDataset(
-        name="segmentation",
-        root=folder_root,
-        normal_dir="train/good",
-        abnormal_dir="test/bad",
-        mask_dir="ground_truth/bad",
-        split=Split.TEST,
-    )
-
-    assert classification[0].gt_mask is None
-    assert classification[0].roi_mask.all()
-    assert segmentation[0].gt_mask is not None
-    assert segmentation[0].roi_mask.all()
-
-
 def test_datamodule_collates_grdnet_batches(folder_root: Path) -> None:
     """GRD-Net folder splits preserve their custom batch type."""
     datamodule = GRDNetFolder(
@@ -299,4 +275,6 @@ def test_ground_truth_paths_are_confined(folder_root: Path, tmp_path: Path, esca
         with pytest.raises(ValueError, match="outside the allowed directory"):
             dataset[0]
     else:
-        assert dataset[0].gt_mask is not None
+        item = dataset[0]
+        assert item.gt_mask is not None
+        assert item.roi_mask.all()
