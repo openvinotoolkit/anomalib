@@ -65,6 +65,27 @@ def test_collate_iterate_and_update() -> None:
     assert batch.roi_mask.all()
 
 
+@pytest.mark.parametrize("missing_first", [True, False])
+def test_collate_preserves_mixed_optional_rois(missing_first: bool) -> None:
+    """Missing supervision cannot drop or overwrite another item's ROI."""
+    missing = GRDNetItem(image=torch.zeros(3, 8, 10))
+    supplied = GRDNetItem(image=torch.ones(3, 8, 10), roi_mask=torch.zeros(8, 10), roi_mask_path="roi.png")
+    items = [missing, supplied] if missing_first else [supplied, missing]
+
+    batch = GRDNetBatch.collate(items)
+
+    missing_index = 0 if missing_first else 1
+    assert batch.roi_mask[missing_index].all()
+    assert not batch.roi_mask[1 - missing_index].any()
+    assert batch.roi_mask.dtype == torch.bool
+    assert batch.roi_mask.device == batch.image.device
+    assert batch.roi_mask_path == (["", "roi.png"] if missing_first else ["roi.png", ""])
+    assert torch.equal(batch.image[0], items[0].image)
+    assert missing.roi_mask is None
+    assert missing.roi_mask_path is None
+    assert supplied.roi_mask_path == "roi.png"
+
+
 def test_batch_validates_size_and_paths() -> None:
     """ROI batch and path counts must match the image batch."""
     with pytest.raises(ValueError, match="batch/spatial dimensions must match"):

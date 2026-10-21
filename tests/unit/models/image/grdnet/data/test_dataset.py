@@ -10,6 +10,7 @@ import numpy as np
 import pytest
 import torch
 from PIL import Image as PILImage
+from tests.helpers.data import DummyImageDatasetGenerator
 from torchvision.transforms.v2 import Compose, RandomCrop, RandomRotation, Resize, Transform
 
 from anomalib.data.utils import Split, ValSplitMode
@@ -30,16 +31,24 @@ def _write_mask(path: Path, value: int = 255, shape: tuple[int, int] = (10, 12))
     PILImage.fromarray(np.full(shape, value, dtype=np.uint8)).save(path)
 
 
-def _make_folder_tree(root: Path) -> None:
-    """Create a minimal folder dataset with train and test data."""
-    for index in range(2):
-        _write_image(root / "train/good" / f"{index:03}.png", value=32 + index)
-        _write_mask(root / "roi/train/good" / f"{index:03}.png")
-    _write_image(root / "test/good/000.png")
-    _write_mask(root / "roi/test/good/000.png")
-    _write_image(root / "test/bad/000.png", value=192)
-    _write_mask(root / "ground_truth/bad/000.png")
-    _write_mask(root / "roi/test/bad/000.png")
+@pytest.fixture
+def folder_root(tmp_path: Path) -> Path:
+    """Reuse the standard RGB/ground-truth generator and add only ROI fixtures."""
+    generator = DummyImageDatasetGenerator(
+        data_format="mvtecad",
+        root=tmp_path,
+        num_train=4,
+        num_test=2,
+        abnormal_category="bad",
+        image_shape=(64, 64),
+        seed=42,
+    )
+    generator.generate_dataset()
+    root = generator.dataset_root / "dummy"
+    for split in ("train", "test"):
+        for path in (root / split).glob("*/*.png"):
+            _write_mask(root / "roi" / path.relative_to(root), shape=(64, 64))
+    return root
 
 
 def test_roi_resolution_prefers_exact_suffix_and_supports_png(tmp_path: Path) -> None:
@@ -196,19 +205,12 @@ def test_joint_augmentations_keep_masks_aligned(tmp_path: Path) -> None:
     assert torch.equal(item.gt_mask, item.roi_mask)
 
 
-def test_classification_and_segmentation_samples(tmp_path: Path) -> None:
+def test_classification_and_segmentation_samples(folder_root: Path) -> None:
     """Both folder task types return GRD-Net items with materialized ROI masks."""
-    classification_root = tmp_path / "classification"
-    _write_image(classification_root / "good/000.png")
-    classification = GRDNetFolderDataset(name="classification", root=classification_root, normal_dir="good")
-
-    segmentation_root = tmp_path / "segmentation"
-    _write_image(segmentation_root / "train/good/000.png")
-    _write_image(segmentation_root / "test/bad/000.png")
-    _write_mask(segmentation_root / "ground_truth/bad/000.png")
+    classification = GRDNetFolderDataset(name="classification", root=folder_root, normal_dir="train/good")
     segmentation = GRDNetFolderDataset(
         name="segmentation",
-        root=segmentation_root,
+        root=folder_root,
         normal_dir="train/good",
         abnormal_dir="test/bad",
         mask_dir="ground_truth/bad",
@@ -221,13 +223,11 @@ def test_classification_and_segmentation_samples(tmp_path: Path) -> None:
     assert segmentation[0].roi_mask.all()
 
 
-def test_datamodule_collates_grdnet_batches(tmp_path: Path) -> None:
+def test_datamodule_collates_grdnet_batches(folder_root: Path) -> None:
     """GRD-Net folder splits preserve their custom batch type."""
-    root = tmp_path / "dataset"
-    _make_folder_tree(root)
     datamodule = GRDNetFolder(
         name="test",
-        root=root,
+        root=folder_root,
         normal_dir="train/good",
         abnormal_dir="test/bad",
         normal_test_dir="test/good",
@@ -245,3 +245,26 @@ def test_datamodule_collates_grdnet_batches(tmp_path: Path) -> None:
         assert isinstance(batch, GRDNetBatch)
         assert batch.image.shape[-2:] == batch.roi_mask.shape[-2:]
         assert batch.roi_mask_path is not None
+
+
+@pytest.mark.parametrize("escape", [False, True])
+def test_ground_truth_paths_are_confined(folder_root: Path, tmp_path: Path, escape: bool) -> None:
+    """Ground-truth reads permit in-root files but reject escaping symlinks."""
+    dataset = GRDNetFolderDataset(
+        name="test",
+        root=folder_root,
+        normal_dir="train/good",
+        abnormal_dir="test/bad",
+        mask_dir="ground_truth/bad",
+        split=Split.TEST,
+    )
+    if escape:
+        mask_path = Path(dataset.samples.iloc[0].mask_path)
+        outside = tmp_path / "outside-mask.png"
+        _write_mask(outside, shape=(64, 64))
+        mask_path.unlink()
+        mask_path.symlink_to(outside)
+        with pytest.raises(ValueError, match="outside the allowed directory"):
+            dataset[0]
+    else:
+        assert dataset[0].gt_mask is not None

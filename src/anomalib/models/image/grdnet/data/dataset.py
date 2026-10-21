@@ -111,7 +111,8 @@ class GRDNetFolderDataset(FolderDataset):
             if sample.label_index == LabelName.NORMAL:
                 gt_mask = Mask(torch.zeros(image.shape[-2:], dtype=torch.uint8))
             elif sample.label_index == LabelName.ABNORMAL:
-                gt_mask = read_mask(sample.mask_path, as_tensor=True)
+                mask_path = validate_path(sample.mask_path, base_dir=self.dataset_root)
+                gt_mask = read_mask(mask_path, as_tensor=True)
 
         roi_mask = (
             read_mask(sample.roi_mask_path, as_tensor=True)

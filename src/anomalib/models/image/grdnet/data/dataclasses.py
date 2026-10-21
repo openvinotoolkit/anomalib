@@ -4,9 +4,11 @@
 """Torch dataclasses for GRD-Net region-of-interest supervision."""
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass, fields
-from typing import ClassVar, Generic, TypeVar
+from typing import ClassVar, Generic, TypeVar, cast
 
+import torch
 from torchvision.tv_tensors import Mask
 
 from anomalib.data.dataclasses.generic import FieldDescriptor
@@ -86,6 +88,37 @@ class GRDNetBatch(
     """
 
     item_class: ClassVar[type[GRDNetItem]] = GRDNetItem
+
+    @classmethod
+    def collate(cls, items: Sequence[ImageItem]) -> "GRDNetBatch":
+        """Collate copied items after materializing optional ROI supervision.
+
+        Args:
+            items: Image items with optional ROI masks and paths.
+
+        Returns:
+            Batch preserving supplied ROIs and using full-image masks for missing ones.
+        """
+        normalized: list[ImageItem] = []
+        for item in items:
+            image = item.image
+            if image is None:
+                msg = "GRD-Net items require an image."
+                raise ValueError(msg)
+            roi_mask = getattr(item, "roi_mask", None)
+            roi_mask_path = getattr(item, "roi_mask_path", None)
+            normalized.append(
+                GRDNetItem(
+                    **{field.name: getattr(item, field.name) for field in fields(ImageItem)},
+                    roi_mask=(
+                        roi_mask
+                        if roi_mask is not None
+                        else Mask(torch.ones(image.shape[-2:], dtype=torch.bool, device=image.device))
+                    ),
+                    roi_mask_path=roi_mask_path if roi_mask_path is not None else "",
+                ),
+            )
+        return cast("GRDNetBatch", super().collate(normalized))
 
     def __post_init__(self) -> None:
         """Validate that ROI fields match the image batch."""

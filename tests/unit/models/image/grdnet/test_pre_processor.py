@@ -5,6 +5,7 @@
 
 import pytest
 import torch
+from torchvision.transforms.v2 import RandomHorizontalFlip
 
 from anomalib.data import ImageBatch
 from anomalib.models.image.grdnet.data.dataclasses import GRDNetBatch
@@ -51,6 +52,20 @@ def test_standard_image_batch_is_supported() -> None:
 
     assert batch.image.shape == (1, 3, 256, 256)
     assert batch.gt_mask is None
+
+
+def test_custom_shape_preserving_transform_keeps_roi_aligned() -> None:
+    """A custom flip transforms all spatial supervision in the same call."""
+    mask = torch.zeros(1, 8, 10)
+    mask[..., :3] = 1
+    batch = GRDNetBatch(image=mask.unsqueeze(1).repeat(1, 3, 1, 1), gt_mask=mask, roi_mask=mask)
+
+    GRDNetPreProcessor(RandomHorizontalFlip(p=1)).on_train_batch_start(None, None, batch, 0)
+
+    expected = mask.flip(-1)
+    assert torch.equal(batch.image[:, 0], expected)
+    assert torch.equal(batch.gt_mask, expected.bool())
+    assert torch.equal(batch.roi_mask, expected.bool())
 
 
 def test_resize_clamps_floating_point_interpolation_overshoot() -> None:

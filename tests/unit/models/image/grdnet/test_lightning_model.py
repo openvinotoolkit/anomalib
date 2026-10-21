@@ -12,16 +12,19 @@ import pytest
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
-from torchvision.transforms.v2 import Compose, Normalize, Resize
+from torchvision.transforms.v2 import CenterCrop, Compose, Normalize, RandomHorizontalFlip, Resize
 
 from anomalib import LearningType
 from anomalib.data import ImageBatch, ImageItem, InferenceBatch
 from anomalib.deploy import ExportType
 from anomalib.engine import Engine
+from anomalib.engine.plugins import AnomalibCheckpointIO
+from anomalib.models.components import AnomalibModule
 from anomalib.models.image.grdnet import lightning_model
 from anomalib.models.image.grdnet.data.dataclasses import GRDNetBatch, GRDNetItem
 from anomalib.models.image.grdnet.lightning_model import GRDNet
 from anomalib.models.image.grdnet.loss import GeneratorLosses
+from anomalib.models.image.grdnet.pre_processor import GRDNetPreProcessor
 from anomalib.models.image.grdnet.torch_model import GRDNetModel
 from anomalib.pre_processing import PreProcessor
 
@@ -570,13 +573,165 @@ def test_validation_step_returns_standard_predictions(model: GRDNet) -> None:
     assert result.anomaly_map.shape == (2, 8, 10)
 
 
+@pytest.mark.parametrize(
+    ("input_size", "options"),
+    [
+        ((256, 256), {}),
+        (None, {}),
+        ((256, 256), {"dynamic_shapes": None}),
+        ((256, 256), {"dynamic_shapes": ({0: torch.export.Dim.DYNAMIC},)}),
+        ((256, 256), {"dynamic_axes": {"input": {0: "batch"}}}),
+    ],
+)
+def test_onnx_shape_options_preserve_caller_settings(
+    model: GRDNet,
+    tmp_path: Path,
+    input_size: tuple[int, int] | None,
+    options: dict[str, object],
+) -> None:
+    """Only default fixed-spatial exports receive the GRD-Net dynamic-batch hint."""
+    with patch.object(AnomalibModule, "to_onnx", return_value=tmp_path / "custom.onnx") as export:
+        result = model.to_onnx(tmp_path, "custom", input_size, opset_version=18, **options)
+
+    expected = dict(options)
+    if input_size is not None and not options:
+        expected["dynamic_shapes"] = ({0: torch.export.Dim.DYNAMIC},)
+    export.assert_called_once_with(tmp_path, "custom", input_size, opset_version=18, **expected)
+    assert result == tmp_path / "custom.onnx"
+
+
+@pytest.mark.usefixtures("model")
+@pytest.mark.parametrize("export_type", [ExportType.ONNX, ExportType.OPENVINO])
+def test_dynamic_batch_export_matches_eager(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    export_type: ExportType,
+) -> None:
+    """Real tile/stitch inference stays dynamic and numerically equivalent after export."""
+    import numpy as np
+
+    pytest.importorskip("onnxscript")
+    onnx = pytest.importorskip("onnx")
+    if export_type == ExportType.OPENVINO:
+        openvino = pytest.importorskip("openvino")
+    monkeypatch.setattr(GRDNet, "configure_torch_model", staticmethod(_tiny_inference_model))
+    configured = GRDNet(pre_processor=False, post_processor=False, evaluator=False, visualizer=False).eval()
+    if export_type == ExportType.ONNX:
+        from onnx.reference import ReferenceEvaluator
+
+        path = configured.to_onnx(tmp_path, input_size=(256, 256))
+        exported = onnx.load(path)
+        assert exported.graph.input[0].type.tensor_type.shape.dim[0].dim_param
+        runtime = ReferenceEvaluator(exported)
+
+        def predict(images: np.ndarray) -> dict[str, np.ndarray]:
+            return dict(
+                zip(
+                    runtime.output_names,
+                    runtime.run(None, {runtime.input_names[0]: images}),
+                    strict=True,
+                ),
+            )
+
+    else:
+        path = configured.to_openvino(tmp_path, input_size=(256, 256))
+        compiled = openvino.Core().compile_model(str(path), "CPU")
+
+        def predict(images: np.ndarray) -> dict[str, np.ndarray]:
+            outputs = compiled(images)
+            return {output.get_any_name(): outputs[output] for output in compiled.outputs}
+
+    for size in (1, 2):
+        images = torch.linspace(0, 1, size * 3 * 256 * 256).reshape(size, 3, 256, 256)
+        with torch.no_grad():
+            expected = configured(images)
+        actual = predict(images.numpy())
+        np.testing.assert_allclose(actual["pred_score"], expected.pred_score.numpy(), rtol=1e-4, atol=1e-5)
+        np.testing.assert_allclose(actual["anomaly_map"], expected.anomaly_map.numpy(), rtol=1e-4, atol=1e-5)
+
+
+@pytest.mark.parametrize(
+    "hook_name",
+    ["on_train_batch_start", "on_validation_batch_start", "on_test_batch_start", "on_predict_batch_start"],
+)
+def test_roi_guard_rejects_incompatible_processor_before_mutation(model: GRDNet, hook_name: str) -> None:
+    """An ordinary processor cannot silently misalign shape-preserving ROI supervision."""
+    processor = PreProcessor(RandomHorizontalFlip(p=1))
+    model.pre_processor = processor
+    images = torch.arange(3 * 8 * 10).float().reshape(1, 3, 8, 10) / 240
+    batch = GRDNetBatch(image=images.clone(), roi_mask=torch.ones(1, 8, 10))
+    callbacks = model.configure_callbacks()
+    assert callbacks.index(processor) > 0
+
+    with pytest.raises(ValueError, match="GRDNetPreProcessor"):
+        getattr(callbacks[0], hook_name)(None, model, batch, 0)
+
+    assert torch.equal(batch.image, images)
+
+
+def test_roi_guard_preserves_ordinary_custom_processor_without_roi(model: GRDNet) -> None:
+    """Custom processor instances retain their behavior for standard batches."""
+    processor = PreProcessor(RandomHorizontalFlip(p=1))
+    model.pre_processor = processor
+    batch = ImageBatch(image=torch.rand(1, 3, 8, 10))
+    expected = batch.image.flip(-1)
+    for callback in model.configure_callbacks():
+        callback.on_train_batch_start(None, model, batch, 0)
+    assert model.pre_processor is processor
+    assert torch.equal(batch.image, expected)
+
+
+@pytest.mark.parametrize("enabled", [False, True])
+def test_roi_guard_accepts_disabled_or_joint_preprocessing(model: GRDNet, enabled: bool) -> None:
+    """Already aligned inputs and subclasses of the joint processor remain supported."""
+
+    class JointProcessor(GRDNetPreProcessor):
+        """User specialization retaining joint transform behavior."""
+
+    model.pre_processor = JointProcessor(RandomHorizontalFlip(p=1)) if enabled else None
+    batch = GRDNetBatch(image=torch.rand(1, 3, 8, 10), roi_mask=torch.ones(1, 8, 10))
+    expected = batch.image.flip(-1) if enabled else batch.image.clone()
+    for callback in model.configure_callbacks():
+        callback.on_train_batch_start(None, model, batch, 0)
+    assert torch.equal(batch.image, expected)
+
+
+def test_custom_joint_processor_checkpoint_roundtrip(model: GRDNet, tmp_path: Path) -> None:
+    """A deterministic custom joint transform survives the model checkpoint path."""
+    model.pre_processor = GRDNetPreProcessor(Compose([CenterCrop((128, 128)), Resize((256, 256))]))
+    loader = _loader(with_roi=True)
+    engine = _engine(tmp_path / "fit")
+    engine.fit(model=model, train_dataloaders=loader, val_dataloaders=loader)
+    path = tmp_path / "joint.ckpt"
+    engine.trainer.save_checkpoint(path)
+    loaded = GRDNet.load_from_checkpoint(path, post_processor=False, evaluator=False, visualizer=False)
+    mask = torch.zeros(1, 256, 256)
+    mask[..., 32:128, 64:192] = 1
+    original_batch = GRDNetBatch(image=mask.unsqueeze(1).repeat(1, 3, 1, 1), roi_mask=mask)
+    restored_batch = deepcopy(original_batch)
+    model.pre_processor.on_predict_batch_start(None, model, original_batch, 0)
+    loaded.pre_processor.on_predict_batch_start(None, loaded, restored_batch, 0)
+    assert isinstance(loaded.pre_processor, GRDNetPreProcessor)
+    assert torch.equal(original_batch.image, restored_batch.image)
+    assert torch.equal(original_batch.roi_mask, restored_batch.roi_mask)
+
+
 def _loader(*, with_roi: bool) -> DataLoader:
     """Create one deterministic image or ROI-aware batch."""
     image = torch.linspace(0, 1, 3 * 256 * 256).reshape(3, 256, 256)
     if with_roi:
         item = GRDNetItem(image=image, roi_mask=torch.ones(256, 256))
-        return DataLoader([item], batch_size=1, collate_fn=GRDNetBatch.collate)
-    return DataLoader([ImageItem(image=image)], batch_size=1, collate_fn=ImageBatch.collate)
+        collate_fn = GRDNetBatch.collate
+    else:
+        item = ImageItem(image=image)
+        collate_fn = ImageBatch.collate
+    # This CPU-only fixture has no accelerator transfer requiring pinned memory.
+    return DataLoader(  # nosemgrep: trailofbits.python.automatic-memory-pinning.automatic-memory-pinning
+        [item],
+        batch_size=1,
+        collate_fn=collate_fn,
+        pin_memory=False,
+    )
 
 
 def _engine(root: Path, *, max_epochs: int = 1) -> Engine:
@@ -637,7 +792,8 @@ def test_checkpoint_roundtrip_restores_training_state(
 
     checkpoint_path = tmp_path / "grdnet.ckpt"
     engine.trainer.save_checkpoint(checkpoint_path)
-    checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    checkpoint_io = AnomalibCheckpointIO(extra_safe_globals=model.checkpoint_safe_globals())
+    checkpoint = checkpoint_io.load_checkpoint(checkpoint_path, map_location="cpu")
     assert len(checkpoint["optimizer_states"]) == 3
     assert len(checkpoint["lr_schedulers"]) == 1
 
@@ -671,7 +827,7 @@ def test_checkpoint_roundtrip_restores_training_state(
         for name in parameters:
             del legacy_checkpoint["hyper_parameters"][name]
         legacy_path = tmp_path / "legacy.ckpt"
-        torch.save(legacy_checkpoint, legacy_path)
+        checkpoint_io.save_checkpoint(legacy_checkpoint, legacy_path)
         legacy = GRDNet.load_from_checkpoint(legacy_path, evaluator=False, visualizer=False)
         assert legacy.generator_loss.contextual_l1_weight == 1.0
         assert legacy.generator_loss.contextual_ssim_weight == 1.0
@@ -723,6 +879,8 @@ def test_nondefault_smoothing_torch_export(tmp_path: Path, monkeypatch: pytest.M
         export_root=tmp_path / "export",
     )
     assert export_path is not None
+    # Full-object export is trusted here: this test just generated the temporary artifact.
+    # nosemgrep: trailofbits.python.pickles-in-pytorch.pickles-in-pytorch
     exported = torch.load(export_path, map_location="cpu", weights_only=False)["model"].eval()
     assert exported.model.smoothing_kernel_size == 3
     with torch.no_grad():

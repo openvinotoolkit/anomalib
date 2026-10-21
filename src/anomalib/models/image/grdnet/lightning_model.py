@@ -4,9 +4,11 @@
 """Lightning integration for GRD-Net."""
 
 import math
+from pathlib import Path
 from typing import Any
 
 import torch
+from lightning import Callback
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 from torchmetrics import MeanMetric
 from torchvision.transforms.v2 import Normalize
@@ -22,7 +24,7 @@ from anomalib.visualization import Visualizer
 
 from .anomaly_generator import GRDNetAnomalyGenerator, TextureSource
 from .loss import GeneratorLosses, GRDNetDiscriminatorLoss, GRDNetGeneratorLoss, GRDNetSegmentatorLoss
-from .pre_processor import GRDNetPreProcessor
+from .pre_processor import GRDNetPreProcessor, _GRDNetROIGuard
 from .tiling import rotate_image_and_roi, tile_image_and_roi
 from .torch_model import GRDNetModel
 from .validation import _validate_integer, _validate_numeric, _validate_texture_source
@@ -192,6 +194,40 @@ class GRDNet(AnomalibModule):
             Trainer overrides that disable automatic clipping and sanity validation.
         """
         return {"gradient_clip_val": 0, "num_sanity_val_steps": 0}
+
+    def configure_callbacks(self) -> list[Callback]:
+        """Place the ROI compatibility guard before preprocessing.
+
+        Returns:
+            ROI guard followed by the ordinary model component callbacks.
+        """
+        callbacks = super().configure_callbacks()
+        if isinstance(callbacks, Callback):
+            callbacks = [callbacks]
+        return [_GRDNetROIGuard(), *callbacks]
+
+    def to_onnx(
+        self,
+        export_root: Path | str,
+        model_file_name: str = "model",
+        input_size: tuple[int, int] | None = None,
+        **kwargs: Any,  # noqa: ANN401  # passthrough to torch.onnx.export
+    ) -> Path:
+        """Export image-only inference with a dynamic batch dimension.
+
+        Args:
+            export_root: Output directory.
+            model_file_name: Exported model name.
+            input_size: Fixed input height and width, or inherited dynamic spatial behavior.
+            **kwargs: Options forwarded to the inherited ONNX exporter.
+
+        Returns:
+            Path to the exported ONNX model.
+        """
+        if input_size is not None and "dynamic_shapes" not in kwargs and "dynamic_axes" not in kwargs:
+            # Avoid CUDA BatchNorm guards on the ninefold internal tile batch.
+            kwargs["dynamic_shapes"] = ({0: torch.export.Dim.DYNAMIC},)
+        return super().to_onnx(export_root, model_file_name, input_size, **kwargs)
 
     @property
     def learning_type(self) -> LearningType:
