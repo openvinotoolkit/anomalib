@@ -5,7 +5,6 @@
 
 import pytest
 import torch
-from _pytest.monkeypatch import MonkeyPatch
 
 from anomalib.data.utils.tiler import Tiler
 from anomalib.models.image.patchcore import torch_model
@@ -13,7 +12,7 @@ from anomalib.models.image.patchcore.torch_model import PatchcoreModel
 
 
 @pytest.fixture(params=[False, True], ids=["untiled", "tiled"])
-def model(monkeypatch: MonkeyPatch, request: pytest.FixtureRequest) -> PatchcoreModel:
+def model(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> PatchcoreModel:
     """PatchCore with a random memory bank and a chunk size smaller than one image's patches."""
     # A 64x64 image gives 8x8 = 64 patches, so eager inference searches the memory bank in several chunks.
     monkeypatch.setattr(torch_model, "DEFAULT_CHUNK_SIZE", 16)
