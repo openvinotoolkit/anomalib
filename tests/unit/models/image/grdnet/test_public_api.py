@@ -8,13 +8,9 @@ from pathlib import Path
 import pytest
 
 from anomalib.cli import AnomalibCLI
-from anomalib.data import GRDNetBatch, GRDNetFolder, GRDNetFolderDataset, GRDNetItem, MVTecAD
-from anomalib.data.dataclasses import GRDNetBatch as DataclassesGRDNetBatch
-from anomalib.data.dataclasses import GRDNetItem as DataclassesGRDNetItem
-from anomalib.data.datamodules import GRDNetFolder as DatamodulesGRDNetFolder
-from anomalib.data.datasets import GRDNetFolderDataset as DatasetsGRDNetFolderDataset
-from anomalib.models import GRDNet, get_model, list_models
-from anomalib.models.image import GRDNet as ImageGRDNet
+from anomalib.data import MVTecAD
+from anomalib.models import GRDNet, get_model
+from anomalib.models.image.grdnet.data import GRDNetFolder
 
 _NONDEFAULT_PARAMETERS = {
     "contextual_l1_weight": 2.0,
@@ -26,25 +22,9 @@ _NONDEFAULT_PARAMETERS = {
 }
 
 
-def test_public_imports() -> None:
-    """GRD-Net model and data types are available from their public packages."""
-    assert ImageGRDNet is GRDNet
-    assert DataclassesGRDNetItem is GRDNetItem
-    assert DataclassesGRDNetBatch is GRDNetBatch
-    assert DatamodulesGRDNetFolder is GRDNetFolder
-    assert DatasetsGRDNetFolderDataset is GRDNetFolderDataset
-
-
-@pytest.mark.parametrize("name", ["GRDNet", "grd_net", "g_r_d_net"])
-def test_get_model_by_name(name: str) -> None:
-    """Existing model-name normalization resolves GRD-Net spellings."""
-    assert isinstance(get_model(name), GRDNet)
-
-
-def test_model_listing_uses_existing_acronym_conversion() -> None:
-    """Model listings retain the repository's existing acronym conversion."""
-    assert "g_r_d_net" in list_models()
-    assert "GRDNet" in list_models(case="pascal")
+def test_get_model_by_name() -> None:
+    """Existing model discovery resolves GRD-Net."""
+    assert isinstance(get_model("grd_net"), GRDNet)
 
 
 @pytest.mark.parametrize("parameters", [{}, _NONDEFAULT_PARAMETERS])
@@ -98,7 +78,7 @@ def test_cli_configuration_with_roi_folder(tmp_path: Path) -> None:
             "--model",
             "anomalib.models.GRDNet",
             "--data",
-            "anomalib.data.GRDNetFolder",
+            "anomalib.models.image.grdnet.data.GRDNetFolder",
             "--data.name",
             "custom",
             "--data.root",

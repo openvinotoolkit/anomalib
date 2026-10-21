@@ -9,7 +9,7 @@ from lightning.fabric.utilities.apply_func import move_data_to_device
 from torchvision.tv_tensors import Mask
 
 from anomalib.data.dataclasses.numpy.image import NumpyImageBatch, NumpyImageItem
-from anomalib.data.dataclasses.torch.grdnet import GRDNetBatch, GRDNetItem
+from anomalib.models.image.grdnet.data.dataclasses import GRDNetBatch, GRDNetItem
 
 
 def _item(index: int = 0) -> GRDNetItem:

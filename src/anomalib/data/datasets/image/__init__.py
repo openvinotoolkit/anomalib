@@ -11,7 +11,6 @@ datasets:
 - ``BTechDataset``: BTech dataset containing industrial objects
 - ``DatumaroDataset``: Dataset in Datumaro format (Intel Geti™ export)
 - ``FolderDataset``: Custom dataset from folder structure
-- ``GRDNetFolderDataset``: Custom folder dataset with optional GRD-Net ROI masks
 - ``KolektorDataset``: Kolektor surface defect dataset
 - ``MVTecADDataset``: MVTec AD dataset with industrial objects
 - ``MVTecLOCODataset``: MVTec LOCO dataset with logical and structural anomalies
@@ -33,7 +32,6 @@ from .bmad import BMADDataset
 from .btech import BTechDataset
 from .datumaro import DatumaroDataset
 from .folder import FolderDataset
-from .grdnet import GRDNetFolderDataset
 from .kaputt import KaputtDataset
 from .kolektor import KolektorDataset
 from .mpdd import MPDDDataset
@@ -51,7 +49,6 @@ __all__ = [
     "BTechDataset",
     "DatumaroDataset",
     "FolderDataset",
-    "GRDNetFolderDataset",
     "KaputtDataset",
     "KolektorDataset",
     "MPDDDataset",

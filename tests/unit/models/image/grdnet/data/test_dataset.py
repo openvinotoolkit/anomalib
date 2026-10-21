@@ -12,10 +12,10 @@ import torch
 from PIL import Image as PILImage
 from torchvision.transforms.v2 import Compose, RandomCrop, RandomRotation, Resize, Transform
 
-from anomalib.data.dataclasses.torch.grdnet import GRDNetBatch
-from anomalib.data.datamodules.image.grdnet import GRDNetFolder
-from anomalib.data.datasets.image.grdnet import GRDNetFolderDataset
 from anomalib.data.utils import Split, ValSplitMode
+from anomalib.models.image.grdnet.data.dataclasses import GRDNetBatch
+from anomalib.models.image.grdnet.data.datamodule import GRDNetFolder
+from anomalib.models.image.grdnet.data.dataset import GRDNetFolderDataset
 
 
 def _write_image(path: Path, value: int = 64, shape: tuple[int, int] = (10, 12)) -> None:

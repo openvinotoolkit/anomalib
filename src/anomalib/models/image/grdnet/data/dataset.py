@@ -12,10 +12,10 @@ from torchvision.transforms.v2 import Transform
 from torchvision.tv_tensors import Mask
 
 from anomalib import TaskType
-from anomalib.data.dataclasses.torch.grdnet import GRDNetBatch, GRDNetItem
 from anomalib.data.datasets.image.folder import FolderDataset
 from anomalib.data.utils import LabelName, Split, read_image, read_mask
 from anomalib.data.utils.path import resolve_path_under_root, validate_path
+from anomalib.models.image.grdnet.data.dataclasses import GRDNetBatch, GRDNetItem
 
 logger = logging.getLogger(__name__)
 

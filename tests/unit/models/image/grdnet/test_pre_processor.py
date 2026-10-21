@@ -7,7 +7,7 @@ import pytest
 import torch
 
 from anomalib.data import ImageBatch
-from anomalib.data.dataclasses.torch.grdnet import GRDNetBatch
+from anomalib.models.image.grdnet.data.dataclasses import GRDNetBatch
 from anomalib.models.image.grdnet.pre_processor import GRDNetPreProcessor
 
 

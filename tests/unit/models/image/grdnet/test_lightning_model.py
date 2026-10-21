@@ -16,10 +16,10 @@ from torchvision.transforms.v2 import Compose, Normalize, Resize
 
 from anomalib import LearningType
 from anomalib.data import ImageBatch, ImageItem, InferenceBatch
-from anomalib.data.dataclasses.torch.grdnet import GRDNetBatch, GRDNetItem
 from anomalib.deploy import ExportType
 from anomalib.engine import Engine
 from anomalib.models.image.grdnet import lightning_model
+from anomalib.models.image.grdnet.data.dataclasses import GRDNetBatch, GRDNetItem
 from anomalib.models.image.grdnet.lightning_model import GRDNet
 from anomalib.models.image.grdnet.loss import GeneratorLosses
 from anomalib.models.image.grdnet.torch_model import GRDNetModel

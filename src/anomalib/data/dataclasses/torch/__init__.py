@@ -19,7 +19,6 @@ Note:
 
 from .base import Batch, DatasetItem, InferenceBatch, ToNumpyMixin
 from .depth import DepthBatch, DepthItem
-from .grdnet import GRDNetBatch, GRDNetItem
 from .image import ImageBatch, ImageItem
 from .video import VideoBatch, VideoItem
 
@@ -35,9 +34,6 @@ __all__ = [
     # Image
     "ImageItem",
     "ImageBatch",
-    # GRD-Net
-    "GRDNetItem",
-    "GRDNetBatch",
     # Video
     "VideoItem",
     "VideoBatch",

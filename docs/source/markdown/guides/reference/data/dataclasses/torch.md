@@ -75,11 +75,11 @@ The module includes several categories of dataclasses:
 without ROI fields. See {doc}`../datamodules/image/grdnet` for the aligned folder pipeline.
 
 ```{eval-rst}
-.. autoclass:: GRDNetItem
+.. autoclass:: anomalib.models.image.grdnet.data.GRDNetItem
    :members: to_numpy
    :show-inheritance:
 
-.. autoclass:: GRDNetBatch
+.. autoclass:: anomalib.models.image.grdnet.data.GRDNetBatch
    :members: to_numpy
    :show-inheritance:
 ```

@@ -82,8 +82,6 @@ from .torch import (
     DatasetItem,
     DepthBatch,
     DepthItem,
-    GRDNetBatch,
-    GRDNetItem,
     ImageBatch,
     ImageItem,
     InferenceBatch,
@@ -107,6 +105,4 @@ __all__ = [
     "VideoBatch",
     "DepthItem",
     "DepthBatch",
-    "GRDNetItem",
-    "GRDNetBatch",
 ]

@@ -10,8 +10,8 @@ from typing import cast
 from torchvision.transforms.v2 import Transform
 
 from anomalib.data.datamodules.image.folder import Folder
-from anomalib.data.datasets.image.grdnet import GRDNetFolderDataset
 from anomalib.data.utils import Split, TestSplitMode, ValSplitMode
+from anomalib.models.image.grdnet.data.dataset import GRDNetFolderDataset
 
 
 class GRDNetFolder(Folder):

@@ -9,7 +9,7 @@ from torchvision.transforms import InterpolationMode
 from torchvision.transforms.v2 import Resize
 
 from anomalib.data import Batch
-from anomalib.data.dataclasses.torch.grdnet import GRDNetBatch
+from anomalib.models.image.grdnet.data.dataclasses import GRDNetBatch
 from anomalib.pre_processing import PreProcessor
 
 

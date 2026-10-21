@@ -104,7 +104,7 @@ Both texture modes use the same Perlin mask and blend factor sampled uniformly f
 ROI masks describe where synthetic anomalies should be treated as relevant during training. They are **not** anomaly ground truth and must not be supplied as `gt_mask`. The segmentator target is the synthetic mask intersected with the ROI. Inference neither requires ROI masks nor multiplies them into predictions.
 
 ```python
-from anomalib.data import GRDNetFolder
+from anomalib.models.image.grdnet.data import GRDNetFolder
 from anomalib.engine import Engine
 from anomalib.models import GRDNet
 

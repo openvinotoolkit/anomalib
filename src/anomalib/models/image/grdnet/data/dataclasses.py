@@ -12,7 +12,7 @@ from torchvision.tv_tensors import Mask
 from anomalib.data.dataclasses.generic import FieldDescriptor
 from anomalib.data.dataclasses.numpy.image import NumpyImageBatch, NumpyImageItem
 from anomalib.data.dataclasses.torch.image import ImageBatch, ImageItem
-from anomalib.data.validators.torch.grdnet import GRDNetBatchValidator, GRDNetItemValidator
+from anomalib.models.image.grdnet.data.validators import GRDNetBatchValidator, GRDNetItemValidator
 
 ROIMaskT = TypeVar("ROIMaskT", bound=Mask)
 ROIPathT = TypeVar("ROIPathT", str, list[str])

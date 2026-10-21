@@ -6,9 +6,9 @@
 from collections.abc import Sequence
 from pathlib import Path
 
+import torch
 from torchvision.tv_tensors import Mask
 
-import torch
 from anomalib.data.validators.path import validate_batch_path, validate_path
 
 

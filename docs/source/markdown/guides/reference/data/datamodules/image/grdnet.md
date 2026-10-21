@@ -22,9 +22,9 @@ No `roi_dir` means full-image ROI masks without warnings. Missing individual fil
 ## Python
 
 ```python
-from anomalib.data import GRDNetFolder
 from anomalib.engine import Engine
 from anomalib.models import GRDNet
+from anomalib.models.image.grdnet.data import GRDNetFolder
 
 data = GRDNetFolder(
     name="widgets",
@@ -44,7 +44,7 @@ engine.fit(model=GRDNet(), datamodule=data)
 ## CLI
 
 ```bash
-anomalib train --model GRDNet --data GRDNetFolder \
+anomalib train --model GRDNet --data anomalib.models.image.grdnet.data.GRDNetFolder \
   --data.name widgets --data.root datasets/widgets \
   --data.normal_dir train/good --data.normal_test_dir test/good \
   --data.abnormal_dir test/bad --data.mask_dir ground_truth/bad \
@@ -60,7 +60,7 @@ Save as `grdnet-roi.yaml` and run `anomalib train --config grdnet-roi.yaml`:
 model:
   class_path: anomalib.models.GRDNet
 data:
-  class_path: anomalib.data.GRDNetFolder
+  class_path: anomalib.models.image.grdnet.data.GRDNetFolder
   init_args:
     name: widgets
     root: datasets/widgets
@@ -93,19 +93,19 @@ NumPy conversion intentionally returns the standard `NumpyImageItem` or `NumpyIm
 ## API
 
 ```{eval-rst}
-.. automodule:: anomalib.data.datamodules.image.grdnet
+.. automodule:: anomalib.models.image.grdnet.data.datamodule
    :members: GRDNetFolder
    :show-inheritance:
 ```
 
 ```{eval-rst}
-.. automodule:: anomalib.data.datasets.image.grdnet
+.. automodule:: anomalib.models.image.grdnet.data.dataset
    :members: GRDNetFolderDataset
    :show-inheritance:
 ```
 
 ```{eval-rst}
-.. automodule:: anomalib.data.dataclasses.torch.grdnet
+.. automodule:: anomalib.models.image.grdnet.data.dataclasses
    :members: GRDNetItem, GRDNetBatch
    :show-inheritance:
 ```
