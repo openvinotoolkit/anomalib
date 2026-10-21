@@ -255,15 +255,6 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
     def _warn_on_hyperparameter_mismatch(self, saved: dict[str, Any] | None) -> None:
         """Warn when a checkpoint was saved with different constructor arguments.
 
-        ``load_from_checkpoint`` rebuilds the model from the saved
-        ``hyper_parameters``. Loading a checkpoint into an existing instance,
-        for example through ``Engine.predict(model=..., ckpt_path=...)``, only
-        restores the weights. Arguments kept as plain attributes, such as
-        ``num_neighbors`` in PatchCore, then keep the instance's values, and the
-        scores no longer match the thresholds and normalization statistics
-        stored in the checkpoint. Only arguments present in both the checkpoint
-        and the model are compared, and ``pre_trained`` is skipped.
-
         Args:
             saved (dict[str, Any] | None): ``hyper_parameters`` from the
                 checkpoint, or ``None`` if the checkpoint has none.
