@@ -37,10 +37,11 @@ from typing import Any, Literal
 
 import numpy as np
 import torch
-import torch.nn.functional as F  # noqa: N812
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
-from torchvision.transforms.functional import to_pil_image
+import cv2
 
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
+import torch.nn.functional as F
+from torchvision.transforms.functional import to_pil_image
 logger = logging.getLogger(__name__)
 
 
@@ -1112,3 +1113,46 @@ def get_visualize_function(field: str) -> Callable:
     current_module = sys.modules[__name__]
     func_name = f"visualize_{field}"
     return getattr(current_module, func_name)
+
+import cv2
+import numpy as np
+from PIL import Image
+
+
+def add_bounding_boxes_to_image(
+    image: Image.Image,
+    anomaly_map: np.ndarray,
+    threshold: float = 0.5,
+    box_color: tuple = (255, 0, 0),
+    box_thickness: int = 2,
+    min_box_size: int = 5,
+    label: str = "DEFECT",
+) -> Image.Image:
+    """Draw bounding boxes around detected anomaly regions.
+
+    Args:
+        image: Original input image as PIL Image.
+        anomaly_map: Anomaly heatmap from model output.
+        threshold: Score threshold to consider a region anomalous.
+        box_color: RGB color tuple for bounding boxes.
+        box_thickness: Thickness of bounding box lines.
+        min_box_size: Minimum contour size to draw a box.
+        label: Text label to display above each bounding box.
+
+    Returns:
+        Image with bounding boxes drawn around anomalous regions.
+    """
+    img_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+    norm_map = (anomaly_map - anomaly_map.min()) / (anomaly_map.max() - anomaly_map.min() + 1e-8)
+    binary_mask = (norm_map > threshold).astype(np.uint8) * 255
+    contours, _ = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    bgr_color = (box_color[2], box_color[1], box_color[0])
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        if w > min_box_size and h > min_box_size:
+            cv2.rectangle(img_cv, (x, y), (x + w, y + h), bgr_color, box_thickness)
+            cv2.putText(
+                img_cv, label, (x, y - 5),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, bgr_color, box_thickness,
+            )
+    return Image.fromarray(cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB))
