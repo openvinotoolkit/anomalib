@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Validate PyTorch tensor data for images.
@@ -32,6 +32,7 @@ Note:
     consistency before processing.
 """
 
+import math
 from collections.abc import Sequence
 
 import numpy as np
@@ -293,7 +294,9 @@ class ImageValidator:
             >>> validated_path == path
             True
         """
-        return validate_path(mask_path) if mask_path else None
+        if isinstance(mask_path, float) and math.isnan(mask_path):
+            return None
+        return validate_path(mask_path) if mask_path and str(mask_path).strip() else None
 
     @staticmethod
     def validate_pred_score(

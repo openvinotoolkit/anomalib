@@ -40,6 +40,7 @@ from .datumaro import Datumaro
 from .folder import Folder
 from .kaputt import Kaputt
 from .kolektor import Kolektor
+from .libad import LIBAD
 from .mpdd import MPDD
 from .mvtec_loco import MVTecLOCO
 from .mvtecad import MVTecAD
@@ -92,6 +93,7 @@ class ImageDataFormat(str, Enum):
     TABULAR = "tabular"
     VAD = "vad"
     VISA = "visa"
+    LIBAD = "libad"
 
 
 __all__ = [
@@ -111,4 +113,5 @@ __all__ = [
     "Tabular",
     "VAD",
     "Visa",
+    "LIBAD",
 ]

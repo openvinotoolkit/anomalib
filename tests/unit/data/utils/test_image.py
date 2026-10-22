@@ -7,9 +7,10 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+import tifffile
 from pytest_mock import MockerFixture
 
-from anomalib.data.utils.image import Image, get_image_filenames, np, read_mask, torch
+from anomalib.data.utils.image import Image, get_image_filenames, np, read_image, read_mask, torch
 
 
 class TestGetImageFilenames:
@@ -87,3 +88,47 @@ class TestReadMask:
         assert isinstance(result, torch.Tensor)
         assert result.dtype == torch.uint8
         assert torch.equal(result, torch.tensor([[0, 1], [1, 0]], dtype=torch.uint8))
+
+
+class TestReadImage:
+    """Tests for ``read_image`` function."""
+
+    @staticmethod
+    def test_read_16bit_tiff(tmp_path: Path) -> None:
+        """Test ``read_image`` correctly reads 16-bit grayscale TIFF without losing precision."""
+        test_file = tmp_path / "test_16bit.tiff"
+        data_16bit = np.array([[0, 32767], [65535, 0]], dtype=np.uint16)
+        tifffile.imwrite(test_file, data_16bit)
+
+        img_np = read_image(test_file, as_tensor=False)
+        assert img_np.shape == (2, 2, 3)
+        assert img_np.dtype == np.float32
+
+        # Verify min/max scaling
+        np.testing.assert_allclose(img_np[0, 1], np.full(3, 32767 / 65535, dtype=np.float32), rtol=0, atol=1e-6)
+        assert np.isclose(img_np.max(), 1.0)
+        assert np.isclose(img_np.min(), 0.0)
+
+        img_tensor = read_image(test_file, as_tensor=True)
+        assert img_tensor.shape == (3, 2, 2)
+        assert img_tensor.dtype == torch.float32
+        torch.testing.assert_close(
+            img_tensor[:, 0, 1],
+            torch.full((3,), 32767 / 65535, dtype=torch.float32),
+            rtol=0,
+            atol=1e-6,
+        )
+        assert torch.isclose(img_tensor.max(), torch.tensor(1.0))
+
+    @staticmethod
+    def test_read_32bit_tiff(tmp_path: Path) -> None:
+        """Test ``read_image`` correctly reads 32-bit float grayscale TIFF."""
+        test_file = tmp_path / "test_32bit.tiff"
+        data_32bit = np.array([[0.0, 0.5], [1.0, 0.0]], dtype=np.float32)
+        tifffile.imwrite(test_file, data_32bit)
+
+        img_np = read_image(test_file, as_tensor=False)
+        assert img_np.shape == (2, 2, 3)
+        assert img_np.dtype == np.float32
+        assert np.isclose(img_np.max(), 1.0)
+        assert np.isclose(img_np.min(), 0.0)

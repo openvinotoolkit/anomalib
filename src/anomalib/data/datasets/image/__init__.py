@@ -34,6 +34,7 @@ from .datumaro import DatumaroDataset
 from .folder import FolderDataset
 from .kaputt import KaputtDataset
 from .kolektor import KolektorDataset
+from .libad import LIBADDataset
 from .mpdd import MPDDDataset
 from .mvtec_loco import MVTecLOCODataset
 from .mvtecad import MVTecADDataset
@@ -59,4 +60,5 @@ __all__ = [
     "TabularDataset",
     "VADDataset",
     "VisaDataset",
+    "LIBADDataset",
 ]

@@ -51,6 +51,7 @@ from .datamodules.base import AnomalibDataModule
 from .datamodules.depth import ADAM3D, DepthDataFormat, Folder3D, MVTec3D
 from .datamodules.image import (
     BMAD,
+    LIBAD,
     MPDD,
     VAD,
     AutoVI,
@@ -80,6 +81,7 @@ from .datasets.image import (
     FolderDataset,
     KaputtDataset,
     KolektorDataset,
+    LIBADDataset,
     MPDDDataset,
     MVTecADDataset,
     MVTecLOCODataset,
@@ -197,6 +199,7 @@ __all__ = [
     "Tabular",
     "VAD",
     "Visa",
+    "LIBAD",
     # Video Data Modules
     "Avenue",
     "ShanghaiTech",
@@ -216,6 +219,7 @@ __all__ = [
     "TabularDataset",
     "VADDataset",
     "VisaDataset",
+    "LIBADDataset",
     "AvenueDataset",
     "ShanghaiTechDataset",
     "UCSDpedDataset",

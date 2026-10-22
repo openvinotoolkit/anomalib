@@ -111,6 +111,13 @@ Valeo Anomaly Detection dataset datamodule for automotive scenes.
 
 Visual Anomaly (VisA) dataset datamodule.
 :::
+
+:::{grid-item-card} LIBAD
+:link: libad
+:link-type: doc
+
+LIBAD dataset datamodule for Li-Ion Battery Electrode Manufacturing defects.
+:::
 ```
 
 ```{toctree}
@@ -132,4 +139,5 @@ realiad
 tabular
 vad
 visa
+libad
 ```

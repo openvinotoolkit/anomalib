@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- 🚀 **data**: Add LIBAD dataset by @andersendsa in https://github.com/open-edge-platform/anomalib/pull/3800
+
 ### Removed
 
 ### Changed

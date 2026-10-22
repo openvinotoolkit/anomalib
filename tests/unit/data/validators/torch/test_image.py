@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Test Torch Image Validators."""
@@ -52,6 +52,11 @@ class TestImageValidator:
     def test_validate_gt_label_none(self) -> None:
         """Test validation of a None ground truth label."""
         assert self.validator.validate_gt_label(None) is None
+
+    @pytest.mark.parametrize("mask_path", [None, "", " ", float("nan")])
+    def test_validate_missing_mask_path(self, mask_path: str | float | None) -> None:
+        """Treat missing classification masks as absent paths."""
+        assert self.validator.validate_mask_path(mask_path) is None
 
     def test_validate_gt_label_invalid_type(self) -> None:
         """Test validation of a ground truth label with invalid type."""

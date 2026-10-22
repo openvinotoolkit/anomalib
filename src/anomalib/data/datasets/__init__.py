@@ -50,6 +50,7 @@ from .image import (
     DatumaroDataset,
     FolderDataset,
     KolektorDataset,
+    LIBADDataset,
     MPDDDataset,
     MVTecADDataset,
     TabularDataset,
@@ -79,6 +80,7 @@ __all__ = [
     "TabularDataset",
     "VADDataset",
     "VisaDataset",
+    "LIBADDataset",
     # Video
     "AvenueDataset",
     "ShanghaiTechDataset",
