@@ -33,7 +33,7 @@ For ICPR this is set to True (i.e. the features for classification head are adap
 
 ## Usage
 
-`anomalib train --model SuperSimpleNet --data MVTecAD --data.category <category>`
+`anomalib train --model Supersimplenet --data MVTecAD --data.category <category>`
 
 > IMPORTANT!
 >

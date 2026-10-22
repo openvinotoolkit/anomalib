@@ -11,24 +11,17 @@
 # Configure pre-processing, metrics, and visualization
 echo "Training with custom pipeline components..."
 anomalib train \
-    --model patchcore \
+    --model Patchcore \
     --data MVTecAD \
     --data.category bottle \
     --model.backbone resnet18 \
-    --model.layers layer2 layer3 \
-    --pre_processor.transform.name Compose \
-    --pre_processor.transform.transforms "[
-        {name: Resize, size: [256, 256]},
-        {name: ToTensor},
-        {name: Normalize, mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225]}
-    ]" \
-    --metrics "[auroc, f1_score]" \
+    --model.layers layer2 layer3
 
 # 2. Advanced Training Configuration
 # Configure training behavior and optimization
 echo -e "\nTraining with advanced settings..."
 anomalib train \
-    --model patchcore \
+    --model Patchcore \
     --data MVTecAD \
     --trainer.max_epochs 1 \
     --trainer.accelerator gpu \
@@ -45,17 +38,16 @@ anomalib train \
 echo -e "\nExporting and running inference..."
 # First, export the model
 anomalib export \
-    --model patchcore \
-    --weights path/to/weights.ckpt \
-    --export_mode onnx \
-    --output_path exported_models
+    --model Patchcore \
+    --ckpt_path path/to/weights.ckpt \
+    --export_type onnx \
+    --export_root exported_models
 
-# Then, run inference with the exported model
+# Then, run inference with the trained checkpoint
 anomalib predict \
-    --model patchcore \
-    --weights exported_models/model.onnx \
-    --input path/to/test/images \
-    --output results/predictions \
+    --model Patchcore \
+    --ckpt_path path/to/weights.ckpt \
+    --data path/to/test/images
 
 # 4. Hyperparameter Search
 # Run multiple training configurations
@@ -65,7 +57,7 @@ for backbone in "resnet18" "wide_resnet50_2"; do
         IFS=',' read -ra layers <<< "$layer_combo"
         echo "Training with backbone: $backbone, layers: ${layers[*]}"
         anomalib train \
-            --model patchcore \
+            --model Patchcore \
             --data MVTecAD \
             --model.backbone "$backbone" \
             --model.layers "${layers[@]}" \

@@ -209,10 +209,12 @@ To run the benchmarking tool, run the following command:
 :::{tab-item} API
 
 ```python
+from argparse import Namespace
+
 from anomalib.pipelines.benchmark import Benchmark
 
-benchmark = Benchmark(config="tools/experimental/benchmarking/sample.yaml")
-benchmark.run()
+benchmark = Benchmark()
+benchmark.run(Namespace(config="tools/experimental/benchmarking/sample.yaml"))
 ```
 
 :::

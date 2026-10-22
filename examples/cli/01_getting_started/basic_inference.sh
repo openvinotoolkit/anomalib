@@ -12,30 +12,34 @@ echo "=== Anomalib Inference Examples ==="
 echo -e "\n1. Basic Inference with Checkpoint Path"
 echo "# Predict using a model checkpoint"
 anomalib predict \
+    --model EfficientAd \
     --ckpt_path "./results/efficient_ad/mvtecad/bottle/weights/model.ckpt" \
-    --data_path path/to/image.jpg
+    --data path/to/image.jpg
 
 echo -e "\n2. Inference with Directory Path"
 echo "# Predict on all images in a directory"
 anomalib predict \
+    --model EfficientAd \
     --ckpt_path "./results/efficient_ad/mvtecad/bottle/weights/model.ckpt" \
-    --data_path "./datasets/mvtecad/bottle/test"
+    --data "./datasets/mvtecad/bottle/test"
 
 echo -e "\n3. Inference with Datamodule"
 echo "# Use a datamodule for inference"
 anomalib predict \
+    --model Patchcore \
     --ckpt_path "./results/my_dataset/weights/model.ckpt" \
-    --datamodule.class_path anomalib.data.Folder \
-    --datamodule.init_args.name "my_dataset" \
-    --datamodule.init_args.root "./datasets/my_dataset" \
-    --datamodule.init_args.normal_dir "good" \
-    --datamodule.init_args.abnormal_dir "defect"
+    --data anomalib.data.Folder \
+    --data.name "my_dataset" \
+    --data.root "./datasets/my_dataset" \
+    --data.normal_dir "good" \
+    --data.abnormal_dir "defect"
 
 echo -e "\n4. Inference with Return Predictions"
 echo "# Return predictions instead of saving to disk"
 anomalib predict \
+    --model EfficientAd \
     --ckpt_path "./results/efficient_ad/mvtecad/bottle/weights/model.ckpt" \
-    --data_path path/to/image.jpg \
+    --data path/to/image.jpg \
     --return_predictions
 
 echo -e "\n=== Example Output ==="

@@ -156,11 +156,15 @@ model = Patchcore(
 )
 
 # Export: Post-processing is included in the graph
-model.export("model", export_mode="openvino")
+from anomalib.deploy import ExportType
+from anomalib.engine import Engine
+
+engine = Engine()
+engine.export(model, export_type=ExportType.OPENVINO, export_root="exported_models")
 
 # Deployment: Simple inference without manual post-processing
 core = Core()
-ov_model = core.read_model("model.xml")
+ov_model = core.read_model("exported_models/weights/openvino/model.xml")
 compiled_model = core.compile_model(ov_model)
 
 # Get input and output names

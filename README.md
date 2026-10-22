@@ -97,7 +97,7 @@ uv pip install "anomalib[cu130]"
 # ROCm support (Linux with AMD GPU)
 uv pip install "anomalib[rocm]"
 
-# Intel XPU support (Linux with Intel GPU)
+# Intel XPU support (Linux/Windows with Intel GPU)
 uv pip install "anomalib[xpu]"
 ```
 
@@ -125,14 +125,17 @@ uv pip install "anomalib[full,cpu]"
 
 Here is a list of available optional dependency groups:
 
-| Extra         | Description                              | Purpose                                     |
-| :------------ | :--------------------------------------- | :------------------------------------------ |
-| `[openvino]`  | Intel OpenVINO optimization              | For accelerated inference on Intel hardware |
-| `[clip]`      | Vision-language models                   | `winclip`                                   |
-| `[vlm]`       | Vision-language model backends           | Advanced VLM features                       |
-| `[loggers]`   | Experiment tracking (wandb, comet, etc.) | For experiment management                   |
-| `[notebooks]` | Jupyter notebook support                 | For running example notebooks               |
-| `[full]`      | All optional dependencies                | All optional features                       |
+| Extra           | Description                              | Purpose                                     |
+| :-------------- | :--------------------------------------- | :------------------------------------------ |
+| `[openvino]`    | Intel OpenVINO optimization              | For accelerated inference on Intel hardware |
+| `[clip]`        | Vision-language models                   | `winclip`                                   |
+| `[vlm]`         | Vision-language model backends           | Advanced VLM features                       |
+| `[video]`       | Video I/O dependencies                   | Video datamodules and models                |
+| `[huggingface]` | Hugging Face Hub / safetensors           | Hub-backed model and weight loading         |
+| `[datasets]`    | Dataset-specific extras                  | e.g. tabular/pyarrow-backed datasets        |
+| `[loggers]`     | Experiment tracking (wandb, comet, etc.) | For experiment management                   |
+| `[notebooks]`   | Jupyter notebook support                 | For running example notebooks               |
+| `[full]`        | All optional dependencies                | All optional features                       |
 
 </details>
 

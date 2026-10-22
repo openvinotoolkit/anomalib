@@ -62,7 +62,7 @@ from anomalib.engine import Engine
 datamodule = MVTecAD(num_workers=0)
 # Specify backbone and layers
 model = Padim(backbone="resnet18", layers=["layer1", "layer2"])
-engine = Engine(image_metrics=["AUROC"], pixel_metrics=["AUROC"])
+engine = Engine()
 
 # Train the model
 engine.fit(datamodule=datamodule, model=model)
