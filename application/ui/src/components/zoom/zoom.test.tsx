@@ -1,8 +1,8 @@
-import { render, screen, renderHook, act } from '@testing-library/react';
+import { act, render, renderHook, screen } from '@testing-library/react';
 import { vi } from 'vitest';
 
 import { useContainerSize } from './use-container-size';
-import { ZoomProvider, useZoom, useSetZoom } from './zoom';
+import { useSetZoom, useZoom, ZoomProvider } from './zoom';
 import { ZoomTransform } from './zoom-transform';
 
 vi.mock('./use-container-size', () => ({

@@ -1,5 +1,7 @@
 import { createContext, Dispatch, ReactNode, SetStateAction, useCallback, useContext, useState } from 'react';
 
+import { isFunction } from 'lodash-es';
+
 type ZoomState = { scale: number; translate: { x: number; y: number } };
 
 const MIN_SCALE = 0.1;
