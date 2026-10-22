@@ -1,0 +1,66 @@
+name: Dataset metadata fuzzing
+
+on:
+  pull_request:
+    paths:
+      - src/anomalib/data/**
+      - tests/unit/data/utils/test_path_fuzz.py
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/fuzzing.yaml
+  schedule:
+    - cron: "23 3 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.10.4"
+          enable-cache: false
+
+      - name: Install test dependencies
+        run: uv sync --locked --python 3.12 --extra test --extra cpu
+
+      - name: Run bounded fuzz tests
+        env:
+          FUZZ_SEED: ${{ github.event_name == 'pull_request' && '3862' || github.run_id }}
+        run: |
+          echo "Hypothesis seed: $FUZZ_SEED"
+          uv run --no-sync pytest tests/unit/data/utils/test_path_fuzz.py \
+            --hypothesis-seed="$FUZZ_SEED" --hypothesis-show-statistics \
+            --timeout=120 --junitxml=fuzz-results.xml
+
+      - name: Preserve regression evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: metadata-fuzz-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            fuzz-results.xml
+            .hypothesis/examples/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 30

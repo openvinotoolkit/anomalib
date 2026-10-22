@@ -43,6 +43,9 @@ can be installed via `pip install -e requirements/dev.txt`.
 
 ## Running Tests with `pytest`
 
+For the bounded security fuzz tests, CI schedule, and regression retention, see
+[Dataset metadata fuzzing](fuzzing.md).
+
 `pytest` is a powerful testing tool that allows for detailed test execution.
 
 To run all tests with pytest, execute:
