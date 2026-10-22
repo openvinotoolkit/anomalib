@@ -453,6 +453,8 @@ class RadModel(DynamicBufferMixin, nn.Module):
         Raises:
             ValueError: If the memory bank grid differs from the query grid.
         """
+        # Grid consistency is an eager validation; extracting buffer values as Python
+        # integers is not supported while Dynamo captures the model for export.
         if torch.compiler.is_compiling():
             return
         bank_rows, bank_cols = (int(size) for size in self.bank_grid)

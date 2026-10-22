@@ -318,6 +318,7 @@ def read_image(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.n
     """
     path = Path(path)
     if path.suffix.lower() in {".tiff", ".tif"}:
+        # Pillow's RGB conversion loses precision for high-bit-depth TIFF images.
         image_np = tifffile.imread(path)
         if image_np.ndim == 2:
             image_np = cv2.cvtColor(image_np, cv2.COLOR_GRAY2RGB)
@@ -335,12 +336,12 @@ def read_image(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.n
 
         image_np = image_np.astype(np.float32) / scale_val
 
-        if as_tensor:
-            return torch.from_numpy(image_np).permute(2, 0, 1)
-        return image_np
-
-    image = Image.open(path).convert("RGB")
-    return to_dtype(to_image(image), torch.float32, scale=True) if as_tensor else np.array(image) / 255.0
+        image = torch.from_numpy(image_np).permute(2, 0, 1) if as_tensor else image_np
+    else:
+        with Image.open(path) as pil_image:
+            rgb_image = pil_image.convert("RGB")
+        image = to_dtype(to_image(rgb_image), torch.float32, scale=True) if as_tensor else np.array(rgb_image) / 255.0
+    return image
 
 
 def read_mask(path: str | Path, as_tensor: bool = False) -> torch.Tensor | np.ndarray:

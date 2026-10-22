@@ -7,6 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from pytest_mock import MockerFixture
 from torchvision.transforms.v2 import Resize
 
 from anomalib.data import LIBAD
@@ -15,6 +16,36 @@ from tests.unit.data.datamodule.base.image import _TestAnomalibImageDatamodule
 
 class TestLIBAD(_TestAnomalibImageDatamodule):
     """LIBAD Datamodule Unit Tests."""
+
+    @staticmethod
+    @pytest.mark.parametrize("category", ["1_wrinklng", "../outside"])
+    def test_invalid_category_before_download(tmp_path: Path, mocker: MockerFixture, category: str) -> None:
+        """Reject invalid categories before checking authentication or downloading."""
+        download = mocker.patch("anomalib.data.datamodules.image.libad.hf_hub_download")
+        token = mocker.patch("anomalib.data.datamodules.image.libad.get_token")
+        datamodule = LIBAD(root=tmp_path, category=category)
+
+        with pytest.raises(ValueError, match="Unknown category"):
+            datamodule.prepare_data()
+
+        download.assert_not_called()
+        token.assert_not_called()
+
+    @staticmethod
+    def test_download_pinned_revision(tmp_path: Path, mocker: MockerFixture) -> None:
+        """Download a fixed revision and extract it without network access."""
+        mocker.patch("anomalib.data.datamodules.image.libad.module_available", return_value=True)
+        mocker.patch("anomalib.data.datamodules.image.libad.get_token", return_value="test-token")
+        download = mocker.patch(
+            "anomalib.data.datamodules.image.libad.hf_hub_download",
+            return_value=str(tmp_path / "LIBAD.zip"),
+        )
+        extract = mocker.patch("anomalib.data.datamodules.image.libad.extract")
+
+        LIBAD(root=tmp_path).prepare_data()
+
+        assert download.call_args.kwargs["revision"] == "1f4c5f4dbef3b6bb3c122a2340dff5b19014bf74"
+        extract.assert_called_once()
 
     @pytest.fixture()
     @staticmethod

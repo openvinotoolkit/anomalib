@@ -32,6 +32,7 @@ Note:
     consistency before processing.
 """
 
+import math
 from collections.abc import Sequence
 
 import numpy as np
@@ -293,7 +294,7 @@ class ImageValidator:
             >>> validated_path == path
             True
         """
-        if isinstance(mask_path, float) and __import__("math").isnan(mask_path):
+        if isinstance(mask_path, float) and math.isnan(mask_path):
             return None
         return validate_path(mask_path) if mask_path and str(mask_path).strip() else None
 

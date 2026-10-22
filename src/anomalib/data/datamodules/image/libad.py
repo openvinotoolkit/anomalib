@@ -4,8 +4,8 @@
 """LIBAD Data Module.
 
 This module provides a PyTorch Lightning DataModule for the LIBAD dataset.
-The dataset will not be downloaded automatically. Users must download it from
-Hugging Face (https://huggingface.co/datasets/Evenrose/LIBAD) and extract it.
+The dataset can be downloaded automatically with authenticated, approved access to
+Hugging Face (https://huggingface.co/datasets/Evenrose/LIBAD), or extracted manually.
 
 Example:
     Create a LIBAD datamodule::
@@ -18,7 +18,7 @@ Example:
         ... )
 
 Notes:
-    The dataset must be downloaded and extracted manually. The expected
+    For manual downloads, extract the dataset into the expected
     directory structure is::
 
         datasets/
@@ -77,7 +77,7 @@ else:
     HF_DOWNLOAD_ERRORS = (Exception,)
 
 from anomalib.data.datamodules.base.image import AnomalibDataModule
-from anomalib.data.datasets.image.libad import LIBADDataset
+from anomalib.data.datasets.image.libad import CATEGORIES, LIBADDataset
 from anomalib.data.utils import TestSplitMode, ValSplitMode, split_by_label
 from anomalib.data.utils.download import extract
 from anomalib.utils.path import resolve_dataset_root
@@ -200,6 +200,10 @@ class LIBAD(AnomalibDataModule):
         session. Automatic download only succeeds if the user has already
         requested and been granted access to the dataset on Hugging Face.
         """
+        if self.category not in CATEGORIES:
+            msg = f"Unknown category {self.category}. Must be one of {CATEGORIES}"
+            raise ValueError(msg)
+
         if (self.root / self.category).is_dir():
             logger.info("Found the dataset.")
             return
@@ -232,6 +236,7 @@ class LIBAD(AnomalibDataModule):
                     hf_hub_download(
                         repo_id="Evenrose/LIBAD",
                         repo_type="dataset",
+                        revision="1f4c5f4dbef3b6bb3c122a2340dff5b19014bf74",
                         filename="LIBAD.zip",
                         local_dir=scratch_dir,
                     ),
