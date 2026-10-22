@@ -1,0 +1,37 @@
+name: Benchmark report
+
+on:
+  pull_request:
+    paths:
+      - "docs/source/_ext/benchmark_report/**"
+      - "docs/source/_static/benchmark*"
+      - "docs/source/_static/benchmark-data/**"
+      - "docs/source/_static/vendor/**"
+      - "docs/source/markdown/benchmarks.md"
+      - "tests/unit/docs/**"
+      - ".github/workflows/benchmark-report.yaml"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+          version: "0.9.18"
+      - name: Offline data and Sphinx integration tests (no model dependencies)
+        run: >-
+          uv run --no-project --python 3.12 --with pytest --with sphinx
+          python -m pytest --confcutdir=tests/unit/docs
+          tests/unit/docs/test_benchmark_report.py

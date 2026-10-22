@@ -1,0 +1,130 @@
+/* Keep benchmark presentation within the existing docs theme. */
+.benchmark-dataset {
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.benchmark-table {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.9rem;
+}
+
+.benchmark-table th,
+.benchmark-table td {
+  padding: 0.8rem 0.9rem;
+  text-align: right;
+}
+
+.benchmark-table th,
+.benchmark-table td:nth-child(2) {
+  font-weight: 600;
+}
+
+.benchmark-table td:nth-child(2),
+.benchmark-table th:nth-child(2) {
+  text-align: left;
+}
+
+.benchmark-table td:not(:first-child),
+.benchmark-table th:not(:first-child) {
+  white-space: nowrap;
+}
+
+.benchmark-delta {
+  color: var(--pst-color-text-muted);
+  font-size: 0.85em;
+  font-weight: normal;
+}
+
+.benchmark-history {
+  border: 1px solid var(--pst-color-border);
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.25rem 0.25rem;
+}
+
+.benchmark-history h4 {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+
+.benchmark-history label,
+.benchmark-chart-summary {
+  font-size: 0.875rem;
+  color: var(--pst-color-text-muted);
+}
+
+.benchmark-chart-summary {
+  margin: 1rem 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.benchmark-chart {
+  height: 340px;
+  width: 100%;
+}
+
+.benchmark-metric {
+  color: var(--pst-color-text-base);
+  background: var(--pst-color-background);
+  border: 1px solid var(--pst-color-border);
+  border-radius: 0.25rem;
+  padding: 0.3rem 0.5rem;
+  margin-left: 0.5rem;
+  min-height: 2.5rem;
+  font: inherit;
+}
+
+.benchmark-metric:focus-visible {
+  outline: 2px solid var(--pst-color-primary);
+  outline-offset: 3px;
+}
+
+.benchmark-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+}
+
+.benchmark-history {
+  scroll-margin-top: 5rem;
+}
+
+.benchmark-categories {
+  border-top: 1px solid var(--pst-color-border);
+  padding: 1rem 0;
+}
+
+.benchmark-categories summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.benchmark-category-table td:first-child,
+.benchmark-category-table th:first-child {
+  text-align: left;
+}
+
+.benchmark-category-table td:not(:first-child),
+.benchmark-category-table th:not(:first-child) {
+  text-align: right;
+  font-weight: normal;
+}
+
+.benchmark-category-link {
+  background: none;
+  border: 0;
+  color: var(--pst-color-link);
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+  font: inherit;
+}

@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+- 📚 **docs**: Add a Python/Sphinx benchmark leaderboard with Plotly history and category drill-down.
+
 ### Removed
 
 ### Changed
