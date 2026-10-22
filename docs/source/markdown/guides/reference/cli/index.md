@@ -27,7 +27,8 @@ anomalib train --model Patchcore --data MVTecAD --data.category bottle
 
 ```bash
 anomalib predict \
-    --ckpt_path results/Patchcore/MVTecAD/weights/lightning/model.ckpt \
+    --model Patchcore \
+    --ckpt_path results/Patchcore/MVTecAD/bottle/latest/weights/lightning/model.ckpt \
     --data path/to/images
 ```
 

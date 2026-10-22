@@ -26,7 +26,8 @@ from anomalib.models import EfficientAd
 from anomalib.engine import Engine
 
 # Load the ViSA dataset, model and engine.
-datamodule = Visa()
+# EfficientAd requires a training batch size of 1.
+datamodule = Visa(train_batch_size=1)
 model = EfficientAd()
 engine = Engine()
 
@@ -50,7 +51,8 @@ from anomalib.engine import Engine
 # Load the folder, model and engine.
 # Set the clip_length_in_frames to 1 to convert the video dataset to a
 #   frame-based image dataset.
-datamodule = Avenue(clip_length_in_frames=1)
+# EfficientAd requires a training batch size of 1.
+datamodule = Avenue(clip_length_in_frames=1, train_batch_size=1)
 model = EfficientAd()
 engine = Engine()
 

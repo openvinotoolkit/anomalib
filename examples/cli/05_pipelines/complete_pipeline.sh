@@ -22,12 +22,15 @@ anomalib train \
     --trainer.enable_checkpointing true \
     --trainer.default_root_dir results
 
+# Checkpoint written by the training phase above
+CKPT_PATH="results/Patchcore/MVTecAD/bottle/latest/weights/lightning/model.ckpt"
+
 # 2. Export Phase
 # --------------
 echo -e "\nStarting Export Phase..."
 anomalib export \
     --model Patchcore \
-    --ckpt_path results/*/checkpoints/*.ckpt \
+    --ckpt_path "$CKPT_PATH" \
     --export_root exported_models \
     --export_type onnx \
     --input_size "[256,256]"
@@ -40,7 +43,7 @@ echo -e "\nStarting Inference Phase..."
 echo "Running inference with PyTorch model..."
 anomalib predict \
     --model Patchcore \
-    --ckpt_path results/*/checkpoints/*.ckpt \
+    --ckpt_path "$CKPT_PATH" \
     --data path/to/test/images
 
 # 4. Results Summary
