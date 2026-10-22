@@ -38,7 +38,7 @@ anomalib predict \
 anomalib export \
     --model Patchcore \
     --export_type openvino \
-    --ckpt_path results/Patchcore/MVTecAD/weights/lightning/model.ckpt
+    --ckpt_path results/Patchcore/MVTecAD/bottle/latest/weights/lightning/model.ckpt
 ```
 
 ## API Reference
