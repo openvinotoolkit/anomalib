@@ -14,7 +14,7 @@ repos:
         exclude: "docs/source/examples"
       - id: check-yaml
       - id: check-added-large-files
-        exclude: '(^|/).*\.lock$' # Exclude lock files (uv.lock, package-lock.json, etc.)
+        exclude: '(^|/).*\.lock$|^docs/source/_static/vendor/plotly-basic-3\.1\.0\.min\.js$'
       - id: debug-statements
       - id: detect-private-key
 
@@ -77,7 +77,7 @@ repos:
     rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
-        exclude: ^app/ui/
+        exclude: '^app/ui/|^docs/source/_static/vendor/plotly-basic-3\.1\.0\.min\.js$'
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.45.0

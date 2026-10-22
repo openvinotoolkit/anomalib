@@ -10,6 +10,7 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html#project-informatio
 # Copyright (C) 2022-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -21,10 +22,12 @@ from docutils.parsers.rst import Directive, directives  # type: ignore[import-un
 project_root = Path(__file__).parent.parent.parent
 module_path = project_root / "src"
 examples_path = project_root / "examples"
+ext_path = Path(__file__).parent / "_ext"
 
 # Insert paths to sys.path
 sys.path.insert(0, str(module_path.resolve()))
 sys.path.insert(0, str(project_root.resolve()))
+sys.path.insert(0, str(ext_path.resolve()))
 
 project = "Anomalib"
 copyright = "Intel Corporation"  # noqa: A001
@@ -44,7 +47,18 @@ extensions = [
     "sphinx_copybutton",
     "sphinx.ext.intersphinx",
     "sphinx.ext.autosectionlabel",
+    "benchmark_report",
 ]
+
+# Benchmark report: URL of the nightly results CSV (e.g. a Hugging Face
+# `resolve/main/...` URL). Empty uses the local fixture below, which also
+# serves as the offline/unreachable-URL fallback.
+benchmark_csv_source = (
+    "https://huggingface.co/datasets/anomalib/benchmarks/resolve/main/results.csv"
+    if os.environ.get("READTHEDOCS") == "True"
+    else ""
+)
+benchmark_csv_source_fixture = "_static/benchmark-data/results.csv"
 
 # Enable nbsphinx only if pandoc is available in the environment
 if shutil.which("pandoc"):
