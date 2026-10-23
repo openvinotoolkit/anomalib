@@ -331,7 +331,7 @@ class TestTrainingService:
                     / "latest"
                     / "weights"
                     / "openvino"
-                ).resolve(),
+                ),
                 dest_dir=Path("/path/to/model"),
                 file_name="model.xml",
             ),
@@ -344,7 +344,7 @@ class TestTrainingService:
                     / "latest"
                     / "weights"
                     / "openvino"
-                ).resolve(),
+                ),
                 dest_dir=Path("/path/to/model"),
                 file_name="model.bin",
             ),
@@ -357,7 +357,7 @@ class TestTrainingService:
                     / "latest"
                     / "weights"
                     / "lightning"
-                ).resolve(),
+                ),
                 dest_dir=Path("/path/to/model/checkpoint"),
                 file_name="model.ckpt",
             ),

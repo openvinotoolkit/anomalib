@@ -264,6 +264,8 @@ requires-dist = [
     { name = "huggingface-hub", marker = "extra == 'dev'" },
     { name = "huggingface-hub", marker = "extra == 'full'" },
     { name = "huggingface-hub", marker = "extra == 'huggingface'" },
+    { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.0" },
+    { name = "hypothesis", marker = "extra == 'test'", specifier = ">=6.0" },
     { name = "imagecodecs" },
     { name = "ipykernel", marker = "extra == 'dev'" },
     { name = "ipykernel", marker = "extra == 'full'" },

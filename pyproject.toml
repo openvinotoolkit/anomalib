@@ -102,6 +102,7 @@ docs = [
 ]
 # testing dependencies
 test = [
+    "hypothesis>=6.0",
     "prek",
     "pytest",
     "pytest-cov",
