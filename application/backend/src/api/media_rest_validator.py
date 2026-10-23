@@ -25,7 +25,7 @@ class MediaRestValidator:
         Raises:
             InvalidMediaException: if the file name is empty or the file extension is
                 not in the supported file extensions
-            PayloadTooLargeException: when the total size of the request exceeds 8GB
+            PayloadTooLargeException: when the total size of the request exceeds MAX_BYTES_SIZE
 
         Returns:
             UploadFile if valid, None if file is not present
@@ -33,11 +33,21 @@ class MediaRestValidator:
         if file is None:
             return None
 
-        file_size = file.size if file.size else int(request.headers["content-length"])
+        if file.size is not None:
+            file_size = file.size
+        else:
+            content_length = request.headers.get("content-length")
+            if content_length is None:
+                raise InvalidMediaException("Could not determine the size of the uploaded file.")
+            try:
+                file_size = int(content_length)
+            except (ValueError, TypeError):
+                raise InvalidMediaException("Invalid Content-Length header.")
+
         if file_size > MediaRestValidator.MAX_BYTES_SIZE:
             raise PayloadTooLargeException(MediaRestValidator.MAX_BYTES_SIZE / (1024**2))
 
-        if file.filename is None:
+        if not file.filename:
             raise InvalidMediaException("Filename can't be empty.")
 
         extension = list(os.path.splitext(file.filename)).pop().lower()
