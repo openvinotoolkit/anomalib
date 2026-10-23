@@ -28,7 +28,7 @@ from typing import Any
 import pandas as pd
 import yaml
 from huggingface_hub import HfApi, hf_hub_download
-from huggingface_hub.errors import EntryNotFoundError
+from huggingface_hub.errors import RemoteEntryNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -250,7 +250,7 @@ def download_hf_results(repo_id: str, dest: Path, token: str | None = None) -> t
             revision=revision,
             token=token or False,
         )
-    except EntryNotFoundError as exc:
+    except RemoteEntryNotFoundError as exc:
         logger.warning("No existing results.csv at %s (%s); starting empty.", repo_id, exc)
         return pd.DataFrame(), revision
 

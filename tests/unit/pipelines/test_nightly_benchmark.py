@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 import yaml
-from huggingface_hub.errors import EntryNotFoundError, RepositoryNotFoundError
+from huggingface_hub.errors import LocalEntryNotFoundError, RemoteEntryNotFoundError, RepositoryNotFoundError
 
 SCRIPT = Path(__file__).resolve().parents[3] / ".github/scripts/benchmark/orchestrate.py"
 SPEC = importlib.util.spec_from_file_location("nightly_benchmark", SCRIPT)
@@ -102,13 +102,14 @@ def test_pin_download_revision(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
 @pytest.mark.parametrize(
     ("error", "empty"),
     [
-        (EntryNotFoundError("no file"), True),
+        (RemoteEntryNotFoundError("no file", response=MagicMock()), True),
+        (LocalEntryNotFoundError("not cached; network unavailable"), False),
         (RepositoryNotFoundError("bad repo", response=MagicMock()), False),
         (OSError("offline"), False),
     ],
 )
 def test_download_failures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: Exception, empty: bool) -> None:
-    """Only missing files mean new history; network/auth/repository failures stop publication."""
+    """Only a remote missing file means empty history; cache/network errors prevent upload."""
     api = MagicMock()
     api.dataset_info.return_value.sha = SHA
     monkeypatch.setattr(nightly, "HfApi", MagicMock(return_value=api))
@@ -118,7 +119,8 @@ def test_download_failures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, erro
         assert frame.empty
     else:
         with pytest.raises(type(error)):
-            nightly.download_hf_results("org/data", tmp_path / "history.csv")
+            nightly.append_and_upload(pd.DataFrame([result()]), "org/data", "test-token", tmp_path / "merged.csv")
+        api.upload_file.assert_not_called()
 
 
 def test_fresh_complete_valid_output_required(tmp_path: Path) -> None:
