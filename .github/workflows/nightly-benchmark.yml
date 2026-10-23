@@ -1,0 +1,106 @@
+name: Nightly Benchmark
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # Default branch only, nightly at 3 AM UTC
+  workflow_dispatch:
+    inputs:
+      num_categories:
+        description: "Override number of categories (positive integer)"
+        required: false
+        type: string
+        default: ""
+      dry_run:
+        description: "Select workload without training or uploading"
+        type: boolean
+        default: false
+      skip_upload:
+        description: "Run without publishing (uploads also require the default branch)"
+        type: boolean
+        default: true
+
+permissions: {}
+
+concurrency:
+  group: nightly-benchmark
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: [self-hosted, anomalib]
+    timeout-minutes: 360
+    permissions:
+      contents: read
+    env:
+      ANOMALIB_DATASETS_ROOT: ${{ github.workspace }}/../anomalib-datasets
+      NUM_CATEGORIES: ${{ github.event.inputs.num_categories || '' }}
+      DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+      SKIP_UPLOAD: ${{ github.event.inputs.skip_upload || 'false' }}
+      HF_HUB_DISABLE_IMPLICIT_TOKEN: "1"
+      TZ: UTC
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Initialize work directory
+        shell: bash
+        run: echo "RUN_WORK_DIR=$RUNNER_TEMP/nightly-benchmark-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+
+      - name: Verify GPU availability
+        if: env.DRY_RUN != 'true'
+        run: nvidia-smi
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+          version: "0.9.18"
+
+      - name: Install locked dependencies
+        run: uv sync --frozen --extra cu130 --extra huggingface
+
+      - name: Select and run benchmarks (no write credentials)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ulimit -n 65536
+          mkdir -p "$ANOMALIB_DATASETS_ROOT" "$RUN_WORK_DIR"
+          ARGS=(
+            --matrix .github/scripts/benchmark/matrix.yaml
+            --datasets-root "$ANOMALIB_DATASETS_ROOT"
+            --work-dir "$RUN_WORK_DIR"
+          )
+          if [ -n "$NUM_CATEGORIES" ]; then
+            ARGS+=(--num-categories "$NUM_CATEGORIES")
+          fi
+          if [ "$DRY_RUN" = "true" ]; then
+            ARGS+=(--dry-run)
+          fi
+          uv run --frozen --no-sync python .github/scripts/benchmark/orchestrate.py "${ARGS[@]}"
+
+      - name: Publish validated results
+        if: >-
+          env.DRY_RUN != 'true' && env.SKIP_UPLOAD != 'true' &&
+          github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          uv run --frozen --no-sync python .github/scripts/benchmark/orchestrate.py \
+            --upload-results "$RUN_WORK_DIR/new_results.csv" \
+            --work-dir "$RUN_WORK_DIR"
+
+      - name: Upload debug artifacts
+        if: always() && env.RUN_WORK_DIR != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nightly-benchmark-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RUN_WORK_DIR }}/
+          if-no-files-found: ignore
+          retention-days: 14

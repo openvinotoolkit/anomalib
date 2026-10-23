@@ -31,6 +31,8 @@ The category average includes only categories measured in that run. Category
 coverage can change between runs; inspect individual category trends before
 interpreting a change in the average as a regression. Missing results are gaps,
 not zero scores.
+Image-only models may omit pixel metrics; unavailable scores display as a dash
+in tables and a gap in charts. Averages include only available measurements.
 These comparisons support manual inspection, not automatic regression alerts.
 
 [Download the results used in this report (CSV)](../_static/benchmark-data/results.csv)

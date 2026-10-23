@@ -57,8 +57,8 @@ def _build_table(headers: list[str], rows: list[list[str]]) -> nodes.table:
     return table
 
 
-def _format_metric(value: float) -> str:
-    return f"{value:.3f}"
+def _format_metric(value: float | None) -> str:
+    return "—" if value is None else f"{value:.3f}"
 
 
 def _model_id(dataset: str, model: str) -> str:
@@ -130,7 +130,10 @@ class BenchmarkHistoryDirective(SphinxDirective):
                         _build_table(
                             ["Run / version", *[label for _, label, _ in METRICS]],
                             [
-                                [version, *[f"{detail['series'][0]['values'][key][i]:.3f}" for key, _, _ in METRICS]]
+                                [
+                                    version,
+                                    *[_format_metric(detail["series"][0]["values"][key][i]) for key, _, _ in METRICS],
+                                ]
                                 for i, version in enumerate(detail["versions"])
                             ],
                         ),
@@ -183,7 +186,7 @@ class BenchmarkHistoryDirective(SphinxDirective):
                 table = _build_table(
                     ["Category", *[label for _, label, _ in METRICS]],
                     [
-                        [row[0], *[f"{value:.3f}" for value in row[1:]]]
+                        [row[0], *[_format_metric(value) for value in row[1:]]]
                         for row in detail["rows"][detail["versions"][-1]]
                     ],
                 )

@@ -1,4 +1,4 @@
-# Copyright (C) 2024 Intel Corporation
+# Copyright (C) 2024-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Benchmarking job for evaluating model performance.
@@ -43,6 +43,7 @@ from lightning import seed_everything
 from rich.console import Console
 from rich.table import Table
 
+from anomalib import __version__
 from anomalib.data import AnomalibDataModule
 from anomalib.engine import Engine
 from anomalib.models import AnomalibModule
@@ -66,6 +67,9 @@ class BenchmarkJob(Job):
         datamodule (AnomalibDataModule): Data module providing the dataset.
         seed (int): Random seed for reproducibility.
         flat_cfg (dict): Flattened configuration dictionary with dotted keys.
+        trainer_params (dict[str, Any] | None): Optional Lightning trainer parameters.
+            Defaults to ``None`` (the existing model/Engine defaults). Device selection
+            and temporary output directories remain controlled by the benchmark job.
 
     Example:
         >>> from anomalib.data import MVTecAD
@@ -100,11 +104,17 @@ class BenchmarkJob(Job):
         datamodule: AnomalibDataModule,
         seed: int,
         flat_cfg: dict,
+        trainer_params: dict[str, Any] | None = None,
     ) -> None:
         super().__init__()
         self.accelerator = accelerator
         self.model = model
         self.datamodule = datamodule
+        self.trainer_params = dict(trainer_params or {})
+        reserved = {"accelerator", "devices", "default_root_dir"} & self.trainer_params.keys()
+        if reserved:
+            msg = f"Benchmark job controls these trainer parameters: {', '.join(sorted(reserved))}"
+            raise ValueError(msg)
         self.seed = seed
         self.flat_cfg = flat_cfg
 
@@ -141,6 +151,7 @@ class BenchmarkJob(Job):
                 accelerator=self.accelerator,
                 devices=devices,
                 default_root_dir=temp_dir,
+                **self.trainer_params,
             )
             fit_start_time = time.time()
             engine.fit(self.model, self.datamodule)
@@ -156,6 +167,7 @@ class BenchmarkJob(Job):
         # https://github.com/open-edge-platform/anomalib/issues/2054
         output = {
             "accelerator": self.accelerator,
+            "anomalib_version": __version__,
             **durations,
             **self.flat_cfg,
             **test_results[0],
@@ -175,13 +187,7 @@ class BenchmarkJob(Job):
             pd.DataFrame: DataFrame containing aggregated results with each row
                 representing a benchmark run.
         """
-        output: dict[str, Any] = {}
-        for key in results[0]:
-            output[key] = []
-        for result in results:
-            for key, value in result.items():
-                output[key].append(value)
-        return pd.DataFrame(output)
+        return pd.DataFrame(results)
 
     @staticmethod
     def save(result: pd.DataFrame) -> None:

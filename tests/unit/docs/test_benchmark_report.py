@@ -19,7 +19,8 @@ from sphinx.application import Sphinx
 def csv_text(rows: list[dict]) -> str:
     """Produce pipeline-shaped CSV, including optional flattened configuration."""
     stream = io.StringIO()
-    writer = csv.DictWriter(stream, fieldnames=[*data.REQUIRED_COLUMNS, "run_timestamp", "model.layers"])
+    columns = list(dict.fromkeys([*data.REQUIRED_COLUMNS, *[column for _, _, column in data.METRICS]]))
+    writer = csv.DictWriter(stream, fieldnames=[*columns, "run_timestamp", "model.layers"])
     writer.writeheader()
     writer.writerows(rows)
     return stream.getvalue()
@@ -59,6 +60,29 @@ def test_missing_headers() -> None:
     """Renamed or missing headers fail before aggregation."""
     with pytest.raises(ValueError, match="missing required columns"):
         data.parse_benchmark_csv("data.class_path\nMVTecAD\n")
+
+
+def test_absent_pixel_columns() -> None:
+    """Legacy image-only CSVs need not include pixel columns at all."""
+    record = {key: value for key, value in row().items() if not key.startswith("pixel_")}
+    stream = io.StringIO()
+    writer = csv.DictWriter(stream, fieldnames=list(record))
+    writer.writeheader()
+    writer.writerow(record)
+    runs = data.parse_benchmark_csv(stream.getvalue())
+    assert runs[0].pixel_f1 is None
+    assert data.leaderboard_for_dataset(runs, "MVTecAD", "2.7.0")[0].pixel_auroc is None
+    assert data.category_history(runs, "MVTecAD", "Padim")["series"][0]["values"]["pixel_f1"] == [None]
+
+
+def test_missing_pixel_values_do_not_dilute_average() -> None:
+    """Only available pixel scores contribute to the pixel average."""
+    first, second = row(), row(category="grid")
+    second["pixel_AUROC"] = "NaN"
+    second["pixel_F1Score"] = ""
+    runs = data.parse_benchmark_csv(csv_text([first, second]))
+    assert data.leaderboard_for_dataset(runs, "MVTecAD", "2.7.0")[0].pixel_auroc == pytest.approx(0.9)
+    assert runs[1].pixel_auroc is runs[1].pixel_f1 is None
 
 
 def test_equal_category_weight_and_latest_measurements() -> None:

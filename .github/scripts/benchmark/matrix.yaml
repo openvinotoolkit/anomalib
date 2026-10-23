@@ -1,0 +1,30 @@
+# Nightly benchmark allowlist.
+# Empty dataset maps resolve to all CATEGORIES for that datamodule.
+num_categories: 5
+seed: 42
+accelerator: cuda
+models:
+  - name: Padim
+    trainer:
+      max_epochs: 1
+  - name: Patchcore
+    trainer:
+      max_epochs: 1
+  - name: EfficientAd
+    init_args:
+      model_size: small
+    data_init_args:
+      train_batch_size: 1
+    trainer:
+      max_steps: 1000
+  - name: Stfpm
+    trainer:
+      max_epochs: 10
+
+datasets:
+  MVTecAD: {}
+  Visa: {}
+
+trainer:
+  max_epochs: 100
+  logger: false

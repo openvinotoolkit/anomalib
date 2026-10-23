@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - 📚 **docs**: Add a Python/Sphinx benchmark leaderboard with Plotly history and category drill-down.
+- 🚀 **ci**: Add nightly benchmarking with bounded training, validated Hugging Face publication, and image-only dashboard support by @ashwinvaidya17 in https://github.com/open-edge-platform/anomalib/pull/3689
 
 ### Removed
 

@@ -21,7 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
         row.forEach((value, index) => {
           const cell = tr.insertCell();
           if (index > 0) {
-            cell.textContent = value.toFixed(3);
+            cell.textContent = value === null ? "—" : value.toFixed(3);
             return;
           }
           const button = document.createElement("button");
