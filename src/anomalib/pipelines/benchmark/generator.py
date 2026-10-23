@@ -104,6 +104,6 @@ class BenchmarkJobGenerator(JobGenerator):
                 seed=_container["seed"],
                 model=get_model(_container["model"]),
                 datamodule=get_datamodule(_container["data"]),
-                trainer_params=_container["trainer"],
+                trainer_params=_container.get("trainer"),
                 flat_cfg=flat_cfg,
             )

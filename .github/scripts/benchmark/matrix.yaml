@@ -4,14 +4,22 @@ num_categories: 5
 seed: 42
 accelerator: cuda
 models:
-  - Padim
-  - Patchcore
+  - name: Padim
+    trainer:
+      max_epochs: 1
+  - name: Patchcore
+    trainer:
+      max_epochs: 1
   - name: EfficientAd
     init_args:
       model_size: small
     data_init_args:
       train_batch_size: 1
-  - Stfpm
+    trainer:
+      max_steps: 1000
+  - name: Stfpm
+    trainer:
+      max_epochs: 10
 
 datasets:
   MVTecAD: {}
@@ -19,3 +27,5 @@ datasets:
 
 trainer:
   max_epochs: 100
+  logger: false
+  enable_checkpointing: false

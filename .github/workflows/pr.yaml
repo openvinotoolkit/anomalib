@@ -60,7 +60,7 @@ name: PR Checks
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    branches: ["main", "feature/**", "release/**"]
+    branches: ["main", "feature/**", "release/**", "feat/benchmark-dashboard"]
   merge_group:
     branches: [main]
 
@@ -131,6 +131,8 @@ jobs:
             test:
               - src/**
               - tests/**
+              - .github/scripts/benchmark/**
+              - .github/workflows/nightly-benchmark.yml
               - examples/**
               - tools/**
               - pyproject.toml

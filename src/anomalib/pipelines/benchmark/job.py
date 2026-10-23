@@ -65,9 +65,11 @@ class BenchmarkJob(Job):
             ``"cpu"``, ``"gpu"``).
         model (AnomalibModule): Anomaly detection model instance to benchmark.
         datamodule (AnomalibDataModule): Data module providing the dataset.
-        trainer_params (dict[str, Any]): Pytorch LightningTrainer parameters.
         seed (int): Random seed for reproducibility.
         flat_cfg (dict): Flattened configuration dictionary with dotted keys.
+        trainer_params (dict[str, Any] | None): Optional Lightning trainer parameters.
+            Defaults to ``None`` (the existing model/Engine defaults). Device selection
+            and temporary output directories remain controlled by the benchmark job.
 
     Example:
         >>> from anomalib.data import MVTecAD
@@ -100,15 +102,19 @@ class BenchmarkJob(Job):
         accelerator: str,
         model: AnomalibModule,
         datamodule: AnomalibDataModule,
-        trainer_params: dict[str, Any],
         seed: int,
         flat_cfg: dict,
+        trainer_params: dict[str, Any] | None = None,
     ) -> None:
         super().__init__()
         self.accelerator = accelerator
         self.model = model
         self.datamodule = datamodule
-        self.trainer_params = trainer_params
+        self.trainer_params = dict(trainer_params or {})
+        reserved = {"accelerator", "devices", "default_root_dir"} & self.trainer_params.keys()
+        if reserved:
+            msg = f"Benchmark job controls these trainer parameters: {', '.join(sorted(reserved))}"
+            raise ValueError(msg)
         self.seed = seed
         self.flat_cfg = flat_cfg
 
@@ -181,13 +187,7 @@ class BenchmarkJob(Job):
             pd.DataFrame: DataFrame containing aggregated results with each row
                 representing a benchmark run.
         """
-        output: dict[str, Any] = {}
-        for key in results[0]:
-            output[key] = []
-        for result in results:
-            for key, value in result.items():
-                output[key].append(value)
-        return pd.DataFrame(output)
+        return pd.DataFrame(results)
 
     @staticmethod
     def save(result: pd.DataFrame) -> None:

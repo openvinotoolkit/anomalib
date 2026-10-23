@@ -19,6 +19,7 @@ from urllib.request import urlopen
 from packaging.version import InvalidVersion, Version
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
 
 # Change these labels/fields to add or remove a displayed metric.
@@ -33,7 +34,8 @@ REQUIRED_COLUMNS = (
     "data.init_args.category",
     "model.class_path",
     "anomalib_version",
-    *(column for _, _, column in METRICS),
+    "image_AUROC",
+    "image_F1Score",
 )
 
 
@@ -46,9 +48,9 @@ class BenchmarkRun:
     model: str
     version: str
     image_auroc: float
-    pixel_auroc: float
+    pixel_auroc: float | None
     image_f1: float
-    pixel_f1: float
+    pixel_f1: float | None
     timestamp: str = ""
 
 
@@ -60,9 +62,9 @@ class LeaderboardEntry:
     version: str
     category_count: int
     image_auroc: float
-    pixel_auroc: float
+    pixel_auroc: float | None
     image_f1: float
-    pixel_f1: float
+    pixel_f1: float | None
     timestamp: str = ""
 
     @property
@@ -75,8 +77,13 @@ def _parse_row(row: dict) -> BenchmarkRun:
     if None in row or any(not row[column] for column in REQUIRED_COLUMNS):
         msg = "missing or extra fields"
         raise ValueError(msg)
-    metrics = {key: float(row[column]) for key, _, column in METRICS}
-    if not all(isfinite(value) and 0 <= value <= 1 for value in metrics.values()):
+    metrics = {
+        key: None
+        if column.startswith("pixel_") and str(row.get(column) or "").lower() in {"", "nan"}
+        else float(row[column])
+        for key, _, column in METRICS
+    }
+    if not all(isfinite(value) and 0 <= value <= 1 for value in metrics.values() if value is not None):
         msg = "metrics must be finite scores between 0 and 1"
         raise ValueError(msg)
     return BenchmarkRun(
@@ -85,7 +92,10 @@ def _parse_row(row: dict) -> BenchmarkRun:
         model=row["model.class_path"],
         version=row["anomalib_version"],
         timestamp=row.get("run_timestamp") or "",
-        **metrics,
+        image_auroc=float(row["image_AUROC"]),
+        image_f1=float(row["image_F1Score"]),
+        pixel_auroc=metrics["pixel_auroc"],
+        pixel_f1=metrics["pixel_f1"],
     )
 
 
@@ -146,11 +156,16 @@ def _entry(model: str, version: str, runs: list[BenchmarkRun], timestamp: str = 
         version=version,
         timestamp=timestamp,
         category_count=len(categories),
-        **{
-            key: mean(mean(getattr(run, key) for run in group) for group in categories.values())
-            for key, _, _ in METRICS
-        },
+        image_auroc=mean(mean(run.image_auroc for run in group) for group in categories.values()),
+        image_f1=mean(mean(run.image_f1 for run in group) for group in categories.values()),
+        pixel_auroc=_average(_average(run.pixel_auroc for run in group) for group in categories.values()),
+        pixel_f1=_average(_average(run.pixel_f1 for run in group) for group in categories.values()),
     )
+
+
+def _average(values: Iterable[float | None]) -> float | None:
+    available = [value for value in values if value is not None]
+    return mean(available) if available else None
 
 
 def leaderboard_for_dataset(runs: list[BenchmarkRun], dataset: str, version: str) -> list[LeaderboardEntry]:
@@ -175,7 +190,7 @@ def category_history(runs: list[BenchmarkRun], dataset: str, model: str) -> dict
     for run in selected:
         groups[run.timestamp, run.version].append(run)
     # Legacy rows precede timestamped nightly runs. Pipeline timestamps are
-    # sortable folder timestamps (YYYY-MM-DD_HH-MM-SS).
+    # sortable folder timestamps (YYYY-MM-DD-HH_MM_SS).
     keys = sorted(groups, key=lambda pair: (pair[0], versions.index(pair[1])))
     entries = [_entry(model, version, groups[timestamp, version], timestamp) for timestamp, version in keys]
     labels = [entry.label for entry in entries]

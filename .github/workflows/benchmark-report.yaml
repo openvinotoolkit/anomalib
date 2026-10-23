@@ -1,4 +1,4 @@
-name: Benchmark report
+name: Benchmark checks
 
 on:
   pull_request:
@@ -9,6 +9,9 @@ on:
       - "docs/source/_static/vendor/**"
       - "docs/source/markdown/benchmarks.md"
       - "tests/unit/docs/**"
+      - "tests/unit/pipelines/test_nightly_benchmark.py"
+      - ".github/scripts/benchmark/**"
+      - ".github/workflows/nightly-benchmark.yml"
       - ".github/workflows/benchmark-report.yaml"
   workflow_dispatch:
 
@@ -30,8 +33,14 @@ jobs:
         with:
           enable-cache: false
           version: "0.9.18"
-      - name: Offline data and Sphinx integration tests (no model dependencies)
+      - name: Offline dashboard and Sphinx integration tests (no model dependencies)
         run: >-
           uv run --no-project --python 3.12 --with pytest --with sphinx
           python -m pytest --confcutdir=tests/unit/docs
           tests/unit/docs/test_benchmark_report.py
+      - name: Offline nightly scheduling and publication tests (no GPU or secrets)
+        run: >-
+          uv run --no-project --python 3.12 --with pytest --with pandas
+          --with pyyaml --with huggingface_hub
+          python -m pytest --confcutdir=tests/unit/pipelines
+          tests/unit/pipelines/test_nightly_benchmark.py

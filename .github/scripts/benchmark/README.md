@@ -1,95 +1,125 @@
-# Nightly Benchmark Scripts
+# Nightly benchmarks
 
-Orchestrates a scheduled GPU benchmark against a curated model/dataset allowlist
-and appends results to the Hugging Face dataset
-[`anomalib/benchmarks`](https://huggingface.co/datasets/anomalib/benchmarks).
+Run a bounded subset of model/dataset/category combinations and append measured
+results to [`anomalib/benchmarks`](https://huggingface.co/datasets/anomalib/benchmarks).
+The dashboard consumes this CSV at docs-build time. These are internal development
+runs, not guaranteed performance claims or full-paper training recipes.
 
-## Layout
+## Workflow and credentials
 
-| File                                    | Role                                                           |
-| --------------------------------------- | -------------------------------------------------------------- |
-| `matrix.yaml`                           | Allowlist of models/datasets and `num_categories`              |
-| `orchestrate.py`                        | Select workload → run `anomalib benchmark` → append/upload CSV |
-| `../../workflows/nightly-benchmark.yml` | Cron + `workflow_dispatch` on `[self-hosted, anomalib]`        |
+[`nightly-benchmark.yml`](../../workflows/nightly-benchmark.yml) runs nightly at
+03:00 UTC on the default branch using `[self-hosted, anomalib]`. This must be a
+trusted, dedicated GPU runner, not a runner for untrusted PR code. Dependencies
+come from `uv.lock` (`uv sync --frozen --extra cu130 --extra huggingface`). The
+same Python interpreter runs selection and training; no nested `uv` resolution.
 
-## Secrets
+Configure **repository Actions secret `HF_TOKEN`** with write access scoped to
+`anomalib/benchmarks`. Only the separate publication step receives it. Selection,
+training, dry-runs, and skipped uploads do not need a write token. Uploads require
+the default branch; manual dispatch defaults to skipping publication.
 
-| Secret     | Purpose                                                           |
-| ---------- | ----------------------------------------------------------------- |
-| `HF_TOKEN` | Hugging Face token with **write** access to `anomalib/benchmarks` |
+Failures remain visible in Actions. Debug artifacts are retained for 14 days;
+no issues are opened automatically. The six-hour timeout is a ceiling, not a
+guarantee that all hardware/model combinations will finish in that time.
 
-Add the secret under repository Settings → Secrets and variables → Actions.
+## Caches and artifacts
 
-## Dataset cache
+Datasets persist at `${{ github.workspace }}/../anomalib-datasets`, configured by
+`ANOMALIB_DATASETS_ROOT` (or `--datasets-root` locally). EfficientAd reuses
+`imagenette` within that directory. Missing datasets are downloaded by Anomalib.
 
-Datasets are stored under a persistent on-runner path so downloads are reused:
+Every benchmark executes in a newly created directory under `--work-dir`. Only
+that execution's output is accepted, and all selected categories must be present
+exactly once. A swallowed pipeline failure, partial result, or missing output
+therefore fails validation instead of publishing an earlier run.
 
-```text
-${{ runner.tool_cache }}/anomalib/datasets
-```
+Artifacts include the generated `benchmark.yaml`, execution logs/results,
+`new_results.csv` (validated new measurements), and upload history/combined CSVs.
+The workflow uses a separate work directory per run and attempt.
 
-Override locally with `--datasets-root` or `ANOMALIB_DATASETS_ROOT`. Anomalib
-downloads missing datasets automatically via each datamodule's `prepare_data()`.
+## Selection and training budgets
 
-## Selection rules
+`matrix.yaml` is the allowlist. Missing triples are selected first, grouped by
+model/dataset, up to `num_categories` (default five). Once all triples are covered,
+the least recently measured categories rotate first. Older history without
+`run_timestamp` counts as oldest. Version changes do not reset coverage.
 
-1. Expand `matrix.yaml` into `(model, dataset, category)` triples.
-2. Prefer triples missing from HF `results.csv`.
-3. Pick the `(model, dataset)` with the most remaining categories; take up to
-   `num_categories`.
-4. If every triple exists, pick least-recent using `run_timestamp` attached at
-   upload time from the `runs/benchmark/YYYY-MM-DD-HH_MM_SS/` folder name.
-5. Uniqueness for scheduling is `(model, dataset, category)` — `anomalib_version`
-   is recorded by `BenchmarkJob` but does not re-queue a combo.
-
-## Local dry-run
-
-```bash
-uv sync --extra cu130 --extra huggingface
-
-# Print selected config only
-ANOMALIB_DATASETS_ROOT=./datasets \
-uv run --extra cu130 --extra huggingface \
-  python .github/scripts/benchmark/orchestrate.py \
-  --matrix .github/scripts/benchmark/matrix.yaml \
-  --dry-run
-
-# Run benchmark without uploading
-HF_TOKEN=... \
-uv run --extra cu130 --extra huggingface \
-  python .github/scripts/benchmark/orchestrate.py \
-  --skip-upload \
-  --num-categories 1
-```
-
-## Editing the matrix
+`trainer` provides defaults; per-model `trainer` entries override them. The
+checked-in matrix uses one epoch for Padim/Patchcore, at most 1,000 steps for
+EfficientAd, and ten epochs for STFPM. Keep budgets fixed when comparing runs;
+changing a training budget changes the experiment. Requested trainer settings,
+seed, and model/data config are recorded in the flattened result columns.
 
 ```yaml
 num_categories: 5
 seed: 42
 accelerator: cuda
 models:
-  - Padim
-  - name: EfficientAd
-    init_args:
-      model_size: small
-    data_init_args:
-      train_batch_size: 1
+  - name: Stfpm
+    trainer:
+      max_epochs: 10
 datasets:
-  MVTecAD: {} # all categories
-  Visa:
-    categories: [candle, cashew] # optional subset
+  MVTecAD:
+    categories: [bottle, cable]
+  Visa: {} # all categories
 trainer:
-  max_epochs: 100
+  logger: false
+  enable_checkpointing: false
 ```
 
-String model entries use defaults. Dict entries may set `init_args` and
-`data_init_args` merged into the generated benchmark YAML.
+Model entries may also set `init_args` and `data_init_args` (e.g. EfficientAd needs
+`train_batch_size: 1`). Dataset root/category selection and benchmark-owned trainer
+arguments (`accelerator`, `devices`, `default_root_dir`) must not be overridden.
+Bad matrix types, duplicate model/category names, and unknown categories fail early.
 
-## Manual workflow
+## CSV contract and publication
 
-Use **Actions → Nightly Benchmark → Run workflow**:
+Required columns: `model.class_path`, `data.class_path`, `data.init_args.category`,
+`anomalib_version`, `seed`, `image_AUROC`, `image_F1Score`. Scores must be finite
+and between zero and one. Image-only models may omit `pixel_AUROC` and
+`pixel_F1Score`, or leave them empty; the dashboard displays gaps/dashes.
 
-- `num_categories` — optional override
-- `dry_run` — select only
-- `skip_upload` — run without HF push
+New measurements add `run_timestamp` from the result folder name
+(`YYYY-MM-DD-HH_MM_SS`), `source_commit` (`GITHUB_SHA`) and `workflow_run_id`
+(`GITHUB_RUN_ID`), when available. Historical rows need not have these fields.
+
+The full CSV is intentionally append-only, without a rolling retention limit.
+Publication re-downloads history at a resolved immutable HF commit, validates
+both inputs, and uploads with `parent_commit` set to that revision. Authentication,
+network, corrupt history, and concurrent-write errors fail closed. Only an absent
+`results.csv` in an accessible repository initializes empty history.
+
+The measurement identity is `(model, dataset, category, run_timestamp, seed)`.
+Retrying already-published identities is a no-op; distinct timestamps remain
+separate observations. Resolve a concurrent-update failure by retrying publication
+of the saved `new_results.csv`; it is not necessary to rerun training.
+
+## Local validation and manual runs
+
+```bash
+uv sync --frozen --extra cu130 --extra huggingface
+
+# Select and print a config; no training or write secret.
+uv run --frozen --no-sync python .github/scripts/benchmark/orchestrate.py \
+  --dry-run --work-dir ./results/nightly-preview
+
+# Run one selected category and stage output; no upload or write secret.
+uv run --frozen --no-sync python .github/scripts/benchmark/orchestrate.py \
+  --num-categories 1 --skip-upload --work-dir ./results/nightly-preview
+
+# Separate publication command, only when intentionally publishing measured data.
+# HF_TOKEN must be set in the environment for this command.
+uv run --frozen --no-sync python .github/scripts/benchmark/orchestrate.py \
+  --upload-results ./results/nightly-preview/new_results.csv \
+  --work-dir ./results/nightly-preview
+```
+
+In **Actions → Nightly Benchmark → Run workflow**, choose `dry_run` or leave
+`skip_upload` enabled for validation. Preview-branch dispatches never publish.
+
+Offline scheduler tests need no GPU, dataset downloads, or credentials:
+
+```bash
+uv run --no-project --with pytest --with pandas --with pyyaml --with huggingface_hub \
+  python -m pytest --confcutdir=tests/unit/pipelines tests/unit/pipelines/test_nightly_benchmark.py
+```
