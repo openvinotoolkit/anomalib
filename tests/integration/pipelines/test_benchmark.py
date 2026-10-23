@@ -11,8 +11,10 @@ import pytest
 import yaml
 
 from anomalib import __version__
+from anomalib.engine import Engine
 from anomalib.pipelines import Benchmark
 from anomalib.pipelines.benchmark.job import BenchmarkJob
+from tests.integration.test_task_types import DummyClassificationModel
 
 
 @patch("anomalib.pipelines.benchmark.job.Engine", return_value=MagicMock(test=MagicMock(return_value=[{"test": 1}])))
@@ -50,3 +52,11 @@ def test_collect_image_only_results() -> None:
     results = BenchmarkJob.collect([{"image_AUROC": 0.9}, {"image_AUROC": 0.8, "pixel_AUROC": 0.7}])
     assert len(results) == 2
     assert pd.isna(results.iloc[0]["pixel_AUROC"])
+
+
+def test_nightly_trainer_setup(tmp_path: Path) -> None:
+    """Nightly defaults construct a real Trainer compatible with Engine's callbacks."""
+    matrix = yaml.safe_load(Path(".github/scripts/benchmark/matrix.yaml").read_text(encoding="utf-8"))
+    engine = Engine(accelerator="cpu", devices=1, default_root_dir=tmp_path, **matrix["trainer"])
+    engine._setup_trainer(DummyClassificationModel())  # noqa: SLF001 - exercise real Trainer construction
+    assert engine.checkpoint_callback is not None

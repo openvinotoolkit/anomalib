@@ -28,4 +28,3 @@ datasets:
 trainer:
   max_epochs: 100
   logger: false
-  enable_checkpointing: false

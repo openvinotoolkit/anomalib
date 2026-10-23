@@ -64,12 +64,13 @@ datasets:
   Visa: {} # all categories
 trainer:
   logger: false
-  enable_checkpointing: false
 ```
 
 Model entries may also set `init_args` and `data_init_args` (e.g. EfficientAd needs
 `train_batch_size: 1`). Dataset root/category selection and benchmark-owned trainer
 arguments (`accelerator`, `devices`, `default_root_dir`) must not be overridden.
+Leave checkpointing enabled: Engine installs a checkpoint callback. The benchmark
+job's temporary directory contains checkpoints and is cleaned up after the job.
 Bad matrix types, duplicate model/category names, and unknown categories fail early.
 
 ## CSV contract and publication
