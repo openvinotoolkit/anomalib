@@ -66,7 +66,7 @@ print(item.gt_mask.shape)       # Segmentation mask (if available)
 For video anomaly detection:
 
 ```python
-from anomalib.data.datasets import Avenue
+from anomalib.data.datasets import AvenueDataset
 
 # Create video dataset
 dataset = AvenueDataset(

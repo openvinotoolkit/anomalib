@@ -154,6 +154,13 @@ video/index
 ```{grid} 2
 :gutter: 2
 
+:::{grid-item-card} ADAM 3D
+:link: depth/adam_3d
+:link-type: doc
+
+3D-ADAM (3D Anomaly Detection in Additive Manufacturing) dataset datamodule.
+:::
+
 :::{grid-item-card} MVTec 3D
 :link: depth/mvtec_3d
 :link-type: doc

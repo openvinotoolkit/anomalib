@@ -18,7 +18,7 @@ In the anomaly classification stage, a shallow linear autoencoder is trained on 
 
 ## Usage
 
-`anomalib train --model Fre --data anomalib.data.MVTec`
+`anomalib train --model Fre --data anomalib.data.MVTecAD`
 
 ## Benchmark
 

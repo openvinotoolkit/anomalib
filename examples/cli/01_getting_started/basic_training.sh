@@ -27,7 +27,7 @@ echo -e "\nTraining with config file..."
 anomalib train --config path/to/config.yaml
 
 # 4. Export a trained model into OpenVINO
-echo .e "\nExporting model into OpenVINO..."
+echo -e "\nExporting model into OpenVINO..."
 anomalib export --model Patchcore \
         --ckpt_path /path/to/model.ckpt \
-        --export_type OPENVINO
+        --export_type openvino
