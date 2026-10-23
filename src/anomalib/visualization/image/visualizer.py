@@ -178,7 +178,7 @@ class ImageVisualizer(Visualizer):
         output_dir: str | Path | None = None,
     ) -> None:
         super().__init__()
-        self.fields = fields or ["image", "gt_mask"]
+        self.fields = fields
         self.overlay_fields = overlay_fields or [("image", ["anomaly_map"]), ("image", ["pred_mask"])]
         self.field_size = field_size
         self.fields_config = {**DEFAULT_FIELDS_CONFIG, **(fields_config or {})}
