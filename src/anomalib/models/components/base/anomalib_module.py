@@ -60,13 +60,57 @@ from anomalib.metrics import AUROC, F1Score
 from anomalib.metrics.evaluator import Evaluator
 from anomalib.post_processing import PostProcessor
 from anomalib.pre_processing import PreProcessor
-from anomalib.utils.path import paths_to_strings
+from anomalib.utils.path import PathValue, paths_to_strings
 from anomalib.utils.serialization import anomalib_safe_globals
 from anomalib.visualization import ImageVisualizer, Visualizer
 
 from .export_mixin import ExportMixin
 
 logger = logging.getLogger(__name__)
+
+
+def _lists_to_tuples(value: object) -> object:
+    """Convert lists nested in a hyperparameter value to tuples.
+
+    Configuration files produce lists where Python code usually passes tuples,
+    for example PatchCore's ``layers``. Both describe the same model, so they
+    are made equal before comparison.
+
+    Args:
+        value (object): Hyperparameter value from a checkpoint or a live model.
+
+    Returns:
+        object: The value with every list and tuple converted to a tuple.
+    """
+    if isinstance(value, (list, tuple)):
+        return tuple(_lists_to_tuples(item) for item in value)
+    if isinstance(value, dict):
+        return {key: _lists_to_tuples(item) for key, item in value.items()}
+    return value
+
+
+def _hyperparameters_match(saved: PathValue, current: PathValue) -> bool:
+    """Check whether a saved hyperparameter matches the live model's value.
+
+    Paths are compared as strings, as they are stored in checkpoints, and lists
+    are compared as tuples. Values that cannot be reduced to a single boolean,
+    such as multi-element tensors, are treated as matching so that no false
+    warning is raised.
+
+    Args:
+        saved (PathValue): Value stored in the checkpoint.
+        current (PathValue): Value on the model instance.
+
+    Returns:
+        bool: ``True`` if the values are equivalent or cannot be compared.
+    """
+    try:
+        # ``==`` on tensors and arrays is elementwise, and ``bool()`` of the result raises
+        # ``RuntimeError`` for tensors and ``ValueError`` for arrays.
+        matches = bool(_lists_to_tuples(paths_to_strings(saved)) == _lists_to_tuples(paths_to_strings(current)))
+    except (RuntimeError, ValueError):
+        return True
+    return matches
 
 
 class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
@@ -199,13 +243,37 @@ class AnomalibModule(ExportMixin, pl.LightningModule, ABC):
                 )
 
     def on_load_checkpoint(self, checkpoint: dict[str, Any]) -> None:
-        """Restore component configuration from safe plain data."""
+        """Restore component configuration and report constructor argument mismatches."""
         super().on_load_checkpoint(checkpoint)
+        self._warn_on_hyperparameter_mismatch(checkpoint.get("hyper_parameters"))
         self._restore_component_enabled_flags(checkpoint.get("anomalib_components_enabled"))
         for checkpoint_key, component in self._checkpointable_components().items():
             config = checkpoint.get(checkpoint_key)
             if config is not None and hasattr(component, "load_checkpoint_config"):
                 component.load_checkpoint_config(config)
+
+    def _warn_on_hyperparameter_mismatch(self, saved: dict[str, Any] | None) -> None:
+        """Warn when a checkpoint was saved with different constructor arguments.
+
+        Args:
+            saved (dict[str, Any] | None): ``hyper_parameters`` from the
+                checkpoint, or ``None`` if the checkpoint has none.
+        """
+        if not saved:
+            return
+        current = dict(self.hparams)
+        # ``pre_trained`` only chooses the initial weights, which the checkpoint's
+        # ``state_dict`` replaces, so a different value is expected.
+        compared = (saved.keys() & current.keys()) - {"pre_trained"}
+        # Only names are logged: values can be secrets, such as ``api_key`` in ``VlmAd``.
+        mismatches = [key for key in sorted(compared) if not _hyperparameters_match(saved[key], current[key])]
+        if not mismatches:
+            return
+        logger.warning(
+            "%s was created with arguments that differ from the checkpoint: %s",
+            self.__class__.__name__,
+            ", ".join(mismatches),
+        )
 
     def _restore_component_enabled_flags(self, flags: dict[str, bool] | None) -> None:
         """Apply plain-boolean enable/disable flags saved with the checkpoint.
