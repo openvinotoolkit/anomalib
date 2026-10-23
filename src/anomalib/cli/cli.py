@@ -7,7 +7,10 @@ This module provides the `AnomalibCLI` class for configuring and running Anomali
 The CLI supports configuration via both command line arguments and configuration files (.yaml or .json).
 """
 
+import ast
+import importlib
 import logging
+import sys
 from collections.abc import Callable, Sequence
 from functools import partial
 from pathlib import Path
@@ -73,7 +76,9 @@ class AnomalibCLI:
         self.parser = self.init_parser()
         self.subcommand_parsers: dict[str, ArgumentParser] = {}
         self.subcommand_method_arguments: dict[str, list[str]] = {}
+        self._pre_processor_kwargs: dict[str, Any] = {}
         self.add_subcommands()
+        args = self._extract_pre_processor_args(args)
         self.config = self.parser.parse_args(args=args)
         self.subcommand = self.config["subcommand"]
         if _LIGHTNING_AVAILABLE:
@@ -299,6 +304,15 @@ class AnomalibCLI:
         But for subcommands we do not want to instantiate any trainer specific classes such as datamodule, model, etc
         This is because the subcommand is responsible for instantiating and executing code based on the passed config
         """
+        patch_info = self._patch_configure_pre_processor() if self._pre_processor_kwargs else None
+        try:
+            self._instantiate_classes()
+        finally:
+            if patch_info is not None:
+                self._unpatch_configure_pre_processor(patch_info)
+
+    def _instantiate_classes(self) -> None:
+        """Internal instantiation logic, called within the pre-processor patch context."""
         if self.config["subcommand"] in {*self.subcommands(), "predict"}:  # trainer commands
             # since all classes are instantiated, the LightningCLI also creates an unused ``Trainer`` object.
             # the minor change here is that engine is instantiated instead of trainer
@@ -469,6 +483,106 @@ class AnomalibCLI:
             return self.parser
         # return the subcommand parser for the subcommand passed
         return self.subcommand_parsers[subcommand]
+
+    def _extract_pre_processor_args(self, args: Sequence[str] | None) -> list[str]:
+        """Extract ``--model.pre_processor.*`` arguments before jsonargparse parsing.
+
+        jsonargparse rejects ``--model.pre_processor.image_size`` because
+        ``pre_processor`` is typed as ``nn.Module | bool``.  This method strips
+        those arguments from the raw CLI list and stores them in
+        ``self._pre_processor_kwargs`` so they can be forwarded to
+        ``configure_pre_processor`` later.
+
+        Args:
+            args: Raw CLI arguments, or ``None`` to read from ``sys.argv``.
+
+        Returns:
+            list[str]: CLI arguments with ``--model.pre_processor.*`` entries removed.
+        """
+        if args is None:
+            args = sys.argv[1:]
+        args = list(args)
+
+        prefix = "--model.pre_processor."
+        indices_to_remove: list[int] = []
+        for i, arg in enumerate(args):
+            if not arg.startswith(prefix):
+                continue
+            if "=" in arg:
+                # --model.pre_processor.image_size=512
+                key, val = arg[len(prefix) :].split("=", 1)
+                self._pre_processor_kwargs[key] = self._parse_cli_value(val)
+                indices_to_remove.append(i)
+            elif i + 1 < len(args):
+                # --model.pre_processor.image_size 512
+                key = arg[len(prefix) :]
+                self._pre_processor_kwargs[key] = self._parse_cli_value(args[i + 1])
+                indices_to_remove.extend([i, i + 1])
+
+        # Convert int image_size to (h, w) tuple for consistency
+        if "image_size" in self._pre_processor_kwargs:
+            val = self._pre_processor_kwargs["image_size"]
+            if isinstance(val, int):
+                self._pre_processor_kwargs["image_size"] = (val, val)
+            elif isinstance(val, list):
+                self._pre_processor_kwargs["image_size"] = tuple(val)
+
+        for idx in reversed(indices_to_remove):
+            args.pop(idx)
+        return args
+
+    @staticmethod
+    def _parse_cli_value(val: str) -> Any:  # noqa: ANN401
+        """Parse a CLI string value into a Python object using literal evaluation."""
+        try:
+            return ast.literal_eval(val)
+        except (ValueError, SyntaxError):
+            return val
+
+    def _patch_configure_pre_processor(self) -> tuple[type, bool, Any] | None:
+        """Patch the model class's ``configure_pre_processor`` with extracted CLI kwargs.
+
+        Uses ``functools.partial`` to bind the extracted pre-processor arguments
+        (e.g. ``image_size``) to the model's ``configure_pre_processor`` method
+        before the model is instantiated.  This follows the same pattern as
+        Lightning CLI's ``configure_optimizers`` override.
+
+        Returns:
+            Tuple of (model_class, had_own_method, original_descriptor) for
+            restoration, or ``None`` if patching was not applicable.
+        """
+        subcommand = self.config["subcommand"]
+        model_cfg = self.config.get(subcommand, self.config).get("model")
+        if model_cfg is None:
+            return None
+
+        class_path = model_cfg.get("class_path") if hasattr(model_cfg, "get") else getattr(model_cfg, "class_path", None)
+        if class_path is None:
+            return None
+
+        # Resolve the model class
+        module_path, class_name = class_path.rsplit(".", 1)
+        model_class = getattr(importlib.import_module(module_path), class_name)
+
+        # Save the original descriptor so we can restore it after instantiation
+        has_own = "configure_pre_processor" in model_class.__dict__
+        original_descriptor = model_class.__dict__.get("configure_pre_processor")
+
+        # Get the resolved callable (handles both @staticmethod and @classmethod)
+        callable_method = model_class.configure_pre_processor
+        patched = partial(callable_method, **self._pre_processor_kwargs)
+        model_class.configure_pre_processor = staticmethod(patched)
+
+        return (model_class, has_own, original_descriptor)
+
+    @staticmethod
+    def _unpatch_configure_pre_processor(patch_info: tuple[type, bool, Any]) -> None:
+        """Restore the original ``configure_pre_processor`` after model instantiation."""
+        model_class, has_own, original_descriptor = patch_info
+        if has_own:
+            model_class.configure_pre_processor = original_descriptor
+        else:
+            delattr(model_class, "configure_pre_processor")
 
     def _configure_optimizers_method_to_model(self) -> None:
         from lightning.pytorch.cli import LightningCLI, instantiate_class
