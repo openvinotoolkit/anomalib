@@ -1,7 +1,9 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 from collections.abc import Callable, Sequence
+
+from loguru import logger
 
 from pydantic_models import Sink, SinkType
 from services.dispatchers import Dispatcher, FolderDispatcher, MqttDispatcher, WebhookDispatcher
@@ -18,12 +20,18 @@ class DispatchService:
 
     @classmethod
     def _get_destination(cls, output_config: Sink) -> Dispatcher | None:
-        # TODO handle exceptions: if some output cannot be initialized, exclude it and raise a warning
         factory = cls._dispatcher_registry.get(output_config.sink_type)
         if factory is None:
-            raise ValueError(f"Unrecognized sink type: {output_config.sink_type}")
+            logger.warning(f"Unrecognized sink type: {output_config.sink_type}")
+            return None
 
-        return factory(output_config)
+        try:
+            return factory(output_config)
+        except Exception:
+            logger.opt(exception=True).warning(
+                f"Failed to initialize dispatcher for sink type: {output_config.sink_type}"
+            )
+            return None
 
     @classmethod
     def get_destinations(cls, output_configs: Sequence[Sink]) -> list[Dispatcher]:
