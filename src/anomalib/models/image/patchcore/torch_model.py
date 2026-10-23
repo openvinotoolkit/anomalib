@@ -1,4 +1,4 @@
-# Copyright (C) 2022-2025 Intel Corporation
+# Copyright (C) 2022-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """PyTorch model for the PatchCore model implementation.
@@ -323,7 +323,8 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
 
         Uses brute force search with Euclidean distance to find the closest
         matches in the memory bank for each input embedding. Processes embeddings
-        in chunks to reduce memory usage for large embedding sets.
+        in chunks to reduce memory usage for large embedding sets, except while
+        exporting, where all embeddings are processed at once.
 
         Args:
             embedding (torch.Tensor): Query embeddings to find neighbors for.
@@ -344,7 +345,10 @@ class PatchcoreModel(DynamicBufferMixin, nn.Module):
             (torch.Size([100, 5]), torch.Size([100, 5]))
         """
         n = embedding.shape[0]
-        chunk_size = DEFAULT_CHUNK_SIZE
+        # Rows are searched independently, so chunking only bounds memory. When exporting, search all rows
+        # at once: branching on the row count would fix the exported batch size to the one used for tracing.
+        # ``is_exporting`` rather than ``is_compiling`` keeps chunking under ``torch.compile``.
+        chunk_size = n if torch.compiler.is_exporting() else DEFAULT_CHUNK_SIZE
 
         if n <= chunk_size:
             # Small embedding set: process all at once
