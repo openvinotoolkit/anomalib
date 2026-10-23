@@ -6,11 +6,13 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pandas as pd
 import pytest
 import yaml
 
 from anomalib import __version__
 from anomalib.pipelines import Benchmark
+from anomalib.pipelines.benchmark.job import BenchmarkJob
 
 
 @patch("anomalib.pipelines.benchmark.job.Engine", return_value=MagicMock(test=MagicMock(return_value=[{"test": 1}])))
@@ -41,3 +43,10 @@ def test_benchmark_pipeline(
         assert "anomalib_version" in results.columns
         assert (results["anomalib_version"] == __version__).all()
         assert engine.call_args.kwargs.get("max_epochs") == (trainer or {}).get("max_epochs")
+
+
+def test_collect_image_only_results() -> None:
+    """Image-only and segmentation results can share a CSV without inventing scores."""
+    results = BenchmarkJob.collect([{"image_AUROC": 0.9}, {"image_AUROC": 0.8, "pixel_AUROC": 0.7}])
+    assert len(results) == 2
+    assert pd.isna(results.iloc[0]["pixel_AUROC"])

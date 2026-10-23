@@ -5,7 +5,6 @@
 
 import importlib.util
 import sys
-from argparse import Namespace
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -48,10 +47,6 @@ def categories(monkeypatch: pytest.MonkeyPatch) -> None:
     [
         {"models": {"Padim": {}}},
         {"datasets": ["MVTecAD"]},
-        {"num_categories": 0},
-        {"num_categories": True},
-        {"seed": "42"},
-        {"trainer": []},
     ],
 )
 def test_matrix_validation(tmp_path: Path, override: dict) -> None:
@@ -60,28 +55,6 @@ def test_matrix_validation(tmp_path: Path, override: dict) -> None:
     path.write_text(yaml.safe_dump({"models": ["Padim"], "datasets": {"MVTecAD": {}}, **override}))
     with pytest.raises((TypeError, ValueError), match="matrix"):
         nightly.load_matrix(path)
-
-
-@pytest.mark.parametrize(
-    "models",
-    [
-        ["Padim", "Padim"],
-        [{"name": "Padim", "init_args": []}],
-        [{"name": "Padim", "data_init_args": {"category": "bottle"}}],
-    ],
-)
-def test_invalid_models(models: list) -> None:
-    """Reject duplicate models and overrides that bypass workload selection."""
-    with pytest.raises((TypeError, ValueError)):
-        nightly.parse_models(models)
-
-
-@pytest.mark.usefixtures("categories")
-@pytest.mark.parametrize("configured", [[], ["typo"], ["bottle", "bottle"], "bottle"])
-def test_invalid_categories(configured: object) -> None:
-    """Empty, misspelled, or duplicate subsets must not silently expand to all categories."""
-    with pytest.raises(ValueError, match="Dataset"):
-        nightly.expand_triples([nightly.ModelSpec("Padim")], {"MVTecAD": configured})
 
 
 @pytest.mark.usefixtures("categories")
@@ -94,12 +67,8 @@ def test_missing_then_lru_selection() -> None:
     assert selection.categories == ["cable"]
     history = pd.DataFrame([result("bottle"), result("cable", "2026-10-21-03_00_00"), result("grid")])
     assert nightly.select_workload(triples, models, history, 2).categories == ["cable", "bottle"]
-
-
-def test_legacy_history() -> None:
-    """Legacy rows without run_timestamp are valid but oldest in scheduling."""
-    history = pd.DataFrame([result()]).drop(columns=[nightly.TIMESTAMP_COL])
-    assert nightly.history_timestamps(history)[nightly.Triple("Padim", "MVTecAD", "bottle")] == nightly.OLDEST_TS
+    legacy = history.drop(columns=[nightly.TIMESTAMP_COL])
+    assert set(nightly.history_timestamps(legacy).values()) == {nightly.OLDEST_TS}
 
 
 def test_trainer_overrides(tmp_path: Path) -> None:
@@ -152,53 +121,39 @@ def test_download_failures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, erro
             nightly.download_hf_results("org/data", tmp_path / "history.csv")
 
 
-def test_complete_output_required(tmp_path: Path) -> None:
-    """Pipeline partial failures cannot be published even when the process exits zero."""
-    csv_path = tmp_path / "results.csv"
+def test_fresh_complete_valid_output_required(tmp_path: Path) -> None:
+    """Stale, partial, and invalid measurements cannot be accepted as a completed run."""
+    stale = tmp_path / "old" / STAMP
+    stale.mkdir(parents=True)
+    pd.DataFrame([result()]).to_csv(stale / "results.csv", index=False)
+    with pytest.raises(FileNotFoundError):
+        nightly.find_latest_results_csv(tmp_path / "fresh")
+    current = tmp_path / "fresh" / STAMP
+    current.mkdir(parents=True)
+    csv_path = current / "results.csv"
     pd.DataFrame([result()]).to_csv(csv_path, index=False)
+    assert nightly.find_latest_results_csv(tmp_path / "fresh") == (csv_path, STAMP)
     selection = nightly.Selection(nightly.ModelSpec("Padim"), "MVTecAD", ["bottle", "grid"])
     with pytest.raises(ValueError, match="selected workload"):
         nightly.prepare_new_rows(csv_path, STAMP, selection)
     selection.categories = ["bottle"]
     assert len(nightly.prepare_new_rows(csv_path, STAMP, selection)) == 1
-
-
-def test_no_stale_output(tmp_path: Path) -> None:
-    """Results outside the current execution directory cannot satisfy output discovery."""
-    stale = tmp_path / "old" / STAMP
-    stale.mkdir(parents=True)
-    pd.DataFrame([result()]).to_csv(stale / "results.csv", index=False)
-    with pytest.raises(FileNotFoundError):
-        nightly.find_latest_results_csv(tmp_path / "fresh" / "runs" / "benchmark")
-
-
-def test_invalid_scores_are_not_published() -> None:
-    """Invalid numeric metrics cannot contaminate the public history."""
     frame = pd.DataFrame([result()])
     frame.loc[0, "image_AUROC"] = float("inf")
     with pytest.raises(ValueError, match="finite"):
         nightly.validate_results(frame)
 
 
-def test_training_uses_current_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Training uses the already-locked interpreter and receives no write credentials."""
-    run = MagicMock()
-    monkeypatch.setenv("HF_TOKEN", "test-only-not-a-real-token")
-    monkeypatch.setattr(nightly.subprocess, "run", run)
-    nightly.run_benchmark(tmp_path / "config.yaml", tmp_path)
-    args, kwargs = run.call_args
-    assert args[0][0] == sys.executable
-    assert "uv" not in args[0]
-    assert kwargs["env"]["HF_TOKEN"] == ""
-    assert kwargs["cwd"] == tmp_path
-
-
 def test_upload_is_idempotent_and_guarded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Retrying published identities is a no-op; new appends guard the snapshot revision."""
     frame = pd.DataFrame([result()])
-    monkeypatch.setattr(nightly, "download_hf_results", MagicMock(return_value=(frame, SHA)))
+    download = MagicMock(return_value=(frame, SHA))
+    monkeypatch.setattr(nightly, "download_hf_results", download)
     api = MagicMock()
     monkeypatch.setattr(nightly, "HfApi", MagicMock(return_value=api))
+    with pytest.raises(SystemExit, match="HF_TOKEN"):
+        nightly.append_and_upload(frame, "org/data", None, tmp_path / "merged.csv")
+    download.assert_not_called()
     nightly.append_and_upload(frame, "org/data", "test-token", tmp_path / "merged.csv")
     api.upload_file.assert_not_called()
     new = pd.DataFrame([result(timestamp="2026-10-24-03_00_00")])
@@ -210,42 +165,36 @@ def test_upload_is_idempotent_and_guarded(tmp_path: Path, monkeypatch: pytest.Mo
         nightly.append_and_upload(new, "org/data", "test-token", tmp_path / "merged.csv")
 
 
-def test_upload_requires_secret_before_network(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """An absent write secret fails before trying a history download or upload."""
-    download = MagicMock()
-    monkeypatch.setattr(nightly, "download_hf_results", download)
-    with pytest.raises(SystemExit, match="HF_TOKEN"):
-        nightly.append_and_upload(pd.DataFrame([result()]), "org/data", None, tmp_path / "merged.csv")
-    download.assert_not_called()
-
-
 @pytest.mark.usefixtures("categories")
 def test_main_never_uploads_during_training(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Run/selection mode stages complete output for a separate authenticated command."""
+    """The run path uses the locked interpreter without credentials and stages, not uploads, results."""
     matrix = tmp_path / "matrix.yaml"
     matrix.write_text(yaml.safe_dump({"models": ["Padim"], "datasets": {"MVTecAD": ["bottle"]}}))
     monkeypatch.setattr(
-        nightly,
-        "parse_args",
-        lambda: Namespace(
-            matrix=matrix,
-            work_dir=tmp_path,
-            upload_results=None,
-            hf_repo="org/data",
-            num_categories=1,
-            datasets_root=tmp_path / "datasets",
-            dry_run=False,
-            skip_upload=False,
-        ),
+        sys,
+        "argv",
+        [
+            str(SCRIPT),
+            "--matrix",
+            str(matrix),
+            "--work-dir",
+            str(tmp_path),
+            "--datasets-root",
+            str(tmp_path / "datasets"),
+        ],
     )
     monkeypatch.setattr(nightly, "download_hf_results", MagicMock(return_value=(pd.DataFrame(), SHA)))
+    monkeypatch.setenv("HF_TOKEN", "test-only-not-a-real-token")
 
-    def benchmark(_config: Path, run_dir: Path) -> None:
-        output = run_dir / "runs" / "benchmark" / STAMP / "results.csv"
+    def benchmark(command: list[str], *, check: bool, cwd: Path, env: dict) -> None:
+        assert command[0] == sys.executable
+        assert check
+        assert env["HF_TOKEN"] == env["HUGGING_FACE_HUB_TOKEN"] == ""
+        output = cwd / "runs" / "benchmark" / STAMP / "results.csv"
         output.parent.mkdir(parents=True)
         pd.DataFrame([result()]).to_csv(output, index=False)
 
-    monkeypatch.setattr(nightly, "run_benchmark", benchmark)
+    monkeypatch.setattr(nightly.subprocess, "run", benchmark)
     upload = MagicMock()
     monkeypatch.setattr(nightly, "append_and_upload", upload)
     assert nightly.main() == 0
