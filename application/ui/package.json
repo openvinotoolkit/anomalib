@@ -110,7 +110,7 @@
             "lodash": "4.18.1"
         },
         "monaco-editor": {
-            "dompurify": "3.4.16"
+            "dompurify": "3.4.17"
         },
         "openapi-typescript": {
             "minimatch": "10.2.5"
