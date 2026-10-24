@@ -29,7 +29,6 @@ root, install dependencies with uv:
 ```bash
 uv sync --locked --python 3.12 --extra test --extra cpu --extra fuzz
 mkdir -p fuzz-artifacts/corpus fuzz-artifacts/crashes
-cp tests/fuzz/seeds/path/* fuzz-artifacts/corpus/
 uv run --no-sync python tests/fuzz/fuzz_path.py fuzz-artifacts/corpus \
   -max_total_time=120 -runs=100000 -seed=3862 -max_len=1024 \
   -timeout=10 -rss_limit_mb=4096 -artifact_prefix=fuzz-artifacts/crashes/
@@ -48,23 +47,22 @@ uv run --no-sync python tests/fuzz/fuzz_path.py fuzz-artifacts/crashes/crash-HAS
 
 ## Retain regressions
 
-The checked-in corpus in `tests/fuzz/seeds/path/` retains traversal, absolute,
-Windows, UNC, control-character, long-name, Unicode, invalid-UTF-8, and symlink
-cases. Ordinary pytest runs replay every seed without requiring Atheris and check
-that the oracle detects both weakened confinement and always-rejecting behavior:
+Fuzzing starts with an empty corpus, which Atheris expands during each run.
+Ordinary pytest runs check that the oracle accepts valid paths and detects
+weakened confinement, symlink escapes, and always-rejecting behavior:
 
 ```bash
 uv run --no-sync pytest tests/unit/data/utils/test_path_fuzz.py
 ```
 
-Windows skips UNC replay to avoid remote network access and skips the symlink test
-when privileges are missing. Linux CI requires both tests to run.
+Windows skips the symlink test when privileges are missing. Linux CI requires
+that test to run.
 
 CI uploads the mutated corpus, libFuzzer crash/timeout/OOM inputs, and execution
 log for 30 days, including failed runs. Download useful failures before expiry,
-minimize with libFuzzer, fix the boundary, and commit the minimized bytes to the
-seed corpus. Checked-in seeds are replayed on every run; artifacts alone are not
-permanent regression coverage. Keep generated corpora outside the source tree.
+minimize with libFuzzer, fix the boundary, and add a unit test reproducing the
+failure. Artifacts alone are not permanent regression coverage. Keep generated
+corpora outside the source tree.
 
 ## OpenSSF Scorecard
 

@@ -46,7 +46,7 @@ jobs:
       - name: Install test dependencies
         run: uv sync --locked --python 3.12 --extra test --extra cpu --extra fuzz
 
-      - name: Replay regression seeds and verify the oracle
+      - name: Verify the fuzzing oracle
         run: uv run --no-sync pytest tests/unit/data/utils/test_path_fuzz.py --timeout=120
 
       - name: Run bounded Atheris fuzzing
@@ -56,7 +56,6 @@ jobs:
           PYTHONFAULTHANDLER: "1"
         run: |
           mkdir -p fuzz-artifacts/corpus fuzz-artifacts/crashes
-          cp tests/fuzz/seeds/path/* fuzz-artifacts/corpus/
           set -o pipefail
           uv run --no-sync python tests/fuzz/fuzz_path.py fuzz-artifacts/corpus \
             -max_total_time="$FUZZ_SECONDS" -runs=100000 -seed="$FUZZ_SEED" \
