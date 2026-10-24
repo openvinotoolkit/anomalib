@@ -236,6 +236,49 @@ class Patchcore(MemoryBankMixin, AnomalibModule):
         """
         return
 
+    def _reserve_embedding_store(self, batch_images: torch.Tensor) -> None:
+        """Best-effort exact reservation of the embedding staging tensor.
+
+        The row count each image contributes is only known once embeddings
+        have actually flowed (it depends on the backbone, input size, and
+        optional tiler), so this is called from ``training_step`` with the
+        first batch: the ratio of embedding rows to batch images measured on
+        that batch sizes the reservation for the whole run.
+
+        Every failure path (no trainer, no dataloader, exotic sampler, world
+        size mismatch) only costs the memory optimization, never correctness:
+        the store silently stays in list mode, which behaves exactly like the
+        historical implementation.
+
+        Args:
+            batch_images (torch.Tensor): The batch tensor from the first
+                training step, used only to derive rows-per-image.
+        """
+        store = self.model.embedding_store
+        if store.num_batches == 0 or not store.is_list_mode:
+            return
+        try:
+            dataset = self.trainer.train_dataloader.dataset
+            num_images = len(dataset)
+            world_size = self.trainer.world_size
+            rows_in_store = store.num_rows
+            batch_images_count = batch_images.shape[0]
+            if num_images <= 0 or batch_images_count <= 0 or world_size <= 0:
+                return
+            rows_per_image = rows_in_store / batch_images_count
+            reserved = int(num_images * rows_per_image / world_size)
+            first = store.first_chunk
+            if first is None or reserved < rows_in_store:
+                return
+            store.upgrade(
+                num_rows=reserved,
+                num_features=first.shape[1],
+                device=first.device,
+                dtype=first.dtype,
+            )
+        except Exception:  # noqa: BLE001  # pragma: no cover - best-effort reservation
+            logger.debug("Could not reserve exact embedding capacity; falling back to list staging.")
+
     def training_step(self, batch: Batch, *args, **kwargs) -> None:
         """Generate feature embedding of the batch.
 
@@ -248,11 +291,12 @@ class Patchcore(MemoryBankMixin, AnomalibModule):
             torch.Tensor: Dummy loss tensor for Lightning compatibility
 
         Note:
-            The method stores embeddings in ``self.embeddings`` for later use in
-            ``fit()``.
+            The method writes the batch embedding into the model's write-through
+            embedding store, which later feeds ``fit()``.
         """
         del args, kwargs  # These variables are not used.
         _ = self.model(batch.image)
+        self._reserve_embedding_store(batch.image)
         # Return a dummy loss tensor
         return torch.tensor(0.0, requires_grad=True, device=self.device)
 

@@ -49,6 +49,16 @@ print([info["module"] for info in model.feature_info.info])
 Unknown layer names may be ignored with a warning. If no valid layers remain after
 filtering, PatchCore will later fail because no features are extracted.
 
+## Memory
+
+During training, patch embeddings are copied into a single preallocated staging
+tensor as each batch arrives (see
+`anomalib.models.image.patchcore.embedding_store`). The staging capacity is
+reserved exactly from the training dataloader length after the first batch, so
+no second full-size copy of the embedding matrix is materialized at fit time.
+If the training loop cannot provide a usable dataloader length, the store
+falls back to the historical per-batch list, which is always correct.
+
 ```{eval-rst}
 .. automodule:: anomalib.models.image.patchcore.lightning_model
    :members:
