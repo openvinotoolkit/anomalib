@@ -88,6 +88,8 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 - ``synthetic``: Generate synthetic anomalies
             Defaults to ``None``.
         test_split_ratio (float | None): Fraction of data to use for testing.
+            A ratio of ``0`` keeps every normal training image in the training
+            split when the test split has no normal images to sample.
             Defaults to ``None``.
         seed (int | None): Random seed for reproducible splitting.
             Defaults to ``None``.
@@ -113,7 +115,7 @@ class AnomalibDataModule(LightningDataModule, ABC):
         self.eval_batch_size = eval_batch_size
         self.num_workers = num_workers
         self.test_split_mode = TestSplitMode(test_split_mode) if test_split_mode else TestSplitMode.NONE
-        self.test_split_ratio = test_split_ratio or 0.5
+        self.test_split_ratio = 0.5 if test_split_ratio is None else test_split_ratio
         self.val_split_mode = ValSplitMode(val_split_mode) if val_split_mode else ValSplitMode.NONE
         self.val_split_ratio = val_split_ratio or 0.5
         self.seed = seed
@@ -309,12 +311,26 @@ class AnomalibDataModule(LightningDataModule, ABC):
                 "No normal test images found. Sampling from training set using ratio of %0.2f",
                 self.test_split_ratio,
             )
-            if self.test_split_ratio is not None:
-                self.train_data, normal_test_data = random_split(
-                    self.train_data,
-                    self.test_split_ratio,
-                    seed=self.seed,
+            if self.test_split_ratio == 0:
+                # A ratio of 0 means no normal images are moved into the test
+                # split at all: keep every normal training image where it is.
+                # The constructor honors 0 as a real value (only None falls
+                # back to the 0.5 default), and random_split rejects 0, so the
+                # request is granted here instead of crashing there. Any other
+                # value, including a negative ratio, is left for random_split
+                # to reject with its validation error.
+                # Nothing was sampled: FROM_DIR must not append an empty set,
+                # and SYNTHETIC cannot build from nothing. Skip both consumers
+                # instead of touching normal_test_data.
+                logger.info(
+                    "test_split_ratio is 0; keeping every normal training image in the training split",
                 )
+                return
+            self.train_data, normal_test_data = random_split(
+                self.train_data,
+                self.test_split_ratio,
+                seed=self.seed,
+            )
 
         if self.test_split_mode == TestSplitMode.FROM_DIR:
             self.test_data += normal_test_data

@@ -79,7 +79,6 @@ CATEGORIES` check. Without this, a typo just surfaces as a generic "found 0 imag
       abnormal_dir: str | Path | Sequence[str | Path] | None = None,
       normal_test_dir: str | Path | Sequence[str | Path] | None = None,  # separate normal images for test set
       mask_dir: str | Path | Sequence[str | Path] | None = None,   # for segmentation masks
-      normal_split_ratio: float = 0.2,
       extensions: tuple[str] | None = None,
       train_batch_size: int = 32,
       eval_batch_size: int = 32,
@@ -97,10 +96,11 @@ CATEGORIES` check. Without this, a typo just surfaces as a generic "found 0 imag
   ```
 
   Note: `test_split_ratio` (inherited from `AnomalibDataModule`) controls the fraction of training
-  images held out for testing when `test_split_mode` triggers a synthetic split. `normal_split_ratio`
-  is stored by `Folder` but used only by `FolderDataset` internally to split normal images between
-  train and test sets when `normal_test_dir` is not provided and test data must come from the normal
-  pool.
+  images held out for testing when `test_split_mode` triggers a synthetic split, including the
+  train-to-test sampling of normal images when the test split contains none. The former
+  `normal_split_ratio` argument is gone: it was stored but never read (#3762), and passing it now
+  fails with a `TypeError`. Use `test_split_ratio` instead; a ratio of `0` keeps every normal
+  training image in the training split.
 
 Use `Folder` directly (no new code needed) whenever the data is already laid out as
 `root/normal_dir/*`, `root/abnormal_dir/*`, optionally `root/mask_dir/*`. Only write a brand-new

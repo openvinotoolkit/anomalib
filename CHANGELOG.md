@@ -10,11 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
+- ⚠️ **breaking**: Remove the unused `normal_split_ratio` argument from the Folder and Tabular datamodules; pass `test_split_ratio` instead by @choksi2212 in https://github.com/open-edge-platform/anomalib/pull/3844
+
 ### Changed
 
 ### Deprecated
 
 ### Fixed
+
+- 🐞 **data**: `test_split_ratio=0` now means what it says: no normal training images are sampled into the test split. Previously the value was silently replaced by the 0.5 default and half the normals moved by @choksi2212 in https://github.com/open-edge-platform/anomalib/pull/3844
 
 ## [v2.7.0] - 2026-10-06
 

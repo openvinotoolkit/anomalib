@@ -1,4 +1,4 @@
-# Copyright (C) 2025 Intel Corporation
+# Copyright (C) 2025-2026 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 
 """Custom Tabular Data Module.
@@ -50,9 +50,6 @@ class Tabular(AnomalibDataModule):
             or ``dict`` containing the dataset information.
         root (str | Path | None): Root folder containing normal and abnormal
             directories. Defaults to ``None``.
-        normal_split_ratio (float): Ratio to split normal training images for
-            test set when no normal test images exist.
-            Defaults to ``0.2``.
         train_batch_size (int): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int): Validation/test batch size.
@@ -112,7 +109,6 @@ class Tabular(AnomalibDataModule):
         name: str,
         samples: dict | list | pd.DataFrame,
         root: str | Path | None = None,
-        normal_split_ratio: float = 0.2,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -145,8 +141,6 @@ class Tabular(AnomalibDataModule):
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
-
-        self.normal_split_ratio = normal_split_ratio
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = TabularDataset(
