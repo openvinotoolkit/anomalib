@@ -101,8 +101,8 @@ docs = [
     "sphinx_design",
 ]
 # testing dependencies
+fuzz = ["atheris==3.1.0 ; sys_platform == 'linux' or sys_platform == 'darwin'"]
 test = [
-    "hypothesis>=6.0",
     "prek",
     "pytest",
     "pytest-cov",

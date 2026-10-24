@@ -10,8 +10,9 @@ repos:
     hooks:
       # list of supported hooks: https://pre-commit.com/hooks.html
       - id: trailing-whitespace
+        exclude: ^tests/fuzz/seeds/
       - id: end-of-file-fixer
-        exclude: "docs/source/examples"
+        exclude: "docs/source/examples|^tests/fuzz/seeds/"
       - id: check-yaml
       - id: check-added-large-files
         exclude: '(^|/).*\.lock$' # Exclude lock files (uv.lock, package-lock.json, etc.)

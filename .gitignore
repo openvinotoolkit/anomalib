@@ -171,6 +171,7 @@ docs/source/_build/
 
 # Misc
 .DS_Store
+fuzz-artifacts/
 
 # logs
 wandb/

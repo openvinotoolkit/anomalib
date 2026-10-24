@@ -5,6 +5,8 @@ on:
     paths:
       - src/anomalib/data/**
       - tests/unit/data/utils/test_path_fuzz.py
+      - tests/fuzz/**
+      - tests/fuzzing.md
       - pyproject.toml
       - uv.lock
       - .github/workflows/fuzzing.yaml
@@ -42,25 +44,31 @@ jobs:
           enable-cache: false
 
       - name: Install test dependencies
-        run: uv sync --locked --python 3.12 --extra test --extra cpu
+        run: uv sync --locked --python 3.12 --extra test --extra cpu --extra fuzz
 
-      - name: Run bounded fuzz tests
+      - name: Replay regression seeds and verify the oracle
+        run: uv run --no-sync pytest tests/unit/data/utils/test_path_fuzz.py --timeout=120
+
+      - name: Run bounded Atheris fuzzing
         env:
-          FUZZ_SEED: ${{ github.event_name == 'pull_request' && '3862' || github.run_id }}
+          FUZZ_SECONDS: ${{ github.event_name == 'pull_request' && '30' || '120' }}
+          FUZZ_SEED: ${{ github.event_name == 'pull_request' && '3862' || '0' }}
+          PYTHONFAULTHANDLER: "1"
         run: |
-          echo "Hypothesis seed: $FUZZ_SEED"
-          uv run --no-sync pytest tests/unit/data/utils/test_path_fuzz.py \
-            --hypothesis-seed="$FUZZ_SEED" --hypothesis-show-statistics \
-            --timeout=120 --junitxml=fuzz-results.xml
+          mkdir -p fuzz-artifacts/corpus fuzz-artifacts/crashes
+          cp tests/fuzz/seeds/path/* fuzz-artifacts/corpus/
+          set -o pipefail
+          uv run --no-sync python tests/fuzz/fuzz_path.py fuzz-artifacts/corpus \
+            -max_total_time="$FUZZ_SECONDS" -runs=100000 -seed="$FUZZ_SEED" \
+            -max_len=1024 -timeout=10 -rss_limit_mb=4096 \
+            -artifact_prefix=fuzz-artifacts/crashes/ -print_final_stats=1 \
+            2>&1 | tee fuzz-artifacts/run.log
 
       - name: Preserve regression evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: metadata-fuzz-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            fuzz-results.xml
-            .hypothesis/examples/
-          include-hidden-files: true
+          path: fuzz-artifacts/
           if-no-files-found: ignore
           retention-days: 30
