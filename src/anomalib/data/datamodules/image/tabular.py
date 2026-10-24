@@ -50,14 +50,6 @@ class Tabular(AnomalibDataModule):
             or ``dict`` containing the dataset information.
         root (str | Path | None): Root folder containing normal and abnormal
             directories. Defaults to ``None``.
-        normal_split_ratio (float | None): Ratio to split normal training
-            samples into the test set when the test split contains no normal
-            samples. Overrides ``test_split_ratio`` for this split. ``None``
-            keeps the ``test_split_ratio`` value, which the base class uses to
-            sample normal test samples from the training set. A ratio of ``0``
-            keeps every normal training sample in the training split; values
-            outside ``[0, 1)`` are rejected by the underlying split.
-            Defaults to ``None``.
         train_batch_size (int): Training batch size.
             Defaults to ``32``.
         eval_batch_size (int): Validation/test batch size.
@@ -117,7 +109,6 @@ class Tabular(AnomalibDataModule):
         name: str,
         samples: dict | list | pd.DataFrame,
         root: str | Path | None = None,
-        normal_split_ratio: float | None = None,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
         num_workers: int = 8,
@@ -150,14 +141,6 @@ class Tabular(AnomalibDataModule):
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
-
-        self.normal_split_ratio = normal_split_ratio
-        if normal_split_ratio is not None:
-            # Same semantics as Folder: ``normal_split_ratio`` drives the
-            # base class's train-to-test sampling of normal images. Store the
-            # explicit value so the sampling uses it; the attribute keeps the
-            # user's value for introspection.
-            self.test_split_ratio = normal_split_ratio
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = TabularDataset(

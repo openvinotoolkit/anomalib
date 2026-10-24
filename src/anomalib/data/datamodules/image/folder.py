@@ -56,14 +56,6 @@ class Folder(AnomalibDataModule):
             normal test images. Defaults to ``None``.
         mask_dir (str | Path | Sequence | None): Directory containing mask
             annotations. Defaults to ``None``.
-        normal_split_ratio (float | None): Ratio to split normal training
-            images into the test set when no normal test images exist.
-            Overrides ``test_split_ratio`` for this split. ``None`` keeps the
-            ``test_split_ratio`` value, which the base class uses to sample
-            normal test images from the training set. A ratio of ``0`` keeps
-            every normal training image in the training split; values outside
-            ``[0, 1)`` are rejected by the underlying split.
-            Defaults to ``None``.
         extensions (tuple[str, ...] | None): Image extensions to include.
             Defaults to ``None``.
         train_batch_size (int): Training batch size.
@@ -125,7 +117,6 @@ class Folder(AnomalibDataModule):
         abnormal_dir: str | Path | Sequence[str | Path] | None = None,
         normal_test_dir: str | Path | Sequence[str | Path] | None = None,
         mask_dir: str | Path | Sequence[str | Path] | None = None,
-        normal_split_ratio: float | None = None,
         extensions: tuple[str] | None = None,
         train_batch_size: int = 32,
         eval_batch_size: int = 32,
@@ -163,15 +154,6 @@ class Folder(AnomalibDataModule):
             val_split_ratio=val_split_ratio,
             seed=seed,
         )
-
-        self.normal_split_ratio = normal_split_ratio
-        if normal_split_ratio is not None:
-            # ``normal_split_ratio`` drives the same train-to-test sampling of
-            # normal images that the base class performs with
-            # ``test_split_ratio`` when the test set contains no normal images.
-            # Store the explicit value so the sampling uses it; the attribute
-            # keeps the user's value for introspection.
-            self.test_split_ratio = normal_split_ratio
 
     def _setup(self, _stage: str | None = None) -> None:
         self.train_data = FolderDataset(
