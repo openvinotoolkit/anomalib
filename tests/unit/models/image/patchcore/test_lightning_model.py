@@ -58,7 +58,7 @@ def make_model(monkeypatch: MonkeyPatch) -> "lightning_model.Patchcore":
 def make_loader(num_images: int, batch_size: int = 2) -> DataLoader:
     """Create a deterministic image dataloader with per-image values."""
     items = [ImageItem(image=torch.full((3, 17, 19), float(idx + 1))) for idx in range(num_images)]
-    return DataLoader(items, batch_size=batch_size, collate_fn=ImageBatch.collate)
+    return DataLoader(items, batch_size=batch_size, collate_fn=ImageBatch.collate, pin_memory=True)
 
 
 def make_trainer() -> Trainer:
